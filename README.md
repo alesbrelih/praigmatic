@@ -1,4 +1,4 @@
-# Pragmatic Agents for OpenCode
+# PrAIgmatic Agents for OpenCode
 
 ## Quick Start
 
