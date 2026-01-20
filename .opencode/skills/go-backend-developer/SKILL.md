@@ -918,6 +918,281 @@ func main() {
 - **Keep middleware focused**: Each middleware should have a single responsibility
 - **Use context values**: Store request-scoped data (user ID, request ID) in context
 
+## Concurrency Patterns
+
+### Goroutine Spawning with WaitGroup
+
+```go
+// import (
+//     "fmt"
+//     "sync"
+// )
+
+// Spawn multiple goroutines and wait for completion
+func ProcessItems(items []Item) error {
+    var wg sync.WaitGroup
+    errChan := make(chan error, len(items))
+
+    // Start a goroutine for each item
+    for i := range items {
+        wg.Add(1)
+        go func(index int) {
+            defer wg.Done()
+
+            // Process item
+            if err := processItem(items[index]); err != nil {
+                errChan <- err
+            }
+        }(i)
+    }
+
+    // Wait for all goroutines to complete
+    wg.Wait()
+    close(errChan)
+
+    // Collect all errors
+    var errs []error
+    for err := range errChan {
+        errs = append(errs, err)
+    }
+
+    // Return combined error or nil
+    if len(errs) > 0 {
+        return fmt.Errorf("multiple errors occurred: %v", errs)
+    }
+
+    return nil
+}
+
+// processItem processes a single item (placeholder)
+func processItem(item Item) error {
+    // Process item logic here
+    return nil
+}
+```
+
+### Channel Communication Patterns
+
+```go
+// import (
+//     "fmt"
+//     "sync"
+//     "time"
+// )
+
+// Producer-consumer pattern with channels
+func ProducerConsumer() {
+    // Create channels
+    items := make(chan int, 10)  // Buffered channel
+    results := make(chan int, 10)
+
+    // Start producer goroutine
+    go func() {
+        defer close(items)
+
+        for i := 0; i < 10; i++ {
+            items <- i
+            time.Sleep(100 * time.Millisecond)
+        }
+    }()
+
+    var wg sync.WaitGroup
+
+    // Start consumer goroutines
+    for i := 0; i < 3; i++ {
+        wg.Add(1)
+        go func(workerID int) {
+            defer wg.Done()
+            for item := range items {
+                result := item * 2
+                results <- result
+                fmt.Printf("Worker %d processed item %d -> %d\n", workerID, item, result)
+            }
+        }(i)
+    }
+
+    // Wait for all consumers to finish before closing results
+    go func() {
+        wg.Wait()
+        close(results)
+    }()
+
+    // Collect results
+    for result := range results {
+        fmt.Println("Result:", result)
+    }
+}
+```
+
+### Mutex for Shared State
+
+```go
+// import (
+//     "sync"
+// )
+
+// Safe counter with mutex
+type SafeCounter struct {
+    mu    sync.Mutex
+    value int
+}
+
+// Increment counter safely
+func (c *SafeCounter) Increment() {
+    c.mu.Lock()
+    defer c.mu.Unlock()
+    c.value++
+}
+
+// Get counter value safely
+func (c *SafeCounter) Value() int {
+    c.mu.Lock()
+    defer c.mu.Unlock()
+    return c.value
+}
+```
+
+### Worker Pool Pattern
+
+```go
+// import (
+//     "context"
+//     "fmt"
+//     "sync"
+// )
+
+// Job represents work to be done
+type Job struct {
+    ID   int
+    Data string
+}
+
+// Result represents output of a job
+type Result struct {
+    JobID  int
+    Output string
+    Error  error
+}
+
+// Worker pool manages concurrent job processing
+type WorkerPool struct {
+    jobs    chan Job
+    results chan Result
+    wg      sync.WaitGroup
+    workers int
+}
+
+// NewWorkerPool creates a new worker pool
+func NewWorkerPool(workers int) *WorkerPool {
+    return &WorkerPool{
+        jobs:    make(chan Job, workers*2),
+        results: make(chan Result, workers*2),
+        workers: workers,
+    }
+}
+
+// Start initializes and starts all workers
+func (wp *WorkerPool) Start(ctx context.Context) {
+    for i := 0; i < wp.workers; i++ {
+        wp.wg.Add(1)
+        go wp.worker(ctx, i)
+    }
+
+    // Close results when all workers are done
+    go func() {
+        wp.wg.Wait()
+        close(wp.results)
+    }()
+}
+
+// worker processes jobs from the jobs channel
+func (wp *WorkerPool) worker(ctx context.Context, workerID int) {
+    defer wp.wg.Done()
+
+    for {
+        select {
+        case job, ok := <-wp.jobs:
+            if !ok {
+                return
+            }
+
+            // Process job
+            result, err := processJob(job)
+            wp.results <- Result{
+                JobID:  job.ID,
+                Output: result,
+                Error:  err,
+            }
+
+        case <-ctx.Done():
+            return
+        }
+    }
+}
+
+// Submit sends a job to the pool
+func (wp *WorkerPool) Submit(job Job) {
+    wp.jobs <- job
+}
+
+// Results returns the results channel
+func (wp *WorkerPool) Results() <-chan Result {
+    return wp.results
+}
+
+// Shutdown gracefully shuts down the pool
+func (wp *WorkerPool) Shutdown() {
+    close(wp.jobs)
+    wp.wg.Wait()
+}
+
+// Usage example
+func WorkerPoolExample() {
+    ctx := context.Background()
+    pool := NewWorkerPool(5)
+    pool.Start(ctx)
+    defer pool.Shutdown()
+
+    // Submit jobs
+    for i := 0; i < 20; i++ {
+        pool.Submit(Job{ID: i, Data: fmt.Sprintf("data-%d", i)})
+    }
+
+    // Collect results
+    for result := range pool.Results() {
+        if result.Error != nil {
+            fmt.Printf("Job %d failed: %v\n", result.JobID, result.Error)
+        } else {
+            fmt.Printf("Job %d result: %s\n", result.JobID, result.Output)
+        }
+    }
+}
+
+// processJob processes a single job (placeholder)
+func processJob(job Job) (string, error) {
+    // Process job logic here
+    return fmt.Sprintf("processed-%s", job.Data), nil
+}
+```
+
+### Best Practices for Concurrent Code
+
+- **Always WaitGroup**: Use sync.WaitGroup to wait for goroutines to complete
+- **Close channels**: Always close channels when done to avoid deadlocks
+- **Lock minimal scope**: Hold locks for the shortest time possible
+- **Use defer**: Always use defer with mutex unlock and WaitGroup.Done()
+- **Context for cancellation**: Use context for cancellation in goroutines
+- **Avoid shared state**: Prefer message passing over shared memory (channels over locks)
+- **Buffered channels**: Use buffered channels for producer-consumer to reduce blocking
+- **Worker pools**: Use worker pools for controlling concurrent goroutines
+- **Error channels**: Collect errors from goroutines using channels
+- **Panic recovery**: Add panic recovery in goroutines (especially long-running ones)
+- **Select for multiple channels**: Use select to wait on multiple channels simultaneously
+- **Don't close from receiver**: Never close a channel from the receiver side
+- **Race detection**: Use go test -race to detect data races
+- **Limit goroutines**: Avoid spawning unlimited goroutines - use worker pools or semaphores
+- **Use sync.Once**: Use sync.Once for one-time initialization
+
 ## Observability Patterns
 
 ### OpenTelemetry Tracing
