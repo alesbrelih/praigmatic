@@ -210,4 +210,27 @@ Impact: High (breaking changes expected)
 Mitigation: Document dependency, monitor release notes, have fallback plan
 ```
 
+## Tool Best Practices
+
+### Grep.app Usage
+
+- **Code vs Concepts**: Search for actual code patterns, not concepts (e.g., 'useState(' not 'react hooks tutorial')
+- **Filter Effectively**: Use language, repository, and path filters to narrow results
+- **Regex Patterns**: Use regex for flexible pattern matching across multiple lines
+- **Check Recency**: Verify commit dates to ensure code examples are current
+
+### WebSearch Usage
+
+- **Include Year**: Add current year to queries for recent information (e.g., "Next.js 14 middleware 2024")
+- **Be Specific**: Use precise queries with technology names and version numbers
+- **Verify Sources**: Prioritize official documentation, reputable blogs, and established tech publications
+- **Check Dates**: Verify publication dates to ensure information is current
+
+### Local Codebase Search
+
+- **Understand Patterns First**: Review existing codebase patterns before proposing solutions
+- **Check for Similar Functionality**: Search for similar implementations before creating new code
+- **Identify Integration Points**: Understand how new code integrates with existing architecture
+- **Follow Project Conventions**: Match existing code style, naming conventions, and structural patterns
+
 See `.opencode/reference/tool-patterns.md` for detailed tool syntax.

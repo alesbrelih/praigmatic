@@ -68,7 +68,7 @@
   - Follow style consistent with other sections
   - Place: `.opencode/agent/pragmatic-researcher.md`
 
-- [ ] **Add Tool Best Practices Section** (Small) (NO_TTD)
+- [x] **Add Tool Best Practices Section** (Small) (NO_TTD)
   - Insert after Risk Assessment (before final reference link at line 142)
   - Add section header "## Tool Best Practices"
   - Add subsection "### Grep.app Usage" with 4 bullets (code vs concepts search, filter by language/repo, regex for patterns, check commit dates)
