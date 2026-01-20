@@ -2,7 +2,7 @@
 description: Expert developer writing clean, maintainable code. Uses TTD approach when specified. Automatically discovers and loads relevant skills via opencode-skillful.
 mode: all
 permission:
-  edit: allow
+  edit: ask
   write: ask
   bash: allow
   webfetch: allow

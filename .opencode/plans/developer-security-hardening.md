@@ -39,7 +39,7 @@
   - This requires human approval before agent writes any files
   - Where: `.opencode/agent/pragmatic-developer.md` (frontmatter, line 6)
 
-- [ ] **Change file edit permission to ask** (TTD_REQUIRED) (Small)
+- [x] **Change file edit permission to ask** (TTD_REQUIRED) (Small)
   - Update YAML frontmatter: change `edit: allow` to `edit: ask`
   - This requires human approval before agent edits any files
   - Where: `.opencode/agent/pragmatic-developer.md` (frontmatter, line 5)
