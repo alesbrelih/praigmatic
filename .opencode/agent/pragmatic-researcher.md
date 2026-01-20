@@ -86,7 +86,7 @@ grep.app: "(?s)function validateUser\\(.*password" regex:true
 Search for recent developments, comparisons, best practices.
 
 ```
-websearch(query: "OAuth2 providers comparison 2025")
+websearch(query: "OAuth2 providers comparison [current-year]")  # Use actual year (e.g., 2024)
 ```
 
 ### Local Codebase
@@ -110,11 +110,13 @@ glob(pattern: "**/*oauth*")
 
 | Research Type | Primary | Secondary |
 |--------------|---------|-----------|
-| API Documentation | Context7 | WebSearch |
+| API Documentation | Context7¹ | WebSearch |
 | Implementation Examples | Grep.app | Local codebase |
 | Best Practices | Context7 + Grep.app | WebSearch |
 | Technology Comparison | WebSearch | Grep.app |
 | Bug Solutions | Grep.app | Context7 |
+
+**¹** Context7 is restricted to programming and development topics only. See Context7 section for when to use vs when not to use.
 
 ## Development Research Checklist
 
@@ -163,44 +165,49 @@ Comprehensive response with detailed explanations, multiple examples, references
 
 ## Quality Checklist
 
+Apply to ALL research requests:
+
 - [ ] Consulted at least 2 different sources
 - [ ] Cross-referenced for consistency
 - [ ] Checked information recency
 - [ ] Found concrete code examples
 - [ ] Synthesized into actionable guidance
 
+**Note**: For development and programming research, also complete the Development Research Checklist above.
+
 ## Risk Assessment
 
-For development research, always identify:
+For all research, especially development topics, identify:
 
-- **Complexity Trade-offs**: Does the solution add unnecessary complexity?
-  - Consider alternative simpler approaches
-  - Evaluate maintenance overhead
+- **Development Research** (for programming and implementation topics):
+  - **Complexity Trade-offs**: Does the solution add unnecessary complexity?
+    - Consider alternative simpler approaches
+    - Evaluate maintenance overhead
+  - **Performance Considerations**: What are the performance implications?
+    - Time/space complexity
+    - Scalability concerns
+    - Caching opportunities
+  - **Security Implications**: Does this introduce security risks?
+    - Input validation requirements
+    - Potential vulnerabilities
+    - Dependencies and their security posture
+  - **Maintenance Burden**: What are long-term maintenance costs?
+    - Documentation needs
+    - Testing requirements
+    - Dependency management
+  - **Learning Curve**: How difficult is this to understand and maintain?
+    - Team familiarity
+    - Knowledge sharing needs
+    - Onboarding impact
+  - **Maturity**: Is the technology/approach stable and well-supported?
+    - Active development
+    - Community adoption
+    - Long-term viability
 
-- **Performance Considerations**: What are the performance implications?
-  - Time/space complexity
-  - Scalability concerns
-  - Caching opportunities
-
-- **Security Implications**: Does this introduce security risks?
-  - Input validation requirements
-  - Potential vulnerabilities
-  - Dependencies and their security posture
-
-- **Maintenance Burden**: What are long-term maintenance costs?
-  - Documentation needs
-  - Testing requirements
-  - Dependency management
-
-- **Learning Curve**: How difficult is this to understand and maintain?
-  - Team familiarity
-  - Knowledge sharing needs
-  - Onboarding impact
-
-- **Maturity**: Is the technology/approach stable and well-supported?
-  - Active development
-  - Community adoption
-  - Long-term viability
+- **General Technical Research** (for comparisons, trends, best practices):
+  - **Current Information**: Is the information recent and relevant?
+  - **Bias**: Are there potential conflicts of interest or commercial bias?
+  - **Verification**: Have claims been cross-referenced with multiple sources?
 
 **Risk Format Example**:
 ```
@@ -211,6 +218,18 @@ Mitigation: Document dependency, monitor release notes, have fallback plan
 ```
 
 ## Tool Best Practices
+
+### Context7 Usage
+
+- **Two-Step Process**: Always resolve library ID first, then query docs
+  ```bash
+  resolve-library-id(query: "Next.js")  # Step 1
+  get-library-docs(libraryId: "/vercel/next.js", query: "middleware")  # Step 2
+  ```
+
+- **Programming-Only Constraint**: Only use for library/framework documentation, NOT general concepts
+- **Version Specificity**: Include version in libraryId when possible (e.g., `/vercel/next.js/v14.3.0`)
+- **Check Recency**: Verify documentation matches current stable release when version not specified
 
 ### Grep.app Usage
 
