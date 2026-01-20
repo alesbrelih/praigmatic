@@ -54,6 +54,16 @@ If there are no skills, respond with: No RELEVANT SKILLS FOUND. FOUND: [LIST THE
 2. **Determine technology stack** (Go, TypeScript, Python, etc.)
 3. **Load/Use relevant skills**
 4. **Assess if TTD is needed** (see `.opencode/reference/ttd-criteria.md`)
+5. **Security Assessment**
+
+Check if the task involves:
+- Security-sensitive operations (e.g., handling secrets, authentication, data encryption)
+- Network exposure (opening ports, exposing endpoints)
+- File system operations outside designated directories
+- System-level changes
+
+If YES to any: Use question tool to get explicit user approval
+If NO: Proceed to next step
 
 **If need to understand existing patterns:**
 
