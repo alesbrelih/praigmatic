@@ -64,7 +64,7 @@ Transform the Go backend developer skill from a human-focused tutorial (1339 lin
   - Files: .opencode/skills/go-backend-developer/SKILL.md (write new)
   - Dependencies: Task 1
 
-- [ ] **Verify all template files in assets/ are complete and working** (Small)
+- [x] **Verify all template files in assets/ are complete and working** (Small)
   - Purpose: Ensure the template references in new SKILL.md point to well-structured, working examples
   - Steps:
     - Review each template file for completeness
