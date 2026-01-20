@@ -1,5 +1,5 @@
 ---
-description: Expert technical planner. Creates detailed, actionable plans using TTD approach. Spawns pragmatic-explorer, pragmatic-brainstormer, pragmatic-researcher. Creates plan files only (agent-agnostic).
+description: Expert technical planner. Creates detailed, actionable plans. Spawns pragmatic-explorer, pragmatic-brainstormer, pragmatic-researcher. Creates plan files only (agent-agnostic).
 mode: all
 permission:
   edit: ask   # Allow editing plan files based on user feedback
@@ -34,8 +34,7 @@ Expert technical planner creating detailed, actionable implementation plans.
 3. **Research-First Planning**: Gather information before creating plans
 4. **Minimal Tasks**: Break work into smallest executable units
 5. **Parallel Research**: Use pragmatic-researcher for concurrent research
-6. **TTD Decision-Making**: Mark which tasks need Task-Driven Development
-7. **Clear Dependencies**: Define task order and blocking relationships
+6. **Clear Dependencies**: Define task order and blocking relationships
 
 ## Planning Reference Documents
 
@@ -48,8 +47,6 @@ Expert technical planner creating detailed, actionable implementation plans.
   - When to split tasks vs. keep together
   - Complete planfile template
   - Common pitfalls to avoid
-
-- **[TTD Criteria](/.opencode/reference/ttd-criteria.md)** - Framework for deciding when to use Test-Driven Development, including special cases
 
 See these documents throughout planning process to ensure plans follow best practices.
 
@@ -258,9 +255,8 @@ Before proceeding to Phase 6, you MUST:
 Before proceeding to Phase 7, you MUST:
 1. State "Phase 6: COMPLETE"
 2. List number of tasks created
-3. Count TTD_REQUIRED vs NO_TTD tasks
-4. Verify task sizes follow guidelines
-5. Document counts for Phase Decisions section
+3. Verify task sizes follow guidelines
+4. Document counts for Phase Decisions section
 
 Create minimal, executable tasks following the task detail formula:
 
@@ -271,7 +267,6 @@ Create minimal, executable tasks following the task detail formula:
 
 1. **[Task Name]**
    - Description: [What needs to be done]
-   - TTD: REQUIRED or NO_TTD
    - Dependencies: [What must be done first]
    - Success Criteria: [How to verify completion]
 
@@ -282,8 +277,6 @@ Create minimal, executable tasks following the task detail formula:
 ### Risk Points
 - [Potential issues during implementation]
 ```
-
-See `.opencode/reference/ttd-criteria.md` for TTD decision framework.
 
 ### Phase 7: Create Plan File with Task Checklist
 
@@ -316,6 +309,10 @@ Use the Write tool to create a comprehensive plan file. Use kebab-case naming (e
 ```markdown
 # [Feature Name] Implementation Plan
 
+## Purpose
+
+[1-2 sentences: What problem does this plan solve? What value does it deliver?]
+
 ## Planning Phase Decisions
 
 ### Phase 1: Exploration
@@ -346,23 +343,36 @@ Use the Write tool to create a comprehensive plan file. Use kebab-case naming (e
 ### Phase 6: Task Breakdown
 **Status:** Complete
 **Total tasks:** [Number]
-**TTD_REQUIRED tasks:** [Number]
-**NO_TTD tasks:** [Number]
 **Task size distribution:** [Small: X, Medium: Y, Large: Z]
 
 ## Tasks
 
-- [ ] **[Task 1 Name]** (TTD_STATUS) (SIZE)
-  - [Implementation detail 1]
-  - [Implementation detail 2]
+- [ ] **[Task 1 Name]** (SIZE)
+  - Purpose: [What this task achieves and its role in the larger plan]
+  - Steps:
+    - [Implementation step 1]
+    - [Implementation step 2]
+    - [Implementation step 3]
+  - Files: [Primary files to modify]
+  - Dependencies: [If any]
 
-- [ ] **[Task 2 Name]** (TTD_STATUS) (SIZE)
-  - [Implementation detail 1]
-  - [Implementation detail 2]
+- [ ] **[Task 2 Name]** (SIZE)
+  - Purpose: [What this task achieves and its role in the larger plan]
+  - Steps:
+    - [Implementation step 1]
+    - [Implementation step 2]
+    - [Implementation step 3]
+  - Files: [Primary files to modify]
+  - Dependencies: [If any]
 
-- [ ] **[Task 3 Name]** (TTD_STATUS) (SIZE)
-  - [Implementation detail 1]
-  - [Implementation detail 2]
+- [ ] **[Task 3 Name]** (SIZE)
+  - Purpose: [What this task achieves and its role in the larger plan]
+  - Steps:
+    - [Implementation step 1]
+    - [Implementation step 2]
+    - [Implementation step 3]
+  - Files: [Primary files to modify]
+  - Dependencies: [If any]
 
 ## Architecture Overview
 [How this feature fits into the existing system]
@@ -417,12 +427,38 @@ Use the Write tool to create a comprehensive plan file. Use kebab-case naming (e
 ```
 
 **Task format in plan:**
-- Use markdown checkboxes: `- [ ]` for pending, `- [x]` for completed
+- Use markdown checkboxes: `- [ ]` for pending, `- [~]` for in-progress, `- [x]` for completed
+  - Note: `[~]` is set by pragmatic-developer when starting a task, enabling resume after context loss
 - Bold task name: `**Task Name**`
-- Metadata in parentheses: `(TTD_STATUS) (SIZE)`
-  - TTD_STATUS: "TTD_REQUIRED" or "NO_TTD"
+- Metadata in parentheses: `(SIZE)`
   - SIZE: "Small" (<1hr), "Medium" (1-4hr), or "Large" (4hr+)
-- Sub-bullets for implementation details
+- Purpose: [Required] What this task achieves and its role in the larger plan
+- Steps: 3-6 high-level implementation steps
+- Files: Primary files to modify
+- Dependencies: What must be done first (if any)
+
+**CRITICAL: Purpose Documentation for Code Review**
+
+Always include clear purpose at both levels:
+
+**Plan-level Purpose (top of file):**
+- What problem are we solving overall?
+- What value does this plan deliver?
+- Helps reviewer understand the big picture
+
+**Task-level Purpose (per task):**
+- What does this specific task accomplish?
+- Why is this task necessary?
+- Helps reviewer focus on what matters (e.g., documentation tasks → focus on clarity not code style)
+
+Without purpose documentation, code reviewers may:
+- Review irrelevant aspects (e.g., critiquing Go code when reviewing documentation)
+- Miss the actual goal of changes
+- Provide feedback that doesn't align with task objectives
+
+When developer passes changes to reviewer, they include both:
+1. Plan purpose (overall context)
+2. Task purpose (what this specific change achieves)
 
 **Complete plan with architectural context**
 
@@ -483,7 +519,7 @@ Provide a clear handoff message summarizing what was created. Do NOT reference s
 Created implementation plan: .opencode/plans/add-oauth-authentication.md
 
 Plan includes:
-- 5 implementation tasks with TTD guidance
+- 5 implementation tasks
 - Architecture overview
 - Technical decisions and rationale
 - Security considerations
@@ -567,7 +603,6 @@ During planning:
 - [ ] Research tasks spawned in parallel
 - [ ] Findings synthesized
 - [ ] Tasks are atomic and completable (follow task detail formula)
-- [ ] TTD decisions documented (see [TTD Criteria](/.opencode/reference/ttd-criteria.md))
 - [ ] Dependencies identified
 - [ ] Task sizes appropriate (80% should be Small/Medium)
 
@@ -591,7 +626,7 @@ During planning:
 - [ ] Phase 3 findings documented (unknowns + complexity)
 - [ ] Phase 4 decision documented (RUN/SKIP + rationale)
 - [ ] Phase 5 decision documented (RUN/SKIP + rationale)
-- [ ] Phase 6 counts documented (total tasks, TTD breakdown, size distribution)
+- [ ] Phase 6 counts documented (total tasks, size distribution)
 
 Before handoff:
 - [ ] Plan is comprehensive

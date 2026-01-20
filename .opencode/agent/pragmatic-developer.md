@@ -148,6 +148,20 @@ Before proceeding to Phase 2, you MUST complete ALL of:
 
 ### Phase 2: Implementation
 
+**Step 1: Mark Task as In-Progress**
+
+1. **Locate the current task** in the plan file (e.g., `.opencode/plans/xxx.md`).
+2. **Change the checkbox** from `- [ ]` to `- [~]`.
+3. **Verify the edit**: Read the file back to ensure the in-progress marker is saved.
+
+```bash
+# Example: Edit task checkbox to in-progress
+# Edit tool: Replace `- [ ] **Task Name**` with `- [~] **Task Name**`
+
+# Verify edit succeeded
+# Read tool: Read the plan file to confirm the change
+```
+
 ⚠️ **CRITICAL: Servers and Long-Running Processes** ⚠️
 
 **ALWAYS use `run_in_background: true` for:**
@@ -196,9 +210,22 @@ git add [file_paths]
 ```
 
 **Step 2: Request Review of Staged Changes**
-Explicitly instruct the reviewer to look at staged changes:
+
+First, read the plan file to extract purpose context:
+```bash
+# Read plan file to get overall purpose
+# File: .opencode/plans/[plan-name].md
+# Extract: Purpose section and current task's Purpose field
 ```
-task(agent: "pragmatic-code-reviewer", prompt: "Review STAGED changes for: [description]. Focus on implementation of [Task Name].")
+
+Then explicitly instruct the reviewer with both plan and task purpose:
+```
+task(agent: "pragmatic-code-reviewer", prompt: "Review STAGED changes for: [description].
+
+**Plan Purpose:** [Paste overall purpose from plan file]
+**Task Purpose:** [Paste specific task purpose from plan file]
+
+Focus on implementation of [Task Name]. The task purpose defines what this change should achieve and what aspects are most important to review.")
 ```
 
 **Step 3: Fix Issues**
@@ -211,12 +238,12 @@ Review the findings. Fix all critical/high issues. Re-stage fixed files (`git ad
 **Step 1: Update Plan File (CRITICAL)**
 
 1. **Locate the current task** in the plan file (e.g., `.opencode/plans/xxx.md`).
-2. **Change the checkbox** from `- [ ]` to `- [x]`.
+2. **Change the checkbox** from `- [~]` to `- [x]`.
 3. **Verify the edit**: Read the file back to ensure the checkmark is saved.
 
 ```bash
 # Example: Edit task checkbox to completed
-# Edit tool: Replace `- [ ] **Task Name**` with `- [x] **Task Name**`
+# Edit tool: Replace `- [~] **Task Name**` with `- [x] **Task Name**`
 
 # Verify edit succeeded
 # Read tool: Read the plan file to confirm the change
