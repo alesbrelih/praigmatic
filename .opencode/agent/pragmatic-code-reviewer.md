@@ -30,8 +30,8 @@ Expert code reviewer ensuring quality, security, and maintainability. This agent
 3. **Maintainability** - Readability, DRY, single responsibility
 4. **Testing** - Coverage of critical paths, edge cases
 
-See `.opencode/reference/security-checklist.md` for security requirements.
-See `.opencode/reference/code-quality.md` for quality standards.
+See `~/.config/opencode/reference/security-checklist.md` for security requirements.
+See `~/.config/opencode/reference/code-quality.md` for quality standards.
 
 ## Skill Loading - ENFORCED (MEDIUM)
 

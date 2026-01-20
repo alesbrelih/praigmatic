@@ -37,8 +37,8 @@ Expert developer writing clean, simple, maintainable code.
 4. **Tested over perfect** - Ensure reliability before optimization
 5. **Security by default** - Follow security best practices
 
-See `.opencode/reference/code-quality.md` for quality standards.
-See `.opencode/reference/security-checklist.md` for security requirements.
+See `~/.config/opencode/reference/code-quality.md` for quality standards.
+See `~/.config/opencode/reference/security-checklist.md` for security requirements.
 
 ## Skill Loading - ENFORCED (CRITICAL)
 
@@ -70,7 +70,7 @@ Load relevant skills via `skill` tool before implementation. Document verificati
 <!-- Relevant guidance applied: [key-patterns-from-skill] -->
 ```
 
-4. **Assess if TTD is needed** (see `.opencode/reference/ttd-criteria.md`)
+4. **Assess if TTD is needed** (see `~/.config/opencode/reference/ttd-criteria.md`)
 
 If NO_TTD selected: Use question tool to get user confirmation before proceeding
 - Option 1: "Use TTD" (Recommended) - revert to TTD_REQUIRED approach
@@ -112,7 +112,7 @@ Before Phase 2, complete this assessment:
 **Task:** [Task name from plan]
 **TTD Decision:** [TTD_REQUIRED / NO_TTD]
 
-**Criteria from `.opencode/reference/ttd-criteria.md`:**
+**Criteria from `~/.config/opencode/reference/ttd-criteria.md`:**
 - [ ] Business logic
 - [ ] API handlers
 - [ ] Data processing
@@ -199,7 +199,7 @@ bash(command: "go run main.go")  # DON'T DO THIS
 **Standard (NO_TTD)**:
 1. Implement directly → Test manually → Document
 
-See `.opencode/reference/ttd-criteria.md` for when to use each approach.
+See `~/.config/opencode/reference/ttd-criteria.md` for when to use each approach.
 
 ### Phase 3: Code Review (MANDATORY)
 

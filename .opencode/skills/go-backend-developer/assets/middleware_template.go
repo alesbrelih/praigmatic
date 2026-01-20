@@ -2,10 +2,12 @@ package pkg_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -97,20 +99,38 @@ func Recovery(next http.Handler) http.Handler {
 
 		defer func() {
 			if err := recover(); err != nil {
+				// Log sanitized error - don't log raw errors that might contain sensitive data
 				slog.ErrorContext(r.Context(),
 					"panic recovered",
-					"error", err,
+					"error", sanitizeError(err),
 					"path", r.URL.Path,
+					"request_id", GetRequestID(r.Context()),
 				)
 
 				if wrapped.status == 0 {
-					http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+					// Always return generic error to client
+					w.Header().Set("Content-Type", "application/json")
+					w.WriteHeader(http.StatusInternalServerError)
+					json.NewEncoder(w).Encode(map[string]string{
+						"error": "internal server error",
+					})
 				}
 			}
 		}()
 
 		next.ServeHTTP(wrapped, r)
 	})
+}
+
+// sanitizeError removes sensitive data from errors before logging
+func sanitizeError(err interface{}) string {
+	// In production, implement sanitization to remove:
+	// - Passwords/tokens
+	// - Personal information
+	// - Stack traces with sensitive data
+	//
+	// For now, just convert to string
+	return fmt.Sprintf("%v", err)
 }
 
 // Authentication Middleware
@@ -122,10 +142,45 @@ type AuthService interface {
 type authService struct{}
 
 func (a *authService) ValidateToken(token string) (string, error) {
+	// Remove "Bearer " prefix if present
+	token = trimBearerPrefix(token)
+	if token == "" {
+		return "", fmt.Errorf("invalid token format")
+	}
+
+	// In production, implement proper JWT validation:
+	// 1. Parse token with claims
+	// 2. Verify signature with secret key
+	// 3. Check expiration time
+	// 4. Extract user ID from claims
+	//
+	// Example using github.com/golang-jwt/jwt/v5:
+	// claims := jwt.MapClaims{}
+	// tkn, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
+	//     if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+	//         return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+	//     }
+	//     return []byte(secret), nil
+	// })
+	// if err != nil || !tkn.Valid {
+	//     return "", fmt.Errorf("invalid token")
+	// }
+	// userID, ok := claims["sub"].(string)
+	// if !ok || userID == "" {
+	//     return "", fmt.Errorf("invalid token claims")
+	// }
+	// return userID, nil
+
+	// For template demonstration: simple token validation
 	if token == "valid-token" {
 		return "user-123", nil
 	}
 	return "", fmt.Errorf("invalid token")
+}
+
+// trimBearerPrefix removes "Bearer " prefix from token
+func trimBearerPrefix(token string) string {
+	return strings.TrimPrefix(token, "Bearer ")
 }
 
 const userKey contextKey = "user"
@@ -140,9 +195,15 @@ func Authentication(auth AuthService) Middleware {
 				return
 			}
 
-			token := authHeader // In real code, remove "Bearer " prefix
+			token := trimBearerPrefix(authHeader)
 			userID, err := auth.ValidateToken(token)
 			if err != nil {
+				slog.ErrorContext(r.Context(),
+					"authentication failed",
+					"error", err,
+					"path", r.URL.Path,
+					"request_id", GetRequestID(r.Context()),
+				)
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				return
 			}

@@ -47,6 +47,13 @@ func (s *Service) ProcessItem(ctx context.Context, id string) (*Item, error) {
 		return nil, errors.New("id is required")
 	}
 
+	// Check for context cancellation before expensive operations
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+
 	// Fetch from repository
 	item, err := s.repo.Get(ctx, id)
 	if err != nil {
@@ -58,7 +65,8 @@ func (s *Service) ProcessItem(ctx context.Context, id string) (*Item, error) {
 		return nil, errors.New("item name cannot be empty")
 	}
 
-	// TODO: Add more business logic
+	// Add more business logic here
+	// e.g., validation, transformation, enrichment
 
 	return item, nil
 }

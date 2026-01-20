@@ -3,8 +3,10 @@ package pkg_test
 import (
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -21,18 +23,42 @@ type ErrorResponse struct {
 
 // writeError writes a JSON error response
 func writeError(w http.ResponseWriter, r *http.Request, status int, err error) {
+	// Log error with context for traceability
+	slog.ErrorContext(r.Context(),
+		"request error",
+		"status", status,
+		"path", r.URL.Path,
+		"method", r.Method,
+		"error", err.Error(),
+	)
+
 	resp := ErrorResponse{
-		Error:   http.StatusText(status),
-		Details: err.Error(),
+		Error: http.StatusText(status),
 	}
 
-	if status >= 500 {
-		resp.Details = "internal server error"
+	// Don't expose internal errors to clients
+	if status < 500 {
+		resp.Details = err.Error()
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(resp)
+
+	// Handle JSON encoding errors
+	if encErr := json.NewEncoder(w).Encode(resp); encErr != nil {
+		// Can't write to response anymore, just log
+		slog.ErrorContext(r.Context(),
+			"failed to encode error response",
+			"error", encErr,
+		)
+	}
+}
+
+// isValidID validates the ID format to prevent injection attacks
+// Only allows alphanumeric characters, dashes, and underscores
+func isValidID(id string) bool {
+	matched, _ := regexp.MatchString(`^[a-zA-Z0-9_-]+$`, id)
+	return matched
 }
 
 // Handler is an example HTTP handler
@@ -60,16 +86,32 @@ func (h *Handler) HandleExample(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Process request using service layer
-	// result, err := h.service.Example(r.Context(), id)
+	// Sanitize input - prevent injection attacks
+	if !isValidID(id) {
+		writeError(w, r, http.StatusBadRequest, errors.New("invalid id format"))
+		return
+	}
+
+	// Call service layer: result, err := h.service.Process(r.Context(), id)
+	// For template demonstration, we'll return a mock response
 
 	// Return success response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{
+
+	resp := map[string]string{
 		"id":     id,
 		"status": "processed",
-	})
+	}
+
+	// Handle JSON encoding errors
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		// Can't write to response anymore, just log
+		slog.ErrorContext(r.Context(),
+			"failed to encode response",
+			"error", err,
+		)
+	}
 }
 
 // TestHandler tests the Handler
@@ -92,6 +134,13 @@ func TestHandler(t *testing.T) {
 			name:           "missing id parameter",
 			method:         http.MethodGet,
 			queryParams:    "",
+			expectedStatus: http.StatusBadRequest,
+			wantErr:        true,
+		},
+		{
+			name:           "invalid id format",
+			method:         http.MethodGet,
+			queryParams:    "?id=<script>",
 			expectedStatus: http.StatusBadRequest,
 			wantErr:        true,
 		},

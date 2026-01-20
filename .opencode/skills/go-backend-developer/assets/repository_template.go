@@ -69,6 +69,52 @@ func (r *SQLRepository) Create(ctx context.Context, item *Item) error {
 	return nil
 }
 
+// UpdateWithTransaction demonstrates transaction handling
+func (r *SQLRepository) UpdateWithTransaction(ctx context.Context, item *Item) error {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	defer func() {
+		if p := recover(); p != nil {
+			tx.Rollback()
+			panic(p)
+		}
+	}()
+
+	// Execute multiple operations within transaction
+	if err := r.updateItem(ctx, tx, item); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := r.logChange(ctx, tx, item); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+
+// updateItem updates an item within a transaction
+func (r *SQLRepository) updateItem(ctx context.Context, tx *sql.Tx, item *Item) error {
+	query := "UPDATE items SET name = $1 WHERE id = $2"
+	_, err := tx.ExecContext(ctx, query, item.Name, item.ID)
+	return err
+}
+
+// logChange logs a change within a transaction
+func (r *SQLRepository) logChange(ctx context.Context, tx *sql.Tx, item *Item) error {
+	query := "INSERT INTO item_changes (item_id, name, changed_at) VALUES ($1, $2, NOW())"
+	_, err := tx.ExecContext(ctx, query, item.ID, item.Name)
+	return err
+}
+
 // TestSQLRepository_Get tests the Get method
 func TestSQLRepository_Get(t *testing.T) {
 	tests := []struct {

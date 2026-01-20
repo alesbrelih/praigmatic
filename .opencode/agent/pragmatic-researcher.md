@@ -252,4 +252,4 @@ Mitigation: Document dependency, monitor release notes, have fallback plan
 - **Identify Integration Points**: Understand how new code integrates with existing architecture
 - **Follow Project Conventions**: Match existing code style, naming conventions, and structural patterns
 
-See `.opencode/reference/tool-patterns.md` for detailed tool syntax.
+See `~/.config/opencode/reference/tool-patterns.md` for detailed tool syntax.

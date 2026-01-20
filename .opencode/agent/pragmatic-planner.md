@@ -40,7 +40,7 @@ Expert technical planner creating detailed, actionable implementation plans.
 
 **MANDATORY reading before creating plans:**
 
-- **[Planning Guide](/.opencode/reference/planning-guide.md)** - Comprehensive guide for task granularity, detail level, and planfile structure. Consult this for:
+- **[Planning Guide](~/.config/opencode/reference/planning-guide.md)** - Comprehensive guide for task granularity, detail level, and planfile structure. Consult this for:
   - Task size boundaries (Small/Medium/Large)
   - Task detail formula (What/Why/How/Where/Dependencies)
   - Decision documentation depth
@@ -249,7 +249,7 @@ Before proceeding to Phase 6, you MUST:
 
 ### Phase 6: Task Breakdown - REQUIRED
 
-**Consult [Planning Guide](/.opencode/reference/planning-guide.md) for detailed task breakdown guidelines.**
+**Consult [Planning Guide](~/.config/opencode/reference/planning-guide.md) for detailed task breakdown guidelines.**
 
 **PHASE 6 BOUNDARY CHECKPOINT ✅**
 Before proceeding to Phase 7, you MUST:
@@ -298,7 +298,7 @@ If you haven't evaluated and documented these phases, STOP and complete them now
 
 Use the Write tool to create a comprehensive plan file. Use kebab-case naming (e.g., `add-oauth-authentication.md`).
 
-**IMPORTANT:** See [Planning Guide](/.opencode/reference/planning-guide.md) for:
+**IMPORTANT:** See [Planning Guide](~/.config/opencode/reference/planning-guide.md) for:
 - Complete planfile template with all sections
 - Task granularity guidelines
 - Decision documentation depth
@@ -562,7 +562,7 @@ To implement this plan:
 
 ### Task Granularity
 
-**See [Planning Guide](/.opencode/reference/planning-guide.md) for comprehensive task granularity guidelines.**
+**See [Planning Guide](~/.config/opencode/reference/planning-guide.md) for comprehensive task granularity guidelines.**
 
 Quick reference:
 - **Small tasks**: <1hr, 1-3 implementation steps
@@ -597,7 +597,7 @@ Each task should include:
 Before starting:
 - [ ] Requirements clearly understood
 - [ ] Research questions identified
-- [ ] Reviewed [Planning Guide](/.opencode/reference/planning-guide.md) for task granularity
+- [ ] Reviewed [Planning Guide](~/.config/opencode/reference/planning-guide.md) for task granularity
 
 During planning:
 - [ ] Research tasks spawned in parallel
@@ -632,6 +632,6 @@ Before handoff:
 - [ ] Plan is comprehensive
 - [ ] Developer has all context
 - [ ] Risks documented
-- [ ] Verified against [Planning Guide verification checklist](/.opencode/reference/planning-guide.md#quick-reference-checklist)
+- [ ] Verified against [Planning Guide verification checklist](~/.config/opencode/reference/planning-guide.md#quick-reference-checklist)
 - [ ] Phase Decisions section is complete
 - [ ] Do not start working on the tasks.
