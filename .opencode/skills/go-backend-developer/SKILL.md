@@ -453,6 +453,259 @@ func TestHandler(t *testing.T) {
 }
 ```
 
+## HTTP Middleware
+
+### Middleware Pattern
+
+```go
+// import (
+//     "context"
+//     "net/http"
+// )
+
+// Middleware type - wraps http.Handler
+type Middleware func(http.Handler) http.Handler
+
+// Chain middleware functions - middlewares are executed in reverse order
+// (last in the list executes first) so the outermost middleware is the first
+// to see the request and the last to see the response.
+func Chain(h http.Handler, middlewares ...Middleware) http.Handler {
+    for i := len(middlewares) - 1; i >= 0; i-- {
+        h = middlewares[i](h)
+    }
+    return h
+}
+```
+
+### Request ID Middleware
+
+```go
+// import (
+//     "context"
+//     "github.com/google/uuid"
+//     "net/http"
+// )
+
+type contextKey string
+
+const requestIDKey contextKey = "requestID"
+
+// RequestID middleware adds a unique ID to each request
+func RequestID(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        // Use existing request ID if present, otherwise generate new one
+        requestID := r.Header.Get("X-Request-ID")
+        if requestID == "" {
+            requestID = uuid.New().String()
+        }
+
+        // Add to request context
+        ctx := context.WithValue(r.Context(), requestIDKey, requestID)
+
+        // Add to response header
+        w.Header().Set("X-Request-ID", requestID)
+
+        // Call next handler with new context
+        next.ServeHTTP(w, r.WithContext(ctx))
+    })
+}
+
+// GetRequestID retrieves the request ID from context
+func GetRequestID(ctx context.Context) string {
+    if requestID, ok := ctx.Value(requestIDKey).(string); ok {
+        return requestID
+    }
+    return ""
+}
+```
+
+### Logging Middleware
+
+```go
+// import (
+//     "log/slog"
+//     "net/http"
+//     "time"
+// )
+
+// Logging middleware logs request details
+func Logging(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        start := time.Now()
+
+        // Create response writer wrapper to capture status code
+        wrapped := &responseWriter{w, http.StatusOK}
+
+        // Call next handler
+        next.ServeHTTP(wrapped, r)
+
+        // Log request details
+        slog.InfoContext(r.Context(),
+            "request completed",
+            "method", r.Method,
+            "path", r.URL.Path,
+            "status", wrapped.status,
+            "duration", time.Since(start),
+            "remote_addr", r.RemoteAddr,
+        )
+    })
+}
+
+// responseWriter wraps http.ResponseWriter to capture status code
+type responseWriter struct {
+    http.ResponseWriter
+    status int
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+    rw.status = code
+    rw.ResponseWriter.WriteHeader(code)
+}
+
+func (rw *responseWriter) Write(b []byte) (int, error) {
+    return rw.ResponseWriter.Write(b)
+}
+```
+
+### Recovery Middleware
+
+```go
+// import (
+//     "log/slog"
+//     "net/http"
+//     "runtime/debug"
+// )
+
+// Recovery middleware recovers from panics
+func Recovery(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        // Wrap response writer to check if headers were written
+        wrapped := &responseWriter{ResponseWriter: w, status: 0}
+
+        defer func() {
+            if err := recover(); err != nil {
+                // Log panic details with stack trace
+                slog.ErrorContext(r.Context(),
+                    "panic recovered",
+                    "error", err,
+                    "stack", debug.Stack(),
+                    "path", r.URL.Path,
+                )
+
+                // Only write error response if headers weren't already written
+                if wrapped.status == 0 {
+                    http.Error(wrapped.ResponseWriter, "Internal Server Error", http.StatusInternalServerError)
+                }
+            }
+        }()
+
+        next.ServeHTTP(wrapped, r)
+    })
+}
+```
+
+### Authentication Middleware
+
+```go
+// import (
+//     "context"
+//     "net/http"
+//     "strings"
+// )
+
+// userKey context key for storing user in context
+const userKey contextKey = "user"
+
+// Authentication middleware validates JWT tokens
+func Authentication(authService AuthService) Middleware {
+    return func(next http.Handler) http.Handler {
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+            // Extract token from Authorization header
+            authHeader := r.Header.Get("Authorization")
+            if authHeader == "" {
+                http.Error(w, "Unauthorized", http.StatusUnauthorized)
+                return
+            }
+
+            // Remove "Bearer " prefix if present
+            token := strings.TrimPrefix(authHeader, "Bearer ")
+
+            // Validate token
+            user, err := authService.ValidateToken(token)
+            if err != nil {
+                http.Error(w, "Unauthorized", http.StatusUnauthorized)
+                return
+            }
+
+            // Add user to context
+            ctx := context.WithValue(r.Context(), userKey, user)
+
+            // Call next handler with user in context
+            next.ServeHTTP(w, r.WithContext(ctx))
+        })
+    }
+}
+
+// GetCurrentUser retrieves the current user from context
+func GetCurrentUser(ctx context.Context) (*User, bool) {
+    if user, ok := ctx.Value(userKey).(*User); ok {
+        return user, true
+    }
+    return nil, false
+}
+```
+
+### Middleware Usage Example
+
+```go
+// import (
+//     "fmt"
+//     "net/http"
+// )
+
+func main() {
+    // Create main handler
+    handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        // Get request ID from context
+        requestID := GetRequestID(r.Context())
+
+        // Get current user from context (after auth middleware)
+        user, ok := GetCurrentUser(r.Context())
+        if !ok {
+            http.Error(w, "User not found", http.StatusUnauthorized)
+            return
+        }
+
+        // Handle request
+        w.Write([]byte(fmt.Sprintf("Hello %s! Request ID: %s", user.Name, requestID)))
+    })
+
+    // Apply middleware chain
+    http.Handle("/", Chain(
+        handler,
+        RequestID,      // Add request ID
+        Logging,        // Log requests
+        Recovery,       // Recover from panics
+        Authentication(authService), // Authenticate requests
+    ))
+
+    http.ListenAndServe(":8080", nil)
+}
+```
+
+### Best Practices for Middleware
+
+- **Order matters**: Middleware executes in reverse order of application (last added runs first)
+- **Recovery first**: Always add Recovery middleware first to catch panics from other middleware
+- **Request ID early**: Add RequestID middleware early so all logs include the request ID
+- **Authentication before authorization**: Auth middleware should come before authz checks
+- **Wrap ResponseWriter**: Use wrapped ResponseWriter to capture status codes for logging
+- **Pass context forward**: Always pass `r.WithContext(ctx)` to next handler
+- **Don't trust client input**: Always validate and sanitize user input
+- **Handle errors**: Always handle errors in middleware, return appropriate status codes
+- **Keep middleware focused**: Each middleware should have a single responsibility
+- **Use context values**: Store request-scoped data (user ID, request ID) in context
+
 ## Observability Patterns
 
 ### OpenTelemetry Tracing
