@@ -36,7 +36,7 @@
   - Text: "5. **Version Awareness**: Always check latest stable version, release notes, and breaking changes for development topics"
   - Place: `.opencode/agent/pragmatic-researcher.md`
 
-- [ ] **Clarify Context7 Usage Guidelines** (Medium) (NO_TTD)
+- [x] **Clarify Context7 Usage Guidelines** (Medium) (NO_TTD)
   - Replace lines 42-52 with enhanced Context7 section
   - Add explicit "Programming Only" constraint in header
   - Add "When to use Context7" subsection with 3 bullet points (API refs, framework guides, version-specific docs, dev tools)

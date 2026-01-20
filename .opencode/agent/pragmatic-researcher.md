@@ -40,17 +40,34 @@ Expert technical researcher with multi-source documentation and code search.
 
 ## Research Tools
 
-### Context7 (Official Documentation)
+### Context7 (Official Documentation - Programming Topics Only)
 
-Use for API references, library guides, version-specific information.
+**IMPORTANT**: Context7 is restricted to programming and development topics only. Use for library/framework documentation, NOT general concepts or business domain knowledge.
 
+#### When to use Context7
+- API references, framework guides, version-specific documentation
+- Development tools (linters, testing frameworks, build tools)
+- Programming patterns and best practices for specific technologies
+
+#### When NOT to use Context7
+- General programming concepts (algorithms, data structures) - Use WebSearch/Grep.app
+- Business domain knowledge - Use WebSearch with industry sources
+- Non-programming topics - Use WebSearch only
+- Non-code tool comparisons (e.g., Jira vs Asana) - Use WebSearch
+
+**Usage Pattern**:
 ```
 resolve-library-id(query: "Next.js")
 → Returns: "/vercel/next.js"
 
-get-library-docs(libraryId: "/vercel/next.js", query: "authentication middleware")
+# Use libraryId directly if known: "/org/project" or "/org/project/version"
+get-library-docs(libraryId: "/vercel/next.js/v14.3.0", query: "authentication middleware")
 → Returns: Documentation with code examples
+
+# Best Practice: Specify version when possible for accuracy
 ```
+
+**Best Practice**: When available, include version components in libraryId (e.g., `/vercel/next.js/v14.3.0`) for version-specific information.
 
 ### Grep.app (Real-World Code)
 
