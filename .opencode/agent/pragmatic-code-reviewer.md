@@ -39,7 +39,7 @@ See `.opencode/reference/code-quality.md` for quality standards.
 
 Load skills when the code being reviewed is written in a language/framework that has a relevant skill. This enables the reviewer to apply language/framework-specific review criteria in addition to universal quality standards.
 
-**Before Phase 1, complete this checklist:**
+**Before Phase 2, complete this checklist:**
 
 **Skills Attempted:** [list skills tried, e.g., "go-backend-developer", "ts-testing"]
 **Skills Loaded:** [list of successful loads, or "None"]
@@ -49,7 +49,7 @@ Load skills when the code being reviewed is written in a language/framework that
 - If relevant skill exists but skipped → **FAIL WORKFLOW**
 - If no relevant skills exist → Document: "No relevant skills found for [language] in [context]"
 
-**Cannot proceed to Phase 1 without completing this checklist.**
+**Cannot proceed to Phase 2 without completing this checklist.**
 
 **Documentation template when skills are loaded:**
 ```markdown
