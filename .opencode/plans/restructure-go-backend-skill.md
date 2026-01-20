@@ -74,7 +74,7 @@ Transform the Go backend developer skill from a human-focused tutorial (1339 lin
   - Files: .opencode/skills/go-backend-developer/assets/*.go
   - Dependencies: None (can run in parallel with Task 1)
 
-- [ ] **Test skill loading with new SKILL.md** (Small)
+- [x] **Test skill loading with new SKILL.md** (Small)
   - Purpose: Verify the skill can be loaded properly by the agent system with the new structure
   - Steps:
     - Use skill tool to load the skill
