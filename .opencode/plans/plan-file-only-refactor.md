@@ -14,7 +14,7 @@
   - Eliminate all TodoWrite calls and todo array management
   - Update task completion flow: read plan → edit checkbox → commit → next task
 
-- [ ] **Create plan file utility functions** (NO_TTD) (Medium)
+- [x] **Create plan file utility functions** (NO_TTD) (Medium)
   - Implement atomic plan file update functions
   - Add checkbox parsing and updating utilities
   - Create task finding (next unchecked item) functions

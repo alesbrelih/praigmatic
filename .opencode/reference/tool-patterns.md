@@ -68,168 +68,138 @@ task(agent: "pragmatic-researcher", prompt: "Research OAuth2 providers")
 task(agent: "pragmatic-code-reviewer", prompt: "Review auth changes")
 ```
 
-## TodoWrite Tool
+## Plan File Handling
 
-**Usage: Task tracking and planner-developer coordination**
+### Find Plan File
 
-### Basic Todo Creation
+```bash
+# If argument provided, use it
+if [ -n "$1" ]; then
+  PLAN_FILE=".opencode/plans/$1"
+else
+  # Auto-detect most recent plan
+  PLAN_FILE=$(ls -t .opencode/plans/*.md 2>/dev/null | grep -v README | head -1)
+fi
 
-```
-TodoWrite({
-  todos: [
-    {
-      content: "Install dependencies (NO_TTD) (Small)",
-      status: "pending",
-      activeForm: "Installing dependencies"
-    },
-    {
-      content: "Implement user authentication (TTD_REQUIRED) (Large)",
-      status: "pending",
-      activeForm: "Implementing user authentication"
-    },
-    {
-      content: "Write integration tests (TTD_REQUIRED) (Medium)",
-      status: "pending",
-      activeForm: "Writing integration tests"
-    }
-  ]
-})
+# Verify file exists
+if [ -z "$PLAN_FILE" ] || [ ! -f "$PLAN_FILE" ]; then
+  echo "❌ No plan file found."
+  echo "Usage: /pragmatic-implementation [plan-file.md]"
+  exit 1
+fi
 ```
 
-### Todo Status Updates
+### Read Plan File
 
 ```
-# Mark task as in_progress (developer picks up task)
-TodoWrite({
-  todos: [
-    {
-      content: "Implement user authentication (TTD_REQUIRED) (Large)",
-      status: "in_progress",
-      activeForm: "Implementing user authentication"
-    },
-    # ... other todos
-  ]
-})
+# Load full plan content
+read(filePath: ".opencode/plans/feature-name.md")
 
-# Mark task as completed (developer finishes task)
-TodoWrite({
-  todos: [
-    {
-      content: "Implement user authentication (TTD_REQUIRED) (Large)",
-      status: "completed",
-      activeForm: "Implementing user authentication"
-    },
-    # ... other todos
-  ]
-})
+# Parse task format: `- [ ] **Task Name** (TTD) (SIZE)`
 ```
 
-### Todo Format Standards
+### Parse Tasks
 
-**Required fields:**
-- `content`: Imperative form - "Install Auth0 SDK", "Update database schema"
-- `status`: "pending" | "in_progress" | "completed"
-- `activeForm`: Present continuous - "Installing Auth0 SDK", "Updating database schema"
-
-**Optional metadata in content:**
-- TTD requirement: "(TTD_REQUIRED)" or "(NO_TTD)"
-- Size estimate: "(Small)" for <1hr, "(Medium)" for 1-4hr, "(Large)" for 4hr+
-- Blocker status: "(BLOCKED: waiting for X)" if dependencies unmet
-
-**Examples:**
-```
-# Good todo content examples:
-"Install Auth0 SDK (NO_TTD) (Small)"
-"Update database schema for OAuth fields (TTD_REQUIRED) (Medium)"
-"Implement JWT validation middleware (TTD_REQUIRED) (Large)"
-"Write integration tests (TTD_REQUIRED) (Medium)"
-"Debug authentication flow (NO_TTD) (Small) (BLOCKED: waiting for API key)"
-```
-
-### Planner Usage Pattern
+Task format pattern: `- [ ] **Task Name** (METADATA)`
 
 ```
-# Step 1: Create todos for implementation plan
-TodoWrite({
-  todos: [
-    { content: "Task 1 (NO_TTD) (Small)", status: "pending", activeForm: "Doing Task 1" },
-    { content: "Task 2 (TTD_REQUIRED) (Medium)", status: "pending", activeForm: "Doing Task 2" },
-    { content: "Task 3 (TTD_REQUIRED) (Large)", status: "pending", activeForm: "Doing Task 3" }
-  ]
-})
+# Extract task components:
+# - Status: `- [ ]` = pending, `- [x]` = completed
+# - Task name: Text between `**` markers
+# - TTD: `(TTD_REQUIRED)` or `(NO_TTD)`
+# - Size: `(Small)`, `(Medium)`, `(Large)`
 
-# Step 2: Write plan file
-write(".opencode/plans/add-oauth-authentication.md", [plan content])
-
-# Step 3: Return control to user (DO NOT spawn developer)
-# Output summary for user:
-✅ Planning complete!
-
-Created 3 tasks for OAuth2 authentication.
-Plan saved at: .opencode/plans/add-oauth-authentication.md
-
-Todos:
-1. Task 1 (NO_TTD) (Small)
-2. Task 2 (TTD_REQUIRED) (Medium)
-3. Task 3 (TTD_REQUIRED) (Large)
-
----
-
-Next steps:
-1. Switch to @pragmatic-developer
-2. Say "Continue" or "Implement the plan"
+# Example tasks:
+- [ ] **Implement user authentication** (TTD_REQUIRED) (Medium)
+- [x] **Install dependencies** (NO_TTD) (Small)
+- [ ] **Add database migrations** (TTD_REQUIRED) (Large)
 ```
 
-### Developer Usage Pattern
+### Find Next Task
 
-```
-# User manually switches to @pragmatic-developer and says "Continue"
+```bash
+# Find first unchecked task line
+grep -n "^\- \[ \]" "$PLAN_FILE" | head -1
 
-# Phase 0: Auto-detect plan and todos
-bash(command: "ls .opencode/plans/*.md 2>/dev/null | grep -v README")
-# Finds: .opencode/plans/add-oauth-authentication.md
-
-read(".opencode/plans/add-oauth-authentication.md")
-# Todos are already in system from planner
-
-# Output acknowledgment:
-📋 Found plan: .opencode/plans/add-oauth-authentication.md
-📝 Found 3 pending todos
-
-Starting implementation...
-
-# Phase 1-3: Work on first pending task
-TodoWrite - Mark first task as "in_progress"
-# ... implement task ...
-
-# Phase 4: Complete task and move to next
-TodoWrite - Mark current task as "completed"
-TodoWrite - Mark next task as "in_progress"
-# ... loop until all tasks done ...
-
-# When all tasks completed:
-bash(command: "mv .opencode/plans/add-oauth-authentication.md .opencode/plans/archive/add-oauth-authentication-$(date +%Y-%m-%d).md")
+# Returns: line_number:- [ ] **Task Name** (METADATA)
 ```
 
-### Handling Task Failures
+### Update Task Checkbox (Mark Complete)
 
 ```
-# If task blocked or fails:
-TodoWrite({
-  todos: [
-    {
-      content: "Implement OAuth callback (TTD_REQUIRED) (Large)",
-      status: "in_progress",  # Keep as in_progress
-      activeForm: "Implementing OAuth callback"
-    },
-    {
-      content: "Debug missing Auth0 credentials before continuing OAuth callback",
-      status: "pending",  # New blocker task
-      activeForm: "Debugging missing Auth0 credentials"
-    },
-    # ... other todos ...
-  ]
-})
+# Use Edit tool to change checkbox from unchecked to checked
+edit(
+  filePath: ".opencode/plans/feature-name.md",
+  oldString: "- [ ] **Task Name** (TTD_REQUIRED) (Medium)",
+  newString: "- [x] **Task Name** (TTD_REQUIRED) (Medium)"
+)
+
+# CRITICAL: Verify edit succeeded
+read(filePath: ".opencode/plans/feature-name.md")
+# Check that `- [x]` appears in the file
+```
+
+### Verify Plan File State
+
+```bash
+# Check if all tasks are completed
+if grep -q "^\- \[ \]" "$PLAN_FILE"; then
+  echo "Plan has pending tasks"
+else
+  echo "All tasks completed"
+fi
+```
+
+### Archive Completed Plan
+
+```bash
+TIMESTAMP=$(date +%Y-%m-%d)
+PLAN_NAME=$(basename "$PLAN_FILE" .md)
+mv "$PLAN_FILE" ".opencode/plans/archive/${PLAN_NAME}-${TIMESTAMP}.md"
+```
+
+### Add Blocker Note
+
+```
+# Add sub-item under task for blocker
+edit(
+  filePath: ".opencode/plans/feature-name.md",
+  oldString: "- [ ] **Task Name** (TTD_REQUIRED) (Medium)",
+  newString: "- [ ] **Task Name** (TTD_REQUIRED) (Medium)
+  - ⚠️ BLOCKED: Missing dependency X"
+)
+```
+
+### Complete Task Workflow
+
+```bash
+# 1. Read plan to find current task
+read(filePath: ".opencode/plans/feature-name.md")
+
+# 2. Edit checkbox to completed
+edit(filePath: ".opencode/plans/feature-name.md", ...)
+
+# 3. Verify edit succeeded (CRITICAL)
+read(filePath: ".opencode/plans/feature-name.md")
+
+# 4. Commit changes
+git add .opencode/plans/feature-name.md [other files]
+git commit -m "feat: Task Name"
+
+# 5. Find next unchecked task
+grep "^\- \[ \]" ".opencode/plans/feature-name.md" | head -1
+# If none found, all tasks completed → archive plan
+```
+
+### Pre-flight Validation
+
+```bash
+# Check git working directory
+if ! git diff-index --quiet HEAD --; then
+  echo "⚠️  WARNING: You have uncommitted changes"
+  git status --short
+  # Prompt user to commit or continue
+fi
 ```
 
 ## Background Processes
