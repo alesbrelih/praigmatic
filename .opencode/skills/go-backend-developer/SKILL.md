@@ -140,6 +140,229 @@ func main() {
 - **Check deadlines**: Use `ctx.Done()` to check for cancellation in long operations
 - **Don't pass nil**: Never pass `nil` context, always derive or use Background/TODO
 
+## Error Handling
+
+### Error Wrapping with fmt.Errorf
+
+```go
+// import (
+//     "errors"
+//     "fmt"
+// )
+
+// Wrap errors with context for better debugging
+func ProcessOrder(orderID string) error {
+    order, err := repo.GetOrder(orderID)
+    if err != nil {
+        // Wrap error with context about what operation failed
+        return fmt.Errorf("failed to get order %s: %w", orderID, err)
+    }
+
+    if order.Status != "pending" {
+        // Create new error with context
+        return fmt.Errorf("order %s is not pending (status: %s)", orderID, order.Status)
+    }
+
+    return nil
+}
+```
+
+### Using errors.Is and errors.As
+
+```go
+// import (
+//     "errors"
+//     "fmt"
+// )
+
+// Define sentinel errors for comparison
+var (
+    ErrOrderNotFound = errors.New("order not found")
+    ErrOrderInvalid  = errors.New("invalid order")
+)
+
+func ValidateOrder(order *Order) error {
+    if order == nil {
+        return &ValidationError{Field: "order", Message: "cannot be nil"}
+    }
+    if order.ID == "" {
+        return &ValidationError{Field: "id", Message: "cannot be empty"}
+    }
+    return nil
+}
+
+// Check for specific errors using errors.Is
+func HandleOrder(orderID string) error {
+    // repo.GetOrder is a placeholder for a repository layer function:
+    // func (r *Repository) GetOrder(ctx context.Context, id string) (*Order, error)
+    order, err := repo.GetOrder(orderID)
+    if err != nil {
+        if errors.Is(err, ErrOrderNotFound) {
+            return fmt.Errorf("order does not exist: %s", orderID)
+        }
+        return err
+    }
+    return nil
+}
+
+// Extract wrapped errors using errors.As
+func HandleOrderWithType(orderID string) error {
+    order, err := repo.GetOrder(orderID)
+    if err != nil {
+        // Check for specific error type - custom error types are defined below
+        var notFound *NotFoundError
+        if errors.As(err, &notFound) {
+            return fmt.Errorf("order %s not found: %v", orderID, notFound)
+        }
+        return err
+    }
+    return nil
+}
+```
+
+### Custom Error Types
+
+```go
+// import (
+//     "errors"
+//     "fmt"
+// )
+
+// ValidationError for input validation errors
+type ValidationError struct {
+    Field   string
+    Message string
+}
+
+func (e *ValidationError) Error() string {
+    return fmt.Sprintf("validation error on field %s: %s", e.Field, e.Message)
+}
+
+// NotFoundError for resource not found errors
+type NotFoundError struct {
+    Resource string
+    ID       string
+}
+
+func (e *NotFoundError) Error() string {
+    return fmt.Sprintf("%s not found: %s", e.Resource, e.ID)
+}
+
+// Usage
+func CreateUser(name, email string) (*User, error) {
+    if name == "" {
+        return nil, &ValidationError{Field: "name", Message: "cannot be empty"}
+    }
+    if email == "" {
+        return nil, &ValidationError{Field: "email", Message: "cannot be empty"}
+    }
+    // ... create user
+    return &User{Name: name, Email: email}, nil
+}
+```
+
+### HTTP Error Response Patterns
+
+```go
+// import (
+//     "encoding/json"
+//     "errors"
+//     "fmt"
+//     "log"
+//     "net/http"
+// )
+
+// Define sentinel error for user operations
+var ErrUserNotFound = errors.New("user not found")
+
+// ErrorResponse for structured JSON error responses
+type ErrorResponse struct {
+    Error   string `json:"error"`
+    Details string `json:"details,omitempty"`
+    Code    string `json:"code,omitempty"`
+}
+
+// Write JSON error response
+func writeError(w http.ResponseWriter, r *http.Request, status int, err error) {
+    // Log detailed error for debugging
+    log.Printf("error: %v", err)
+
+    // Return generic error to client
+    resp := ErrorResponse{
+        Error:   http.StatusText(status),
+        Details: err.Error(),
+    }
+
+    // Don't expose internal errors to clients
+    if status >= 500 {
+        resp.Details = "internal server error"
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(status)
+    // Error handling for JSON encoding omitted for brevity in this example
+    // In production, check: if err := json.NewEncoder(w).Encode(resp); err != nil { ... }
+    json.NewEncoder(w).Encode(resp)
+}
+
+// Usage in handler
+func Handler(w http.ResponseWriter, r *http.Request) {
+    // Extract userID from request context, URL params, or body
+    userID := r.URL.Query().Get("user_id")
+
+    // Validate userID
+    if userID == "" {
+        writeError(w, r, http.StatusBadRequest, fmt.Errorf("user_id is required"))
+        return
+    }
+
+    user, err := service.GetUser(r.Context(), userID)
+    if err != nil {
+        // Check for custom error types with details
+        var notFound *NotFoundError
+        if errors.As(err, &notFound) {
+            writeError(w, r, http.StatusNotFound, fmt.Errorf("%s: %s", notFound.Resource, notFound.ID))
+            return
+        }
+
+        // Check for validation errors
+        var validationErr *ValidationError
+        if errors.As(err, &validationErr) {
+            writeError(w, r, http.StatusBadRequest, validationErr)
+            return
+        }
+
+        // Check for sentinel errors
+        if errors.Is(err, ErrUserNotFound) {
+            writeError(w, r, http.StatusNotFound, err)
+            return
+        }
+
+        // All other errors
+        writeError(w, r, http.StatusInternalServerError, err)
+        return
+    }
+
+    // Error handling for JSON encoding omitted for brevity in this example
+    // In production, check: if err := json.NewEncoder(w).Encode(user); err != nil { ... }
+    json.NewEncoder(w).Encode(user)
+}
+```
+
+### Best Practices for Error Handling
+
+- **Wrap errors**: Always wrap errors with context using `fmt.Errorf("...: %w", err)`
+- **Use error.Is**: Check for specific errors using `errors.Is(err, sentinelErr)`
+- **Use error.As**: Extract wrapped error types using `errors.As(err, &customErr)`
+- **Sentinel errors**: Define exported sentinel errors for common cases (`var ErrNotFound = errors.New("not found")`)
+- **Custom error types**: Create custom error types for domain-specific errors that need type checking
+- **Never ignore errors**: Always check errors, even if just logging them
+- **Handle at boundaries**: Handle errors at application boundaries (HTTP handlers, CLI commands, main)
+- **Log details internally**: Log full error details, but return generic messages to clients
+- **Don't use panic**: Use errors, not panics, for expected error conditions
+- **Validate early**: Validate inputs early and return errors with clear context
+- **Include context**: Wrap errors with context about what operation failed
+
 ## Table-Driven Tests
 
 ```go
