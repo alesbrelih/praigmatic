@@ -439,6 +439,218 @@ func TestDatabaseQuery(t *testing.T) {
 }
 ```
 
+## Database Patterns
+
+### Connection Pool Configuration
+
+```go
+// import (
+//     "database/sql"
+//     "time"
+// )
+
+// Configure DB connection pool
+func NewDB(dsn string) (*sql.DB, error) {
+    db, err := sql.Open("postgres", dsn)
+    if err != nil {
+        return nil, fmt.Errorf("failed to open database: %w", err)
+    }
+
+    // Configure connection pool
+    db.SetMaxOpenConns(25)           // Maximum open connections
+    db.SetMaxIdleConns(5)            // Maximum idle connections
+    db.SetConnMaxLifetime(5 * time.Minute)  // Maximum connection lifetime
+    db.SetConnMaxIdleTime(1 * time.Minute)  // Maximum idle time
+
+    // Verify connection is working
+    if err := db.Ping(); err != nil {
+        return nil, fmt.Errorf("failed to ping database: %w", err)
+    }
+
+    return db, nil
+}
+```
+
+### Transaction Management
+
+```go
+// import (
+//     "context"
+//     "database/sql"
+//     "fmt"
+// )
+
+// Transaction pattern with proper error handling
+func ExecuteTransaction(ctx context.Context, db *sql.DB) error {
+    // Begin transaction
+    tx, err := db.BeginTx(ctx, nil)
+    if err != nil {
+        return fmt.Errorf("failed to begin transaction: %w", err)
+    }
+
+    // Ensure transaction is rolled back if function panics
+    defer func() {
+        if p := recover(); p != nil {
+            tx.Rollback()
+            panic(p) // re-panic after rollback
+        }
+    }()
+
+    // Execute queries
+    if err := updateUserBalance(ctx, tx, userID, amount); err != nil {
+        tx.Rollback()
+        return fmt.Errorf("failed to update balance: %w", err)
+    }
+
+    if err := recordTransaction(ctx, tx, userID, amount); err != nil {
+        tx.Rollback()
+        return fmt.Errorf("failed to record transaction: %w", err)
+    }
+
+    // Commit transaction
+    if err := tx.Commit(); err != nil {
+        return fmt.Errorf("failed to commit transaction: %w", err)
+    }
+
+    return nil
+}
+
+// updateUserBalance updates user balance within transaction
+func updateUserBalance(ctx context.Context, tx *sql.Tx, userID string, amount float64) error {
+    _, err := tx.ExecContext(ctx,
+        "UPDATE users SET balance = balance + $1 WHERE id = $2",
+        amount, userID)
+    return err
+}
+
+// recordTransaction records transaction within transaction
+func recordTransaction(ctx context.Context, tx *sql.Tx, userID string, amount float64) error {
+    _, err := tx.ExecContext(ctx,
+        "INSERT INTO transactions (user_id, amount, created_at) VALUES ($1, $2, NOW())",
+        userID, amount)
+    return err
+}
+```
+
+### Query Patterns with Context
+
+```go
+// import (
+//     "context"
+//     "database/sql"
+// )
+
+// Query with context for cancellation support
+func GetUser(ctx context.Context, db *sql.DB, userID string) (*User, error) {
+    var user User
+
+    // Query with context
+    row := db.QueryRowContext(ctx,
+        "SELECT id, name, email, balance FROM users WHERE id = $1", userID)
+
+    // Scan row into struct
+    err := row.Scan(&user.ID, &user.Name, &user.Email, &user.Balance)
+    if err != nil {
+        if err == sql.ErrNoRows {
+            return nil, fmt.Errorf("user not found: %s", userID)
+        }
+        return nil, fmt.Errorf("failed to query user: %w", err)
+    }
+
+    return &user, nil
+}
+
+// Query multiple rows with context
+func GetUsers(ctx context.Context, db *sql.DB) ([]*User, error) {
+    // Query with context
+    rows, err := db.QueryContext(ctx, "SELECT id, name, email FROM users ORDER BY name")
+    if err != nil {
+        return nil, fmt.Errorf("failed to query users: %w", err)
+    }
+    defer rows.Close()
+
+    var users []*User
+
+    // Iterate through rows
+    for rows.Next() {
+        var user User
+        if err := rows.Scan(&user.ID, &user.Name, &user.Email); err != nil {
+            return nil, fmt.Errorf("failed to scan user: %w", err)
+        }
+        users = append(users, &user)
+    }
+
+    // Check for iteration errors
+    if err := rows.Err(); err != nil {
+        return nil, fmt.Errorf("error iterating users: %w", err)
+    }
+
+    return users, nil
+}
+```
+
+### Prepared Statements
+
+```go
+// import (
+//     "context"
+//     "database/sql"
+// )
+
+// Prepared statement for frequent queries
+func PrepareUserQueries(db *sql.DB) (*sql.Stmt, *sql.Stmt, error) {
+    // Prepare statements at startup
+    insertStmt, err := db.Prepare("INSERT INTO users (name, email) VALUES ($1, $2)")
+    if err != nil {
+        return nil, nil, fmt.Errorf("failed to prepare insert: %w", err)
+    }
+
+    selectStmt, err := db.Prepare("SELECT id, name, email FROM users WHERE email = $1")
+    if err != nil {
+        insertStmt.Close()
+        return nil, nil, fmt.Errorf("failed to prepare select: %w", err)
+    }
+
+    return insertStmt, selectStmt, nil
+}
+
+// Use prepared statement
+func InsertUser(ctx context.Context, stmt *sql.Stmt, name, email string) error {
+    result, err := stmt.ExecContext(ctx, name, email)
+    if err != nil {
+        return fmt.Errorf("failed to insert user: %w", err)
+    }
+
+    // Get inserted ID
+    id, err := result.LastInsertId()
+    if err != nil {
+        return fmt.Errorf("failed to get inserted ID: %w", err)
+    }
+
+    fmt.Printf("User inserted with ID: %d\n", id)
+    return nil
+}
+
+// Remember to close prepared statements when done
+// defer insertStmt.Close()
+// defer selectStmt.Close()
+```
+
+### Best Practices for Database Operations
+
+- **Use prepared statements**: Prevent SQL injection and improve performance
+- **Always use context**: Pass context to all DB operations for cancellation support
+- **Handle sql.ErrNoRows**: Distinguish "not found" from actual errors
+- **Always close rows**: Use `defer rows.Close()` after Query/QueryContext
+- **Use transactions**: Wrap multiple operations in transactions for atomicity
+- **Rollback on error**: Always rollback transaction if any operation fails
+- **Ping after open**: Verify connection works with db.Ping()
+- **Configure connection pool**: Tune SetMaxOpenConns, SetMaxIdleConns based on workload
+- **Scan into structs**: Use sql.Rows.Scan with pointers to struct fields
+- **Check rows.Err()**: Always check rows.Err() after iteration
+- **Limit query results**: Use LIMIT to prevent large result sets
+- **Use connection lifetime**: SetConnMaxLifetime to prevent stale connections
+
 ## Testing HTTP Handlers
 
 ```go
