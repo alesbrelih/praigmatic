@@ -8,7 +8,7 @@
   - Simplify pre-flight checks (remove todo validation)
   - Update acknowledgment to show plan file tasks only
 
-- [ ] **Refactor pragmatic-developer agent workflow** (NO_TTD) (Large)
+- [x] **Refactor pragmatic-developer agent workflow** (NO_TTD) (Large)
   - Remove Phase 0 (Todo Acknowledgment) entirely
   - Simplify Phase 4 to only update plan file checkboxes
   - Eliminate all TodoWrite calls and todo array management

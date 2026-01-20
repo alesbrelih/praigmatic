@@ -48,56 +48,11 @@ If there are no skills, respond with: No RELEVANT SKILLS FOUND. FOUND: [LIST THE
 
 ## Development Workflow
 
-### Phase 0: Todo Acknowledgment (if todos exist)
-
-**Pragmatic approach:** Only run this phase if todos exist. No automatic plan detection.
-
-**Step 1: Check for todos**
-
-If todos exist in the system, proceed with this phase.
-If no todos exist, skip to Phase 1 (normal single-task workflow).
-
-**Step 2: Review todo list**
-
-Review all todos to understand:
-- Task order (encodes dependencies)
-- TTD requirements (look for "(TTD_REQUIRED)" or "(NO_TTD)")
-- Size estimates (Small/Medium/Large)
-- Which task to start with (first "pending" task)
-
-**Step 3: Acknowledge and start**
-
-Output summary:
-```
-📝 Found 5 pending todos
-
-Starting implementation:
-[→] Task 1: Install Auth0 SDK (NO_TTD) (Small)
-[ ] Task 2: Update database schema (TTD_REQUIRED) (Medium)
-[ ] Task 3: Implement callback handler (TTD_REQUIRED) (Large)
-[ ] Task 4: Add middleware (TTD_REQUIRED) (Medium)
-[ ] Task 5: Integration tests (TTD_REQUIRED) (Medium)
-```
-
-**Step 4: Mark first task as in_progress**
-
-```
-TodoWrite - Update first pending task to "in_progress"
-```
-
-**Step 5: Proceed to Phase 1 for current task**
-
-Analyze and implement the current task.
-
-**If no todos exist:** Skip Phase 0 entirely and proceed directly to Phase 1 (Analysis).
-
----
-
 ### Phase 1: Analysis
 
 1. **Identify task type** (feature, bugfix, refactor)
 2. **Determine technology stack** (Go, TypeScript, Python, etc.)
-3. **Load/Use relevant skills** 
+3. **Load/Use relevant skills**
 4. **Assess if TTD is needed** (see `.opencode/reference/ttd-criteria.md`)
 
 **If need to understand existing patterns:**
@@ -178,17 +133,19 @@ Review the findings. Fix all critical/high issues. Re-stage fixed files (`git ad
 
 **After completing the current task:**
 
-**Step 1: Update Plan and Todos (CRITICAL)**
+**Step 1: Update Plan File (CRITICAL)**
 
-1. **Update Plan File**:
-   - Locate the current task in the plan file (e.g., `.opencode/plans/xxx.md`).
-   - Change the checkbox from `- [ ]` to `- [x]`.
-   - **Verification**: Read the file back to ensure the checkmark is saved.
+1. **Locate the current task** in the plan file (e.g., `.opencode/plans/xxx.md`).
+2. **Change the checkbox** from `- [ ]` to `- [x]`.
+3. **Verify the edit**: Read the file back to ensure the checkmark is saved.
 
-2. **Update Todo System**:
-   ```
-   TodoWrite - Mark current task as "completed"
-   ```
+```bash
+# Example: Edit task checkbox to completed
+# Edit tool: Replace `- [ ] **Task Name**` with `- [x] **Task Name**`
+
+# Verify edit succeeded
+# Read tool: Read the plan file to confirm the change
+```
 
 **Step 2: Commit Changes (REQUIRED)**
 
@@ -198,23 +155,23 @@ You must commit changes **after every single task**.
 task(agent: "pragmatic-committer", prompt: "[SUBAGENT] Commit staged changes. Context: Completed task '[Task Name]'")
 ```
 
-**Step 3: Check for more pending todos**
+**Step 3: Check for More Tasks**
 
-**If more pending todos exist:**
-1. **Select next task**: Identify the next pending task.
-2. **Update status**: Mark it as "in_progress" via `TodoWrite`.
-3. **Loop**: Return to Phase 1 (Analysis) for this new task.
-   - *Note: Do not stop. Continue immediately to the next task.*
+**If more pending tasks exist:**
+1. **Read the plan file** to find the next unchecked task (`- [ ]`)
+2. **Proceed to Phase 1** (Analysis) for that task
+3. **Continue** - do not stop. Move immediately to the next task.
 
 **If task is blocked or fails:**
-1. Keep task as "in_progress"
-2. Create new todo for debugging:
+1. Keep the task checkbox as unchecked `- [ ]`
+2. Add blocker note as sub-item in plan file:
+   ```markdown
+   - [ ] **Task Name**
+     - ⚠️ BLOCKED: Missing dependency X
    ```
-   TodoWrite - Add: "Debug [issue] before continuing [original task]"
-   ```
-3. Address blocker, then return to original task
+3. Resolve blocker, then continue task
 
-**If all todos completed:**
+**If all tasks are completed:**
 
 **Step 4: Holistic Code Review**
 
@@ -237,12 +194,10 @@ Review the system as a whole for consistency, architecture, and cross-task issue
 
 Move the completed plan file to the archive:
 ```bash
-mv .opencode/plans/[current-plan].md .opencode/plans/archive/
+TIMESTAMP=$(date +%Y-%m-%d)
+PLAN_NAME=$(basename "$PLAN_FILE" .md)
+mv "$PLAN_FILE" ".opencode/plans/archive/${PLAN_NAME}-${TIMESTAMP}.md"
 ```
-
-**If no todos existed (single-task mode):**
-
-Proceed directly to code review and commit as before.
 
 ## Quality Checklist
 
