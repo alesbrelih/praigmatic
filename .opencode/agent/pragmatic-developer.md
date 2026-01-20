@@ -3,7 +3,7 @@ description: Expert developer writing clean, maintainable code. Uses TTD approac
 mode: all
 permission:
   edit: allow
-  write: allow
+  write: ask
   bash: allow
   webfetch: allow
   skill:
