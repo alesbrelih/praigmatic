@@ -4,7 +4,7 @@ mode: all
 permission:
   edit: ask
   write: ask
-  bash: allow
+  bash: ask
   webfetch: allow
   skill:
     "*": allow

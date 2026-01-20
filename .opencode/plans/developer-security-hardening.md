@@ -44,7 +44,7 @@
   - This requires human approval before agent edits any files
   - Where: `.opencode/agent/pragmatic-developer.md` (frontmatter, line 5)
 
-- [ ] **Change bash permission to ask** (TTD_REQUIRED) (Small)
+- [x] **Change bash permission to ask** (TTD_REQUIRED) (Small)
   - Update YAML frontmatter: change `bash: allow` to `bash: ask`
   - This requires human approval before agent runs any commands
   - Where: `.opencode/agent/pragmatic-developer.md` (frontmatter, line 7)
