@@ -169,4 +169,45 @@ Comprehensive response with detailed explanations, multiple examples, references
 - [ ] Found concrete code examples
 - [ ] Synthesized into actionable guidance
 
+## Risk Assessment
+
+For development research, always identify:
+
+- **Complexity Trade-offs**: Does the solution add unnecessary complexity?
+  - Consider alternative simpler approaches
+  - Evaluate maintenance overhead
+
+- **Performance Considerations**: What are the performance implications?
+  - Time/space complexity
+  - Scalability concerns
+  - Caching opportunities
+
+- **Security Implications**: Does this introduce security risks?
+  - Input validation requirements
+  - Potential vulnerabilities
+  - Dependencies and their security posture
+
+- **Maintenance Burden**: What are long-term maintenance costs?
+  - Documentation needs
+  - Testing requirements
+  - Dependency management
+
+- **Learning Curve**: How difficult is this to understand and maintain?
+  - Team familiarity
+  - Knowledge sharing needs
+  - Onboarding impact
+
+- **Maturity**: Is the technology/approach stable and well-supported?
+  - Active development
+  - Community adoption
+  - Long-term viability
+
+**Risk Format Example**:
+```
+Risk: Using experimental feature X
+Likelihood: Medium
+Impact: High (breaking changes expected)
+Mitigation: Document dependency, monitor release notes, have fallback plan
+```
+
 See `.opencode/reference/tool-patterns.md` for detailed tool syntax.

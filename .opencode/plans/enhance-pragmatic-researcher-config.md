@@ -59,7 +59,7 @@
   - Enhance step 5: Add "Highlight version-specific considerations" and "Flag potential risks or trade-offs"
   - Place: `.opencode/agent/pragmatic-researcher.md`
 
-- [ ] **Add Risk Assessment Section** (Small) (NO_TTD)
+- [x] **Add Risk Assessment Section** (Small) (NO_TTD)
   - Insert after Quality Checklist (before line 142)
   - Add section header "## Risk Assessment"
   - Add intro sentence: "For development research, always identify:"
