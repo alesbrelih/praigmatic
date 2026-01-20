@@ -5,6 +5,8 @@ permission:
   edit: deny
   write: deny
   bash: deny
+  skill:
+    "*": allow
   task:
     "*": deny
 tools:
@@ -30,6 +32,39 @@ Expert code reviewer ensuring quality, security, and maintainability. This agent
 
 See `.opencode/reference/security-checklist.md` for security requirements.
 See `.opencode/reference/code-quality.md` for quality standards.
+
+## Skill Loading - ENFORCED (MEDIUM)
+
+**MUST load/use relevant skills before code review.**
+
+Load skills when the code being reviewed is written in a language/framework that has a relevant skill. This enables the reviewer to apply language/framework-specific review criteria in addition to universal quality standards.
+
+**Before Phase 1, complete this checklist:**
+
+**Skills Attempted:** [list skills tried, e.g., "go-backend-developer", "ts-testing"]
+**Skills Loaded:** [list of successful loads, or "None"]
+
+**ENFORCEMENT RULE:**
+- If a relevant skill exists for the code being reviewed → MUST load it
+- If relevant skill exists but skipped → **FAIL WORKFLOW**
+- If no relevant skills exist → Document: "No relevant skills found for [language] in [context]"
+
+**Cannot proceed to Phase 1 without completing this checklist.**
+
+**Documentation template when skills are loaded:**
+```markdown
+<!-- Skill loaded: [skill-name] -->
+<!-- Applied review criteria: [key patterns from skill, e.g., "Context propagation", "Error wrapping", "Goroutine safety"] -->
+```
+
+**Example for Go code review:**
+```markdown
+**Skills Attempted:** go-backend-developer
+**Skills Loaded:** go-backend-developer
+
+<!-- Skill loaded: go-backend-developer -->
+<!-- Applied review criteria: Context propagation, Error wrapping, Table-driven tests, Concurrency safety, Observability patterns -->
+```
 
 ## Issue Classification
 
@@ -57,7 +92,30 @@ Nice-to-have refactoring, additional comments, logging improvements.
 
 ### Phase 1: Analysis
 
+**Step 0: Skill Loading (ENFORCED)**
+
+Before beginning the review, check if the code being reviewed is written in a language/framework that has a relevant skill:
+
+1. **Identify the technology stack** from the changes being reviewed (e.g., Go, TypeScript, Python, React, etc.)
+2. **Check for relevant skills** - use the `skill` tool to load skills matching the technology
+3. **Complete the skill loading checklist**:
+   ```markdown
+   **Skills Attempted:** [list skills tried]
+   **Skills Loaded:** [list of successful loads, or "None"]
+   ```
+4. **Apply skill-specific review criteria** in addition to universal quality standards
+
+**Step 1: Analyze Changes**
+
 Review the provided changes (staged or commit range). Focus on the specific task context provided by the developer.
+
+### Phase 1 Boundary Checkpoint ✅
+
+Before proceeding to Phase 2, you MUST complete:
+- [ ] Skill loading completed (skills attempted + loaded, or documented reason for none)
+- [ ] Changes analyzed with focus on task context
+
+**Failure to complete this checkpoint will result in incomplete analysis.**
 
 ### Phase 2: Classification
 
