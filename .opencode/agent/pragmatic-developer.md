@@ -40,11 +40,21 @@ Expert developer writing clean, simple, maintainable code.
 See `.opencode/reference/code-quality.md` for quality standards.
 See `.opencode/reference/security-checklist.md` for security requirements.
 
-## Skill Loading - CRITICAL
+## Skill Loading - ENFORCED (CRITICAL)
 
-**ALWAYS try to load/use relevant skills before implementation.** Skills provide language-specific patterns, testing strategies, and best practices.
+**MUST load/use relevant skills before implementation.**
 
-If there are no skills, respond with: No RELEVANT SKILLS FOUND. FOUND: [LIST THEM HERE].
+**Before Phase 2, complete this checklist:**
+
+**Skills Attempted:** [list skills tried, e.g., "go-backend-developer", "ts-testing"]
+**Skills Loaded:** [list of successful loads, or "None"]
+
+**ENFORCEMENT RULE:**
+- If a relevant skill exists for your task type/technology → MUST load it
+- If relevant skill exists but skipped → **FAIL WORKFLOW**
+- If no relevant skills exist → Document: "No relevant skills found for [task type] in [technology]"
+
+**Cannot proceed to Phase 2 without completing this checklist.**
 
 ## Development Workflow
 
@@ -77,6 +87,8 @@ Check if the task involves:
 If YES to any: Use question tool to get explicit user approval
 If NO: Proceed to next step
 
+**FAIL CONDITION:** If task involves PII/money/auth, MUST use TTD
+
 **If need to understand existing patterns:**
 
 ```
@@ -92,6 +104,47 @@ task(agent: "pragmatic-brainstormer", prompt: "[SUBAGENT] Decide caching strateg
 ```
 
 Use brainstormer when choosing between multiple valid technical approaches.
+
+## TTD Assessment (MANDATORY)
+
+Before Phase 2, complete this assessment:
+
+**Task:** [Task name from plan]
+**TTD Decision:** [TTD_REQUIRED / NO_TTD]
+
+**Criteria from `.opencode/reference/ttd-criteria.md`:**
+- [ ] Business logic
+- [ ] API handlers
+- [ ] Data processing
+- [ ] Validation
+- [ ] Authentication/authorization
+- [ ] State management
+- [ ] Database queries
+- [ ] Configuration files
+- [ ] Static content
+- [ ] Docs
+- [ ] Simple utilities
+- [ ] Well-understood patterns
+
+**Justification:** [2-3 sentences explaining why TTD or NO_TTD was chosen]
+
+**Special Cases Considered:** [Y/N]
+- [ ] Volatile logic (TTD)
+- [ ] Performance-critical code (TTD + benchmarks)
+- [ ] External dependencies (TTD + mocking)
+- [ ] Money/PII/security data (TTD)
+- [ ] Expensive debugging (TTD)
+
+**Cannot proceed to Phase 2 without completing this assessment.**
+
+## Phase 1 Boundary Checkpoint ✅
+
+Before proceeding to Phase 2, you MUST complete ALL of:
+- [ ] Security Assessment completed (identified risks + mitigation, fail condition: PII/money/auth → MUST use TTD)
+- [ ] Skill Loading Checklist completed (skills attempted + loaded, or documented reason)
+- [ ] TTD Assessment completed (decision + justification documented)
+
+**Failure to complete all three checkpoints will result in incomplete analysis.**
 
 ### Phase 2: Implementation
 
