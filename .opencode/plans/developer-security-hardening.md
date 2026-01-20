@@ -63,7 +63,7 @@
   - Add enforcement: If relevant skill exists but skipped → FAIL workflow
   - Where: `.opencode/agent/pragmatic-developer.md` (Skill Loading section, lines 43-47)
 
-- [ ] **Add Mandatory TTD Justification** (TTD_REQUIRED) (Medium)
+- [x] **Add Mandatory TTD Justification** (TTD_REQUIRED) (Medium)
   - Create "TTD Assessment (MANDATORY)" section before Phase 2
   - Require 4 answers: TTD status, applicable criteria, justification (2-3 sentences), special cases
   - Add fail condition: If justification missing → cannot proceed to Phase 2

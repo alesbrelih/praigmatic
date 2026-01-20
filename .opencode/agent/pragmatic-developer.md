@@ -61,6 +61,11 @@ Load relevant skills via `skill` tool before implementation. Document verificati
 ```
 
 4. **Assess if TTD is needed** (see `.opencode/reference/ttd-criteria.md`)
+
+If NO_TTD selected: Use question tool to get user confirmation before proceeding
+- Option 1: "Use TTD" (Recommended) - revert to TTD_REQUIRED approach
+- Option 2: "Proceed with NO_TTD" - requires documented justification
+
 5. **Security Assessment**
 
 Check if the task involves:
