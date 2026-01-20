@@ -18,7 +18,7 @@ This directory contains detailed implementation plans created by the pragmatic-p
 
 ### Implementing Plans
 
-1. **Use the `/pragmatic-implementation` command**: This command reads the plan file, creates todos, and starts implementation
+1. **Use the `/pragmatic-implementation` command**: This command reads the plan file and starts implementation (plan checkboxes track progress)
 
 2. **Progress tracking**: As tasks complete, the plan file checkboxes are updated:
    - `- [ ]` = Pending task

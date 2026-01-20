@@ -18,10 +18,10 @@ This guide provides explicit guidance on how to structure planfiles with the rig
 - **Too low:** "Create file, import library, write function X" (micromanagement)
 - **Just right:** "Implement JWT middleware with validation and user context" + 4-6 step breakdown
 
-**3. Plans Evolve, Todos Execute**
-- **Plan file:** Living document, updated as blockers emerge or scope changes
-- **Todos:** Execution tracking, marked completed as work progresses
-- **Sync:** Plan checkboxes ↔ todo status (both stay updated)
+**3. Plan File Tracks Both Planning AND Execution**
+- **Plan file:** Single source of truth for task definitions AND execution state
+- **Execution tracking:** Plan checkboxes mark progress (`- [ ]` → `- [x]`)
+- **No synchronization:** One file eliminates dual-tracking complexity
 
 **4. Decision Documentation is Permanent**
 - **Why we chose X over Y:** Critical for future maintainers
@@ -110,6 +110,22 @@ Too Sparse                    ✓ OPTIMAL                      Too Detailed
                                                              - [ ] Update middleware chain
                                                              - [ ] Add logging
 ```
+
+---
+
+## Execution Workflow
+
+**Plan-file-only approach:**
+
+1. User types `/pragmatic-implementation`
+2. Command reads plan file
+3. Finds first unchecked task (`- [ ]`)
+4. Agent implements task
+5. Plan checkbox updated to `- [x]`
+6. Changes committed
+7. Repeat for next unchecked task
+
+**No separate todo system needed** - plan file is single source of truth.
 
 ---
 

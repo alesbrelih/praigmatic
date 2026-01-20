@@ -20,7 +20,7 @@ tools:
   glob: true
   skill: true
   askuserquestion: true  # Enable for feedback loop
-  todowrite: false  # Disabled - todos created by /pragmatic-implementation command
+  todowrite: false  # Disabled - plan-file-only workflow (plan tracks all state)
 ---
 
 # Pragmatic Planner
@@ -330,7 +330,7 @@ Plan includes:
 To implement this plan:
 → Type: /pragmatic-implementation
 
-(Command reads plan, creates todos, starts work)
+(Command reads plan and starts implementation - plan checkboxes track progress)
 ```
 
 **Important:**
