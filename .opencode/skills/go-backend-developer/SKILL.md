@@ -1225,12 +1225,89 @@ logger.ErrorContext(ctx, "operation failed",
 ### Metrics
 
 ```go
-// Counter
-requestsTotal.WithLabelValues(status, method).Inc()
+// import (
+//     "net/http"
+//     "time"
+//     "github.com/prometheus/client_golang/prometheus"
+//     "github.com/prometheus/client_golang/promhttp"
+// )
 
-// Histogram
-requestDuration.WithLabelValues(method).Observe(duration.Seconds())
+// Define metrics at package level
+var (
+    // Counter tracks total number of requests with status and method labels
+    requestsTotal = prometheus.NewCounterVec(
+        prometheus.CounterOpts{
+            Name: "http_requests_total",
+            Help: "Total number of HTTP requests",
+        },
+        []string{"status", "method"},  // Label dimensions
+    )
+
+    // Histogram tracks request duration with quantile buckets
+    requestDuration = prometheus.NewHistogramVec(
+        prometheus.HistogramOpts{
+            Name:    "http_request_duration_seconds",
+            Help:    "HTTP request duration in seconds",
+            Buckets: prometheus.DefBuckets,  // Default buckets: 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10
+        },
+        []string{"method"},  // Label dimensions
+    )
+)
+
+// Register metrics with Prometheus registry
+func init() {
+    prometheus.MustRegister(requestsTotal)
+    prometheus.MustRegister(requestDuration)
+}
+
+// Expose metrics endpoint
+func MetricsHandler() http.Handler {
+    return promhttp.Handler()
+}
+
+// Usage in HTTP handler
+func Handler(w http.ResponseWriter, r *http.Request) {
+    start := time.Now()
+
+    // Track status code (default to 500, update on success)
+    status := "500"
+    method := r.Method
+
+    // Defer metrics recording (always runs, even on panic)
+    defer func() {
+        requestsTotal.WithLabelValues(status, method).Inc()
+        requestDuration.WithLabelValues(method).Observe(time.Since(start).Seconds())
+    }()
+
+    // Process request
+    // ... your handler logic here ...
+
+    // Update status variable before writing response
+    status = "200"
+    w.WriteHeader(http.StatusOK)
+}
+
+// Register metrics endpoint in main
+func main() {
+    http.Handle("/metrics", MetricsHandler())
+    http.ListenAndServe(":8080", nil)
+}
 ```
+
+#### Metrics Best Practices
+
+- **Cardinality awareness**: Limit label cardinality to prevent high metric cardinality
+- **Use histograms for latency**: Histograms show distribution, gauges only show current value
+- **Use counters for totals**: Counters monotonically increase (request counts, error counts)
+- **Use gauges for state**: Gauges go up and down (memory usage, connections)
+- **Instrumentation layer**: Instrument at middleware level for consistent metrics across all endpoints
+- **Label consistency**: Use consistent label names across all related metrics
+- **Avoid user IDs as labels**: User IDs create high cardinality - use separate user metrics
+- **Quantile buckets**: Use appropriate buckets for your data (e.g., response times)
+- **Metric naming**: Follow Prometheus naming convention (snake_case, descriptive units)
+- **Help text**: Always include Help text describing what the metric measures
+- **Register once**: Register metrics in init() or during application startup
+- **Metric registration**: Use `MustRegister()` for package-level metrics where registration failure is fatal. For optional metrics, use `Register()` and handle errors.
 
 ## Test Commands
 
