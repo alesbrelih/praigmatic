@@ -84,7 +84,7 @@ Transform the Go backend developer skill from a human-focused tutorial (1339 lin
   - Files: .opencode/skills/go-backend-developer/SKILL.md
   - Dependencies: Task 2
 
-- [ ] **Update README or documentation if needed** (Small)
+- [x] **Update README or documentation if needed** (Small)
   - Purpose: Document the change from tutorial-style to agent-optimized pattern reference
   - Steps:
     - Check if there's a README in the skills directory
