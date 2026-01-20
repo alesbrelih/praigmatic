@@ -56,7 +56,7 @@
   - Add fail condition: If task involves PII/money/auth, MUST use TTD
   - Where: `.opencode/agent/pragmatic-developer.md` (Phase 1: Analysis section, lines 51-57)
 
-- [ ] **Enforce Skill Loading with Verification** (TTD_REQUIRED) (Medium)
+- [x] **Enforce Skill Loading with Verification** (TTD_REQUIRED) (Medium)
   - Replace "ALWAYS try" with "MUST load/use relevant skills"
   - Add mandatory documentation step before Phase 2
   - Require: Skills attempted, Skills loaded, or "None"

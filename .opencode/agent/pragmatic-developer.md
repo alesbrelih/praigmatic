@@ -52,7 +52,14 @@ If there are no skills, respond with: No RELEVANT SKILLS FOUND. FOUND: [LIST THE
 
 1. **Identify task type** (feature, bugfix, refactor)
 2. **Determine technology stack** (Go, TypeScript, Python, etc.)
-3. **Load/Use relevant skills**
+3. **Load/Use relevant skills (MANDATORY)**
+
+Load relevant skills via `skill` tool before implementation. Document verification as comments:
+```markdown
+<!-- Skill loaded: [skill-name] -->
+<!-- Relevant guidance applied: [key-patterns-from-skill] -->
+```
+
 4. **Assess if TTD is needed** (see `.opencode/reference/ttd-criteria.md`)
 5. **Security Assessment**
 
