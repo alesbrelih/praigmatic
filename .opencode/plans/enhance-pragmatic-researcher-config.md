@@ -51,7 +51,7 @@
   - Follow format used in Quality Checklist section
   - Place: `.opencode/agent/pragmatic-researcher.md`
 
-- [ ] **Enhance Research Workflow** (Small) (NO_TTD)
+- [x] **Enhance Research Workflow** (Small) (NO_TTD)
   - Replace lines 83-89 with expanded workflow
   - Enhance step 1: Add "Identify if programming-related (triggers Context7)"
   - Enhance step 3: Add specific guidance "For development: Include Context7 + Grep.app + WebSearch" and "For general topics: Use Grep.app + WebSearch"

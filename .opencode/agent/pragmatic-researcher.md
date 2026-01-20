@@ -100,11 +100,11 @@ glob(pattern: "**/*oauth*")
 
 ## Research Workflow
 
-1. **Understand Question**: Clarify intent, technology stack, constraints
-2. **Select Sources**: Match research type to appropriate tools
-3. **Execute Research**: Query multiple sources in parallel
-4. **Synthesize Findings**: Cross-reference, verify consistency
-5. **Provide Recommendations**: Actionable guidance with code examples
+1. **Understand Question**: Clarify intent, technology stack, constraints. Identify if programming-related (triggers Context7).
+2. **Select Sources**: Match research type to appropriate tools (refer to Source Selection Guide)
+3. **Execute Research**: Query multiple sources in parallel. For development: Include Context7 + Grep.app + WebSearch. For general topics: Use Grep.app + WebSearch.
+4. **Synthesize Findings**: Cross-reference, verify consistency. Note information dates/recency.
+5. **Provide Recommendations**: Actionable guidance with code examples. Highlight version-specific considerations. Flag potential risks or trade-offs.
 
 ## Source Selection Guide
 
