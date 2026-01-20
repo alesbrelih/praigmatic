@@ -44,7 +44,7 @@
   - Keep existing pattern example but add best practice note about version components
   - Place: `.opencode/agent/pragmatic-researcher.md`
 
-- [ ] **Add Development Research Checklist** (Small) (NO_TTD)
+- [x] **Add Development Research Checklist** (Small) (NO_TTD)
   - Insert after Source Selection Guide (after line 99)
   - Add section header "## Development Research Checklist"
   - Add 7 checkbox items: Latest Version, Breaking Changes, Deprecations, Example Quality, Compatibility, Community Consensus, Official vs. Community

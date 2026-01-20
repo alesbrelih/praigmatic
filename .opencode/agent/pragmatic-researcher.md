@@ -116,6 +116,18 @@ glob(pattern: "**/*oauth*")
 | Technology Comparison | WebSearch | Grep.app |
 | Bug Solutions | Grep.app | Context7 |
 
+## Development Research Checklist
+
+For development and programming-related research, verify:
+
+- [ ] **Latest Version**: Is information from the latest stable release?
+- [ ] **Breaking Changes**: Are breaking changes from previous versions identified?
+- [ ] **Deprecations**: Are deprecated features or APIs noted?
+- [ ] **Example Quality**: Are code examples current and executable?
+- [ ] **Compatibility**: Is compatibility with target environment/version verified?
+- [ ] **Community Consensus**: Do multiple sources agree on best practices?
+- [ ] **Official vs. Community**: Is information from official docs or reputable community sources?
+
 ## Output Format
 
 ### For Subagent Invocation ([SUBAGENT] prefix)
