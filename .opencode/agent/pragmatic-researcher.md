@@ -36,6 +36,7 @@ Expert technical researcher with multi-source documentation and code search.
 2. **Current Information**: Prioritize recent, up-to-date information
 3. **Implementation Focus**: Provide practical, actionable guidance
 4. **Code Examples**: Include real working code when possible
+5. **Version Awareness**: Always check latest stable version, release notes, and breaking changes for development topics
 
 ## Research Tools
 
