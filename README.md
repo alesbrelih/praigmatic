@@ -91,18 +91,15 @@ Phase 6: Create plan file ONLY
 /pragmatic-implementation command (agent-agnostic bridge)
   │  ├─ Find and read plan file
   │  ├─ Parse task checklist
-  │  ├─ Create todos via TodoWrite
+  │  ├─ Show acknowledgment with plan tasks
   │  └─ Start implementation in current agent
   ↓
 Developer (or any other agent)
   ↓
-Phase 0: Todo acknowledgment (if todos exist)
-  │  ├─ Review todos
-  │  └─ Mark first task as "in_progress"
-  ↓
 Phase 1-3: Implement task-by-task
   │  ├─ Implement current task
-  │  ├─ Mark task as "completed"
+  │  ├─ Edit plan: Change checkbox from `- [ ]` to `- [x]`
+  │  ├─ Commit changes
   │  └─ Loop for next task
   ↓
 Phase 4: Code review + commit
@@ -112,22 +109,22 @@ Phase 4: Code review + commit
 Reviewer (quality, security, performance checks)
 ```
 
-## Todo Workflow & Plan Files
+## Plan File Workflow
 
 ### Overview
 
-Clean separation architecture:
+Plan-file-only architecture:
 - **Planner**: Creates plan file with task checklist (agent-agnostic)
-- **/pragmatic-implementation command**: Bridge that creates todos from plan (agent-agnostic)
-- **Developer**: Works with todos (plan-agnostic)
+- **/pragmatic-implementation command**: Bridge that starts implementation (agent-agnostic)
+- **Developer**: Works directly with plan file (reads and updates checkboxes)
 
 This provides:
-- **Single source of truth**: Plan file contains all information
-- **Structured execution**: Todos track runtime progress
+- **Single source of truth**: Plan file contains all information and state
 - **Rich context**: Plan documents architecture, decisions, risks
-- **Progress visibility**: Both todos (live) and plan checkboxes (permanent)
+- **Progress visibility**: Plan checkboxes track execution state
 - **Clean separation**: No coupling between planner and implementation
-- **Audit trail**: Archived plans show execution history
+- **Audit trail**: Git history and archived plans show execution history
+- **Simple and reliable**: No dual synchronization issues
 
 ### Planner Creates Plan File Only
 
@@ -206,32 +203,15 @@ Or with specific plan file:
 - Extract tasks from markdown checkboxes
 - Parse metadata: TTD status, size estimate
 
-**3. Create todos via TodoWrite:**
-```
-TodoWrite({
-  todos: [
-    {
-      content: "Install Auth0 SDK (NO_TTD) (Small)",
-      status: "pending",
-      activeForm: "Installing Auth0 SDK"
-    },
-    {
-      content: "Update database schema (TTD_REQUIRED) (Medium)",
-      status: "pending",
-      activeForm: "Updating database schema"
-    }
-  ]
-})
-```
-
-**4. Start implementation:**
-- Show acknowledgment
-- Mark first task as "in_progress"
+**3. Start implementation:**
+- Show acknowledgment with plan tasks
 - Begin implementation in current agent context
 
-**5. As tasks complete:**
-- TodoWrite: Mark todo as "completed"
+**4. As tasks complete:**
 - Edit plan: Change `- [ ]` to `- [x]`
+- Verify edit succeeded
+- Commit changes
+- Continue with next task
 
 **6. Archive plan when done:**
 ```bash
@@ -239,17 +219,22 @@ mv .opencode/plans/add-oauth-authentication.md \
    .opencode/plans/archive/add-oauth-authentication-2026-01-18.md
 ```
 
-### Todo Format
+### Plan File Format
 
-**Required fields:**
-- `content`: Imperative - "Install Auth0 SDK"
-- `status`: "pending" | "in_progress" | "completed"
-- `activeForm`: Present continuous - "Installing Auth0 SDK"
+**Task format:**
+```markdown
+- [ ] **Task Name** (TTD) (SIZE)
+  - Sub-task 1
+  - Sub-task 2
+```
 
-**Optional metadata in content:**
-- TTD: "(TTD_REQUIRED)" or "(NO_TTD)"
-- Size: "(Small)" | "(Medium)" | "(Large)"
-- Blocker: "(BLOCKED: waiting for X)"
+**Status:**
+- `- [ ]` = pending
+- `- [x]` = completed
+
+**Metadata:**
+- TTD: `(TTD_REQUIRED)` or `(NO_TTD)`
+- Size: `(Small)` | `(Medium)` | `(Large)`
 
 ### Plan File Lifecycle
 
@@ -282,9 +267,9 @@ Archived when complete:
    - Easy to maintain and extend
 
 ✅ **Single source of truth**:
-   - Plan file contains all information
-   - Todos derived from plan dynamically
+   - Plan file contains all information and state
    - Plan checkboxes show execution history
+   - Git commits provide audit trail
 
 ✅ **Pragmatic**:
    - Zero overhead when not using plans
