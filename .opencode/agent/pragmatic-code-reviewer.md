@@ -33,6 +33,45 @@ Expert code reviewer ensuring quality, security, and maintainability. This agent
 See `~/.config/opencode/reference/security-checklist.md` for security requirements.
 See `~/.config/opencode/reference/code-quality.md` for quality standards.
 
+## Test Quality Review Criteria
+
+When evaluating the **Testing** dimension, consider the following aspects of test quality:
+
+### Test Design
+
+- **Arrangement-Act-Assert (AAA) Pattern**: Tests should clearly separate setup, execution, and assertion phases
+- **Descriptive test names**: Test names should describe the scenario being tested and expected outcome
+- **Single assertion per test**: Each test should verify one specific behavior or condition
+- **Test independence**: Tests should not depend on execution order or shared state
+
+### Test Isolation
+
+- **No external dependencies**: Tests should not rely on external services, databases, or network calls
+- **Deterministic results**: Tests should produce consistent results across multiple runs
+- **Proper mocking**: External dependencies should be mocked/stubbed appropriately
+- **Setup/teardown cleanup**: Test fixtures should be properly cleaned up to prevent cross-test contamination
+
+### Coverage Depth
+
+- **Critical paths covered**: Core business logic and error handling paths must have tests
+- **Edge cases**: Tests should cover boundary conditions, null/empty values, and error scenarios
+- **Happy paths**: Success scenarios should be validated
+- **Integration vs unit tests**: Ensure appropriate balance between unit tests (fast, isolated) and integration tests (slower, realistic)
+
+### Test Maintainability
+
+- **Avoid test duplication**: Common setup and assertions should be extracted to helper functions or fixtures
+- **Clear test data**: Test inputs should be self-documenting and easy to understand
+- **Fast execution**: Unit tests should complete quickly (<100ms per test)
+- **Debuggable failure messages**: Test failures should clearly indicate what went wrong and why
+
+### Mocking Best Practices
+
+- **Don't mock what you own**: Only mock external dependencies, not internal application code
+- **Mock behavior, not implementation**: Verify interactions through expected behaviors, not implementation details
+- **Avoid over-mocking**: Too many mocks make tests brittle and hard to understand
+- **Verify mock usage**: Ensure mocks are called as expected using verification (when using mock frameworks)
+
 ## Skill Loading - ENFORCED (MEDIUM)
 
 **MUST load/use relevant skills before code review.**
