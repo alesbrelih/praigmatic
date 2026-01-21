@@ -59,7 +59,7 @@ Each task should contain:
 ### Example - Good Task Granularity
 
 ```markdown
-- [ ] **Implement JWT authentication middleware** (TTD_REQUIRED) (MEDIUM)
+- [ ] **Implement JWT authentication middleware** (MEDIUM)
   - Purpose: Secure API endpoints with token-based authentication
   - Steps:
     1. Create middleware in `internal/auth/jwt_middleware.go`
@@ -100,15 +100,15 @@ Each task should contain:
 Too Sparse                    ✓ OPTIMAL                      Too Detailed
 ------------                  -----------                    ------------
 - [ ] Add auth               - [ ] Implement JWT auth       - [ ] Import jwt library
-- [ ] Fix bug                  middleware (TTD_REQUIRED)    - [ ] Create jwt.go file
-- [ ] Update docs              (MEDIUM)                     - [ ] Write parseToken func
-                               - Validate token in           - [ ] Write validateToken
-                                 Authorization header        - [ ] Write refreshToken
-                               - Return 401 for invalid      - [ ] Add error handling
-                               - Add user context to         - [ ] Write unit tests
-                                 request                     - [ ] Write integration tests
-                                                             - [ ] Update middleware chain
-                                                             - [ ] Add logging
+- [ ] Fix bug                  middleware (MEDIUM)          - [ ] Create jwt.go file
+- [ ] Update docs              - Validate token in           - [ ] Write parseToken func
+                                  Authorization header        - [ ] Write validateToken
+                                - Return 401 for invalid      - [ ] Write refreshToken
+                                - Add user context to         - [ ] Add error handling
+                                  request                     - [ ] Write unit tests
+                                                              - [ ] Write integration tests
+                                                              - [ ] Update middleware chain
+                                                              - [ ] Add logging
 ```
 
 ---
@@ -156,7 +156,6 @@ Too Sparse                    ✓ OPTIMAL                      Too Detailed
 - Task has >10 implementation steps
 - Task requires multiple people
 - Task has natural pause points (e.g., "implement feature" then "write docs")
-- Task mixes different TTD requirements (some need TTD, some don't)
 
 ### Keep together if
 
@@ -175,7 +174,7 @@ Too Sparse                    ✓ OPTIMAL                      Too Detailed
 [1-2 paragraphs: What problem does this solve? Why now?]
 
 ## Tasks
-- [ ] **Task 1 Name** (TTD_STATUS) (SIZE)
+- [ ] **Task 1 Name** (SIZE)
   - Purpose: [Why this task matters]
   - Steps: [3-6 high-level implementation steps]
   - Files: [Primary files to modify]
@@ -239,7 +238,6 @@ After creating a plan, test with these scenarios:
 **Input:** "Fix typo in README"
 **Expected:**
 - 1 task
-- NO_TTD
 - <10 lines in planfile
 - Completion time: <15 minutes
 
@@ -247,7 +245,6 @@ After creating a plan, test with these scenarios:
 **Input:** "Add rate limiting to API"
 **Expected:**
 - 2-3 tasks
-- TTD_REQUIRED
 - ~50 lines in planfile
 - Clear technical decisions documented
 
@@ -255,7 +252,6 @@ After creating a plan, test with these scenarios:
 **Input:** "Implement OAuth2 authentication"
 **Expected:**
 - 6-10 tasks
-- Mixed TTD requirements
 - ~200 lines in planfile
 - Complete architecture overview
 - All integration points documented
