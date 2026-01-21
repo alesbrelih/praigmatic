@@ -133,7 +133,7 @@ Read plan to find next unchecked task. Prioritize `[~]` over `[ ]`. Repeat from 
 2. Request holistic review: `task(agent: "pragmatic-code-reviewer", prompt: "Perform holistic review of entire functionality. Plan: [Name], Purpose: [purpose], Tasks: [list], Commits: [paste git log]. Review for consistency, architecture coherence, integration issues, overall quality, security.")`
 
 **Holistic Improvement Loop (Conditional):**
-Initialize: `holistic_retry_count = 0`, `holistic_max_retries = 5`
+Initialize: `holistic_retry_count = 0`, `max_holistic_retries = 3`
 
 Store holistic review output for potential retry use.
 
@@ -144,12 +144,16 @@ Store holistic review output for potential retry use.
 - **No critical/high issues**: Skip improvement loop → proceed to archive
 - **Critical/high issues found**: Display "🔍 Holistic review found critical/high issues. Initiating improvement loop..." → enter retry loop
 
-While `holistic_retry_count < holistic_max_retries` and critical/high issues present:
+While `holistic_retry_count < max_holistic_retries` and critical/high issues present:
+
+Increment: `holistic_retry_count = holistic_retry_count + 1`
+
+Display "🔄 Holistic improvement attempt [holistic_retry_count]/[max_holistic_retries]..."
 
 1. **Re-invoke Developer with Holistic Feedback:**
    Build retry prompt:
    ```markdown
-   # Task Execution Request (HOLISTIC REVIEW RETRY - Attempt [holistic_retry_count + 1] of [holistic_max_retries])
+    # Task Execution Request (HOLISTIC REVIEW RETRY - Attempt [holistic_retry_count] of [max_holistic_retries])
 
    ## Task Information
    **Task Name:** Holistic Improvement for [Plan Name]
@@ -170,22 +174,22 @@ While `holistic_retry_count < holistic_max_retries` and critical/high issues pre
 
    Invoke developer: `task(agent: "pragmatic-developer", prompt: "[prompt above]")`
 
-2. **Handle Developer Response:**
+ 2. **Handle Developer Response:**
 
-   Parse response for completion status:
-   - **Success**: Stage changes with `git add`. Increment `holistic_retry_count`. Request new holistic review.
-   - **Failed/Blocked**: Exit loop, add note to plan, inform user.
+    Parse response for completion status:
+    - **Success**: Stage changes with `git add`. Request new holistic review.
+    - **Failed/Blocked**: Exit loop, add note to plan, inform user.
 
 3. **Request Updated Holistic Review:**
 
    `task(agent: "pragmatic-code-reviewer", prompt: "Perform holistic review again. Plan: [Name], Commits: [paste updated git log]. Focus on whether previous critical/high issues were resolved.")`
 
-4. **Severity Check (Loop Continuation):**
+ 4. **Severity Check (Loop Continuation):**
 
-   Parse updated review output for `### Critical Issues` and `### High Issues` sections.
+    Parse updated review output for `### Critical Issues` and `### High Issues` sections.
 
-   - **No critical/high issues**: Exit loop → proceed to commit fixes
-   - **Critical/high issues found**: If `holistic_retry_count >= holistic_max_retries`, exit loop → handle max retries. Otherwise, continue loop.
+    - **No critical/high issues**: Exit loop → proceed to commit fixes
+    - **Critical/high issues found**: If `holistic_retry_count >= max_holistic_retries`, exit loop → handle max retries. Otherwise, continue loop.
 
 **Commit Holistic Fixes (Success Path):**
 Commit fixes with: `task(agent: "pragmatic-committer", prompt: "[SUBAGENT] Commit staged changes. Context: Holistic review improvements for '[Plan Name]'. Files: [file list]")`
@@ -196,7 +200,7 @@ Add notes to plan using `plan-tasks` → `addNote`:
 - "Attempts: [holistic_retry_count] iterations completed"
 - "Required: Manual review and fixes needed"
 
-Do not commit. Keep files staged for user review. Inform user of remaining issues and next steps.
+Do not commit. Keep files staged for user review. Display "⚠️ Holistic review max retries reached. Some issues remain. Reviewing staged changes..." Inform user of remaining issues and next steps.
 
 **Archive Plan:**
 Use `archive-plan` tool with planPath. Stage and commit archive move: `git add "[plan]" "[archive]" && task(agent: "pragmatic-committer", prompt: "[SUBAGENT] Commit staged changes. Context: Plan '[Name]' completed and archived")`
