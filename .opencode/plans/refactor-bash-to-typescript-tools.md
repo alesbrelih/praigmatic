@@ -53,7 +53,7 @@ Replace embedded bash code blocks in `pragmatic-implementation.md` with properly
   - Files: `.opencode/tools/find-plan.ts`
   - Dependencies: None
 
-- [ ] **Create validate-git-state tool** (Small)
+- [~] **Create validate-git-state tool** (Small)
   - Purpose: Replace bash git validation logic with a custom tool that checks for uncommitted changes
   - Steps:
     - Create `.opencode/tools/validate-git-state.ts` file
