@@ -13,8 +13,9 @@ permission:
     pragmatic-explorer: allow
     pragmatic-brainstormer: ask
     pragmatic-code-reviewer: allow
-    pragmatic-committer: deny  # Orchestration commands handle commits
+    pragmatic-committer: ask  # Orchestration commands handle commits
     pragmatic-researcher: ask
+    pragmatic-developer: allow
 tools:
   write: true
   edit: true

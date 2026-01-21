@@ -11,6 +11,7 @@ permission:
     pragmatic-explorer: allow
     pragmatic-brainstormer: allow
     pragmatic-researcher: allow
+    pragmatic-developer: ask
 tools:
   write: true   # Enable for plan file creation
   edit: true    # Enable for plan file editing based on feedback
