@@ -72,6 +72,8 @@ Load relevant skills via `skill` tool before implementation. Document verificati
 
 4. **Assess if TTD is needed** (see `~/.config/opencode/reference/ttd-criteria.md`)
 
+**IMPORTANT:** TTD decision is made **independently in Phase 1** and is NOT read from plan file metadata. Plan files no longer contain TTD labels.
+
 If NO_TTD selected: Use question tool to get user confirmation before proceeding
 - Option 1: "Use TTD" (Recommended) - revert to TTD_REQUIRED approach
 - Option 2: "Proceed with NO_TTD" - requires documented justification
@@ -110,7 +112,7 @@ Use brainstormer when choosing between multiple valid technical approaches.
 Before Phase 2, complete this assessment:
 
 **Task:** [Task name from plan]
-**TTD Decision:** [TTD_REQUIRED / NO_TTD]
+**TTD Decision:** [TTD_REQUIRED / NO_TTD] *(Decision made independently in Phase 1)*
 
 **Criteria from `~/.config/opencode/reference/ttd-criteria.md`:**
 - [ ] Business logic
@@ -305,7 +307,7 @@ mv "$PLAN_FILE" ".opencode/plans/archive/${PLAN_NAME}-${TIMESTAMP}.md"
 
 Before review:
 - [ ] Code follows project patterns
-- [ ] Tests pass (TTD) or manual testing done (NO_TTD)
+- [ ] Tests pass (TTD) or manual testing done (NO_TTD) *(Refers to independent Phase 1 decision, not plan metadata)*
 - [ ] No debug statements in code
 - [ ] Code is readable and self-documenting
 
