@@ -154,7 +154,142 @@ function wrapError(error: unknown, context: string): Error {
 }
 
 /**
- * Parse task status from markdown checkbox pattern
+ * Task line parsing result
+ */
+interface ParsedTaskLine {
+  indent: string;
+  bullet: string;
+  checkbox: string;
+  content: string;
+  taskName: string;
+  size: string | null;
+  status: "pending" | "in-progress" | "completed";
+}
+
+/**
+ * Regex pattern for parsing task lines
+ * Groups: 1=indent, 2=bullet, 3=checkbox, 4=content
+ */
+const TASK_LINE_PATTERN = /^(\s*)([-*+])\s+(\[[ xX~]\])\s+(.*)$/;
+
+/**
+ * Parse a single task line and extract structured data.
+ * Supports multiple bullet types (-, *, +) and all checkbox states.
+ * Extracts size info when present at end of content (e.g., "(3 points)").
+ *
+ * This function provides more comprehensive parsing than parseTaskStatus() which
+ * only handles dash bullets and returns TaskStatus enum values.
+ *
+ * @param line - The task line to parse (must be a string)
+ * @returns Parsed task information or null if line doesn't match task pattern or input is invalid
+ * @example
+ * parseTaskLine("  - [ ] Implement feature (3 points)");
+ * // Returns:
+ * // {
+ * //   indent: "  ",
+ * //   bullet: "-",
+ * //   checkbox: "[ ]",
+ * //   content: "Implement feature (3 points)",
+ * //   taskName: "Implement feature",
+ * //   size: "(3 points)",
+ * //   status: "pending"
+ * // }
+ */
+function parseTaskLine(line: string): ParsedTaskLine | null {
+  // Input validation: handle null, undefined, and non-string inputs
+  if (typeof line !== "string") {
+    return null;
+  }
+
+  // Handle empty strings early
+  if (line.trim().length === 0) {
+    return null;
+  }
+
+  const match = line.match(TASK_LINE_PATTERN);
+  if (!match) {
+    return null;
+  }
+
+  const [, indent, bullet, checkbox, content] = match;
+
+  // Determine status from checkbox
+  let status: "pending" | "in-progress" | "completed";
+  const checkboxContent = checkbox.trim();
+  if (checkboxContent === "[ ]") {
+    status = "pending";
+  } else if (checkboxContent === "[~]") {
+    status = "in-progress";
+  } else if (checkboxContent === "[x]" || checkboxContent === "[X]") {
+    status = "completed";
+  } else {
+    // This should not happen given the regex pattern
+    status = "pending";
+  }
+
+  // Extract task name and size from content
+  // Size is expected at the END of content with parentheses like "(1 point)" or "(3 pts)"
+  // The regex is defensive: only captures if the number and optional "point(s)" appear together
+  const sizeMatch = content.match(/\((\d+)\s*(?:point|points|pt|pts)?\)\s*$/i);
+  const size = sizeMatch ? sizeMatch[0] : null;
+
+  // Extract task name by removing size if present, otherwise use trimmed content
+  // Note: This may not handle all edge cases (e.g., multiple parentheticals)
+  // The size extraction is best-effort and expects the size to be the last parenthetical
+  const taskName = size ? content.replace(sizeMatch![0], "").trim() : content.trim();
+
+  return {
+    indent,
+    bullet,
+    checkbox,
+    content,
+    taskName,
+    size,
+    status,
+  };
+}
+
+/**
+ * Parse an entire plan file and extract all tasks
+ * @param planPath - Path to the plan file
+ * @returns Array of parsed task lines with their line indices
+ * @throws {Error} If file cannot be read
+ */
+async function parsePlanFile(planPath: string): Promise<Array<ParsedTaskLine & { lineIndex: number }>> {
+  try {
+    const content = await readFile(planPath, "utf-8");
+    // Detect and preserve line endings (CRLF or LF) for consistency
+    const lineEnding = content.includes("\r\n") ? "\r\n" : "\n";
+    const lines = content.split(lineEnding);
+
+    const tasks: Array<ParsedTaskLine & { lineIndex: number }> = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      const parsed = parseTaskLine(lines[i]);
+      if (parsed) {
+        tasks.push({
+          ...parsed,
+          lineIndex: i,
+        });
+      }
+    }
+
+    return tasks;
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("ENOENT")) {
+      throw new Error(`Plan file not found: ${planPath}`);
+    }
+    throw wrapError(error, "Failed to parse plan file");
+  }
+}
+
+/**
+ * Parse task status from markdown checkbox pattern.
+ * Lightweight function for dash-only tasks, returns TaskStatus enum values.
+ * For comprehensive parsing (multiple bullets, size extraction), use parseTaskLine().
+ *
+ * @param line - The task line to parse
+ * @returns TaskStatus enum value or null if line doesn't match pattern
  */
 function parseTaskStatus(line: string): TaskStatus | null {
   const taskMatch = line.match(/^\s*-\s\[([xX~ ])\]\s/);
