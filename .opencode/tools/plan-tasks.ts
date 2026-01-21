@@ -250,10 +250,59 @@ async function markInProgress(planPath: string, taskIndex: number): Promise<Plan
   }
 }
 
+/**
+ * Mark a task as completed
+ * @throws {Error} If task doesn't exist or is already done
+ */
+async function markCompleted(planPath: string, taskIndex: number): Promise<PlanTask> {
+  try {
+    const { writeFile } = await import("node:fs/promises");
+    const content = await readFile(planPath, "utf-8");
+    const lines = content.split("\n");
+
+    let taskCount = 0;
+    for (let i = 0; i < lines.length; i++) {
+      const status = parseTaskStatus(lines[i]);
+      if (status !== null) {
+        if (taskCount === taskIndex) {
+          // Check if task is already done
+          if (status === TaskStatus.DONE) {
+            throw new Error(`Task ${taskIndex} is already marked as completed`);
+          }
+
+          // Replace `- [ ]` or `- [~]` with `- [x]` preserving indentation
+          const updatedLine = lines[i].replace(/^(\s*-\s\[)[ ~xX](\])/, "$1x$2");
+          lines[i] = updatedLine;
+
+          // Write the modified content back to the file
+          await writeFile(planPath, lines.join("\n"), "utf-8");
+
+          // Return the updated task information
+          const taskContent = parseTaskContent(lines[i]);
+          const note = hasTaskNote(lines[i]) ? extractTaskNote(lines[i]) : undefined;
+
+          return {
+            planPath,
+            lineIndex: i,
+            status: TaskStatus.DONE,
+            content: taskContent,
+            note,
+          };
+        }
+        taskCount++;
+      }
+    }
+
+    throw new Error(`Task index ${taskIndex} not found in plan`);
+  } catch (error) {
+    throw wrapError(error, "Failed to mark task as completed");
+  }
+}
+
 export default tool({
-  description: "Read or modify task status in plan files. Operations include getting task status or marking tasks as in-progress.",
+  description: "Read or modify task status in plan files. Operations include getting task status, marking tasks as in-progress, or marking tasks as completed.",
   args: {
-    operation: tool.schema.enum(["getTaskStatus", "markInProgress"]).describe("Operation to perform on the task"),
+    operation: tool.schema.enum(["getTaskStatus", "markInProgress", "markCompleted"]).describe("Operation to perform on the task"),
     planName: tool.schema.string().optional().describe("Plan file name (without .opencode/plans/ prefix). If not provided, uses the most recent plan file."),
     taskIndex: tool.schema.number().describe("Zero-based index of the task within the plan"),
   },
@@ -273,6 +322,11 @@ export default tool({
 
       case "markInProgress": {
         const task = await markInProgress(planPath, taskIndex);
+        return JSON.stringify(task, null, 2);
+      }
+
+      case "markCompleted": {
+        const task = await markCompleted(planPath, taskIndex);
         return JSON.stringify(task, null, 2);
       }
 
