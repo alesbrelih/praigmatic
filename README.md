@@ -58,7 +58,8 @@
 | Brainstormer | agent/subagent | Interactive Q&A for requirements clarification |
 | Planner | agent/subagent | TTD plans, spawns explorer + brainstormer + researchers |
 | Researcher | agent/subagent | Context7, Grep.app, WebSearch |
-| Developer | agent/subagent | Implementation + skill loading |
+| Developer | agent/subagent | Pure implementation with structured prompts, plan-agnostic |
+| Committer | agent/subagent | Git commit analysis and conventional commits |
 | Reviewer | agent/subagent | Security, quality, fixes |
 
 ## Agent Workflow
@@ -88,78 +89,179 @@ Phase 6: Create plan file ONLY
   ↓
 👤 USER TYPES: /pragmatic-implementation
   ↓
-/pragmatic-implementation command (agent-agnostic bridge)
+/pragmatic-implementation command (orchestrator)
   │  ├─ Find and read plan file
   │  ├─ Parse task checklist
-  │  ├─ Show acknowledgment with plan tasks
-  │  └─ Start implementation in current agent
+  │  └─ Show acknowledgment with plan tasks
   ↓
-Developer (or any other agent)
+For EACH task (loop):
+  ├─ Mark task as in-progress (edit plan: [ ] → [~])
+  ├─ Construct structured prompt for developer
+  │  ├─ Task name, purpose, context
+  │  ├─ Architecture, decisions, security
+  │  └─ Task steps, files to modify
+  ├─ Invoke developer agent
+  │  └─ Developer implements task (Phases 1-3)
+  │     ├─ Phase 1: Analysis (Security, Skills, TTD)
+  │     ├─ Phase 2: Implementation
+  │     └─ Phase 3: Code review (stages changes for review)
+  ├─ Handle developer response:
+  │  ├─ ✅ Success: Stage changes, update plan ([~] → [x]), commit
+  │  ├─ ❌ Failure: Document error, stop loop
+  │  └─ ⚠️ Blocked: Document blocker, stop loop
+  └─ Continue to next task
   ↓
-Phase 1-3: Implement task-by-task
-  │  ├─ Implement current task
-  │  ├─ Edit plan: Change checkbox from `- [ ]` to `- [x]`
-  │  ├─ Commit changes
-  │  └─ Loop for next task
-  ↓
-Phase 4: Code review + commit
-  │  ├─ Code review
-  │  └─ Commit
-  ↓
-Reviewer (quality, security, performance checks)
+All tasks completed:
+  ├─ Holistic code review (Reviewer)
+  ├─ Archive plan file
+  └─ Commit archive move
 ```
 
 ## Plan File Workflow
 
 ### Overview
 
-Plan-file-only architecture:
-- **Planner**: Creates plan file with task checklist (agent-agnostic)
-- **/pragmatic-implementation command**: Bridge that starts implementation (agent-agnostic)
-- **Developer**: Works directly with plan file (reads and updates checkboxes)
+The `/pragmatic-implementation` command is an **orchestrator** that manages plan-driven implementation. It:
 
-This provides:
-- **Single source of truth**: Plan file contains all information and state
-- **Rich context**: Plan documents architecture, decisions, risks
-- **Progress visibility**: Plan checkboxes track execution state
-- **Clean separation**: No coupling between planner and implementation
-- **Audit trail**: Git history and archived plans show execution history
-- **Simple and reliable**: No dual synchronization issues
+1. **Reads the plan file** to understand tasks and their order
+2. **Manages workflow state** (checkboxes, loops, commits, archives)
+3. **Invokes developer agent** for each task with structured context
+4. **Handles task outcomes** (success, failure, blocked)
+5. **Performs post-completion** (holistic review, archive, final commit)
 
-### Planner Creates Plan File Only
+### Key Architecture Changes
 
-**Plan file with task checklist:**
+**Before refactoring:**
+- Developer agent owned workflow logic (checkboxes, loops, commits)
+- Tight coupling: Developer knew about plan file format
+- Difficult to use developer for ad-hoc tasks
 
-```markdown
-# OAuth2 Authentication Implementation Plan
+**After refactoring:**
+- Clear separation: Command orchestrates, Developer implements
+- Developer is plan-agnostic (receives structured prompts)
+- Reusable: Developer works with or without plans
+- Clean interface: Structured prompt → Status response
 
-## Tasks
+### Implementation Loop
 
-- [ ] **Install Auth0 SDK** (NO_TTD) (Small)
-  - Add Auth0 SDK to package.json
-  - Configure credentials
+For **each task** in the plan (prioritizing in-progress tasks `- [~]`):
 
-- [ ] **Update database schema** (TTD_REQUIRED) (Medium)
-  - Add OAuth fields to user table
-  - Create migration script
+#### 1. Mark Task In-Progress
 
-- [ ] **Implement callback handler** (TTD_REQUIRED) (Large)
-  - Create /auth/callback endpoint
-  - Handle token exchange
+Edit plan file: `- [ ]` → `- [~]`
 
-## Architecture Overview
-[How feature fits into system]
+#### 2. Construct Developer Prompt
 
-## Technical Decisions
-- Decision 1: Choice (Rationale)
+Build structured prompt with:
+- Task Name & Purpose
+- Context (Architecture, Decisions, Security)
+- Task Steps (numbered list)
+- Files to Modify (with descriptions)
 
-## Security Considerations
-- Risk 1: Description → Mitigation
+See `.opencode/design/new-command-developer-interface.md` for full prompt template.
 
-## Testing Strategy
-- Unit tests: approach
-- Integration tests: approach
+#### 3. Invoke Developer Agent
+
+```bash
+task(agent: "pragmatic-developer", prompt: "[structured prompt]")
 ```
+
+Developer executes Phases 1-3:
+- Phase 1: Analysis (Security, Skills, TTD decision)
+- Phase 2: Implementation (write code, tests, docs)
+- Phase 3: Code Review (stage changes, invoke reviewer, fix issues)
+
+#### 4. Handle Response
+
+**✅ Success:**
+- Collect modified files from response
+- Stage changes: `git add [files]`
+- Update plan: `- [~]` → `- [x]`
+- Commit: `task(agent: "pragmatic-committer")`
+- Continue to next task
+
+**❌ Failure:**
+- Document error in plan file as sub-item
+- Stop loop (require user intervention)
+- Do not commit
+
+**⚠️ Blocked:**
+- Document blocker in plan file as sub-item
+- Stop loop (require user to resolve blocker)
+- Do not commit
+
+#### 5. Continue or Finish
+
+If more tasks: Repeat from step 1
+
+If all tasks complete: Proceed to post-completion steps
+
+### Post-Completion
+
+After all tasks have `[x]` checkbox:
+
+#### Holistic Code Review
+
+1. Identify commits: `git log --oneline [filter]`
+2. Invoke reviewer:
+   ```
+   task(agent: "pragmatic-code-reviewer", prompt: "Holistic review...
+
+   Context:
+   - Plan: [Name]
+   - Purpose: [Overall purpose]
+   - Tasks: [List]
+   - Commits: [git log results]")
+   ```
+
+#### Archive Plan
+
+```bash
+TIMESTAMP=$(date +%Y-%m-%d)
+PLAN_NAME=$(basename "$PLAN_FILE" .md)
+mv "$PLAN_FILE" ".opencode/plans/archive/${PLAN_NAME}-${TIMESTAMP}.md"
+```
+
+Stage and commit archive move:
+```bash
+git add [plan files]
+task(agent: "pragmatic-committer", prompt: "[SUBAGENT] Plan '${PLAN_NAME}' completed and archived")
+```
+
+### Developer Agent
+
+The `pragmatic-developer` agent is now **plan-agnostic** and can be used standalone or via orchestration commands.
+
+**Input:** Structured prompt with task context
+**Output:** Success/Failure/Blocked status with file list and summary
+
+See `.opencode/agent/pragmatic-developer.md` for the developer workflow.
+
+### Committer Agent
+
+The `pragmatic-committer` agent analyzes staged changes and creates conventional commits.
+
+**Input:** Context about what was done
+**Output:** Commit hash or error
+
+See `.opencode/agent/pragmatic-committer.md` for details.
+
+### Error Handling
+
+**Blocked Tasks:**
+- Documented in plan file
+- Loop stops
+- User must resolve blocker
+
+**Failed Tasks:**
+- Documented in plan file
+- Loop stops
+- User must fix error
+
+**Resume Capability:**
+- Tasks marked `[~]` are executed first
+- Allows resuming interrupted work
+- No need to re-complete tasks
 
 **Returns control to user (agent-agnostic):**
 

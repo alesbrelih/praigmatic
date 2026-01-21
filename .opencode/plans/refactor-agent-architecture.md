@@ -37,7 +37,7 @@ Decouple pragmatic-developer from plan-driven workflow by moving orchestration l
 
 ## Tasks
 
-- [ ] **Analyze current dependencies and interfaces** (Small)
+- [x] **Analyze current dependencies and interfaces** (Small)
   - Purpose: Identify all touchpoints between developer, implementation command, and committer to ensure nothing is missed during refactoring
   - Steps:
     - Document all plan-specific logic in pragmatic-developer.md (checkbox updates, archive)
@@ -51,7 +51,7 @@ Decouple pragmatic-developer from plan-driven workflow by moving orchestration l
     - `.opencode/agent/pragmatic-committer.md`
   - Dependencies: None
 
-- [ ] **Design new command-to-developer interface** (Small)
+- [x] **Design new command-to-developer interface** (Small)
   - Purpose: Define clear contract for command invoking developer, enabling developer to be plan-agnostic
   - Steps:
     - Define prompt template for command → developer invocation
@@ -63,7 +63,7 @@ Decouple pragmatic-developer from plan-driven workflow by moving orchestration l
     - New interface documentation in plan file
   - Dependencies: Task 1
 
-- [ ] **Simplify pragmatic-developer.md - remove plan-specific logic** (Medium)
+- [x] **Simplify pragmatic-developer.md - remove plan-specific logic** (Medium)
   - Purpose: Transform developer into pure implementation agent that can work with or without plans
   - Steps:
     - Remove Phase 2 Step 1: "Mark Task as In-Progress" (checkbox updates)
@@ -80,7 +80,7 @@ Decouple pragmatic-developer from plan-driven workflow by moving orchestration l
     - `.opencode/agent/pragmatic-developer.md`
   - Dependencies: Task 2
 
-- [ ] **Expand pragmatic-implementation.md - add orchestration logic** (Medium)
+- [x] **Expand pragmatic-implementation.md - add orchestration logic** (Medium)
   - Purpose: Move all workflow management (plan state + git) to command where it belongs
   - Steps:
     - Replace "Step 5.1 Execute Phases 1-4" with detailed task invocation
@@ -97,7 +97,7 @@ Decouple pragmatic-developer from plan-driven workflow by moving orchestration l
     - `.opencode/commands/pragmatic-implementation.md`
   - Dependencies: Task 2
 
-- [ ] **Update README.md to reflect new architecture** (Medium)
+- [x] **Update README.md to reflect new architecture** (Medium)
   - Purpose: Correct documentation to match actual implementation (remove false "agent-agnostic" claims)
   - Steps:
     - Update Agent Workflow diagram to show: command reads plan → invokes developer → manages state
