@@ -54,11 +54,11 @@ Plans follow a standard template:
 
 ## Tasks
 
-- [ ] **Task 1 Name** (TTD_REQUIRED) (Small)
+- [ ] **Task 1 Name** (Small)
   - Implementation detail 1
   - Implementation detail 2
 
-- [ ] **Task 2 Name** (NO_TTD) (Medium)
+- [ ] **Task 2 Name** (Medium)
   - Implementation detail 1
 
 ## Architecture Overview
