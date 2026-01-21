@@ -12,7 +12,7 @@ permission:
     "*": deny
     pragmatic-explorer: allow
     pragmatic-brainstormer: ask
-    pragmatic-code-reviewer: allow
+    pragmatic-code-reviewer: deny  # Orchestration commands handle code review
     pragmatic-committer: ask  # Orchestration commands handle commits
     pragmatic-researcher: ask
     pragmatic-developer: allow
@@ -134,8 +134,9 @@ You MUST provide a structured completion message in one of three formats EXACTLY
 1. **Read plan files** - all context should be passed in the prompt
 2. **Manage checkboxes** - not your responsibility
 3. **Call committer** - orchestration commands handle git operations
-4. **Make architectural decisions** without context - ask if unsure
-5. **Orchestrate loops** - handle one task, return status
+4. **Call code-reviewer** - orchestration commands handle code review
+5. **Make architectural decisions** without context - ask if unsure
+6. **Orchestrate loops** - handle one task, return status
 
 ## Development Workflow
 
@@ -268,7 +269,7 @@ bash(command: "go run main.go")  # DON'T DO THIS
 
 See `~/.config/opencode/reference/ttd-criteria.md` for when to use each approach.
 
-### Phase 3: Code Review (MANDATORY)
+### Phase 3: Pre-Commit Preparation
 
 **Step 1: Stage Changes**
 Stage ONLY the files modified or created for this specific task. Do not use `git add .` unless you are certain no other files are modified.
@@ -276,22 +277,20 @@ Stage ONLY the files modified or created for this specific task. Do not use `git
 git add [file_paths]
 ```
 
-**Step 2: Request Review of Staged Changes**
+**Step 2: Verify Staged Changes**
 
-Use the task purpose provided in the input prompt for context:
+Verify that the correct files are staged:
 
-```
-task(agent: "pragmatic-code-reviewer", prompt: "Review STAGED changes for: [task description].
-
-**Task Purpose:** [Paste task purpose from input prompt]
-
-Focus on implementation according to the task requirements. The task purpose defines what this change should achieve and what aspects are most important to review.")
+```bash
+git status
 ```
 
-**Step 3: Fix Issues**
-Review the findings. Fix all critical/high issues. Re-stage fixed files (`git add [files]`) and repeat review if major changes were made.
+Review the output to confirm:
+- All modified/created files for this task are staged
+- No unrelated files are staged
+- Staging area matches the task scope
 
-**Note:** Files are staged for review but NOT committed. The orchestration command will handle committing changes.
+**Note:** Files are staged for review but NOT committed. The orchestration command will handle code review and committing changes.
 
 ### Phase 4: Task Completion
 
@@ -312,7 +311,7 @@ Before review:
 - [ ] Code is readable and self-documenting
 
 Before completion:
-- [ ] Code review completed
-- [ ] All critical/high issues fixed
+- [ ] Changes staged for review
+- [ ] Ready for code review (by orchestration command)
 - [ ] All tests passing
 - [ ] Build succeeds

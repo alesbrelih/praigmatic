@@ -8,7 +8,7 @@
 2. `@pragmatic-brainstormer` - Interactive requirements clarification
 3. `@pragmatic-planner` - Creates detailed implementation plans
 4. `@pragmatic-researcher` - Multi-source technical research
-5. `@pragmatic-developer` - Clean code with automatic review
+5. `@pragmatic-developer` - Clean, maintainable code implementation
 6. `@pragmatic-code-reviewer` - Quality, security, performance checks
 
 ### Commands
@@ -17,6 +17,7 @@
   - Auto-detects most recent plan or use: `/pragmatic-implementation plan-file.md`
   - Creates structured prompts from plan tasks
   - Works in any agent context
+  - Self-correcting code review loop (max 3 iterations per task)
   - Updates plan checkboxes as tasks complete
   - Developer-agnostic: developer agent doesn't need to know about plans
 
@@ -105,11 +106,20 @@ For EACH task (loop):
   │  └─ Developer implements task (Phases 1-3)
   │     ├─ Phase 1: Analysis (Security, Skills, TTD)
   │     ├─ Phase 2: Implementation
-  │     └─ Phase 3: Code review (stages changes for review)
+  │     └─ Phase 3: Pre-Commit Preparation (stages changes, verifies)
   ├─ Handle developer response:
-  │  ├─ ✅ Success: Stage changes, update plan ([~] → [x]), commit
+  │  ├─ ✅ Success: Stage changes → Self-Correcting Code Review Loop
   │  ├─ ❌ Failure: Document error, stop loop
   │  └─ ⚠️ Blocked: Document blocker, stop loop
+  ├─ Self-Correcting Code Review Loop (max 3 iterations):
+  │  ├─ Invoke code-reviewer on staged changes
+  │  ├─ Check for critical/high issues
+  │  ├─ If NO critical/high: Exit loop → Commit
+  │  ├─ If critical/high found:
+  │  │  ├─ Re-invoke developer with review feedback
+  │  │  └─ Loop back to review (max 3 attempts)
+  │  └─ If max retries exceeded: Stop, require user intervention
+  ├─ Update plan ([~] → [x]), commit changes
   └─ Continue to next task
   ↓
 All tasks completed:
@@ -170,13 +180,19 @@ task(agent: "pragmatic-developer", prompt: "[structured prompt]")
 Developer executes Phases 1-3:
 - Phase 1: Analysis (Security, Skills, TTD decision)
 - Phase 2: Implementation (write code, tests, docs)
-- Phase 3: Code Review (stage changes, invoke reviewer, fix issues)
+- Phase 3: Pre-Commit Preparation (stage changes, verify)
 
 #### 4. Handle Response
 
 **✅ Success:**
 - Collect modified files from response
 - Stage changes: `git add [files]`
+- Enter Self-Correcting Code Review Loop (max 3 iterations):
+  - Invoke code-reviewer on staged changes
+  - Check for critical/high severity issues
+  - If NO critical/high: Exit loop
+  - If critical/high found: Re-invoke developer with feedback
+  - If max retries exceeded: Stop, require user intervention
 - Update plan: `- [~]` → `- [x]`
 - Commit: `task(agent: "pragmatic-committer")`
 - Continue to next task
@@ -378,6 +394,11 @@ Archived when complete:
    - Zero overhead when not using plans
    - Explicit user control via command
    - Works with or without planner
+
+✅ **Quality assurance**:
+   - Self-correcting code review loop (max 3 iterations)
+   - Automatic fixes for critical/high severity issues
+   - Command orchestrates review, not developer
 
 ### When to Use What
 

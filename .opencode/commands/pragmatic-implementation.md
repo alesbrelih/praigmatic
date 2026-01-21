@@ -131,7 +131,9 @@ If the developer returns success:
    ```bash
    git add [file1] [file2] [file3]
    ```
-3. **Proceed to Step 5.4** (Update Plan & Commit)
+3. **Proceed to Step 5.4** (Self-Correcting Code Review Loop - MANDATORY)
+
+**Note:** Do NOT skip code review. Every task must go through the code review loop before commit.
 
 **Example developer response:**
 ```markdown
@@ -210,26 +212,158 @@ If the developer returns blocked status:
   - Required: User must provide OAuth client credentials via environment variables
 ```
 
-### 5.4 Update Plan & Commit (for Successful Tasks)
+### 5.4 Self-Correcting Code Review Loop (MANDATORY)
 
-1. **Update checkbox**: Change from `- [~]` to `- [x]`
-2. **Verify edit**: Read plan file to confirm
+After successful task completion, enter a self-correcting loop to ensure code quality:
+
+**Initialize Loop State:**
+- `retry_count = 0`
+- `max_retries = 3`
+- `review_issues = null`
+
+**Loop: While retry_count < max_retries**
+
+#### Step 5.4.1: Code Review
+
+**Verify Staged Changes:**
+```bash
+git status
+```
+If no files are staged, this indicates a developer error. Document and stop.
+
+**Request Review:**
+```bash
+task(agent: "pragmatic-code-reviewer", prompt: "Review STAGED changes for: [Task Name].
+
+**Task Purpose:** [Extract from plan: Purpose field]
+**Iteration:** Attempt [retry_count + 1] of [max_retries]
+
+Focus on implementation according to the task requirements.")
+```
+
+**Analyze Review Findings:**
+The code-reviewer returns findings categorized by severity:
+- **Critical**: Security vulnerabilities, data corruption, broken functionality
+- **High**: Difficult to maintain, missing error handling, poor architecture
+- **Medium/Low**: Style, optimizations, nice-to-haves
+
+#### Step 5.4.2: Decision Point
+
+**Determine if critical/high issues exist:**
+
+Read the code-reviewer output to identify if there are any critical or high severity issues mentioned. This is a simple check - you don't need to parse or extract the issues, just determine if the review indicates critical/high problems.
+
+**If NO Critical or High Issues:**
+- Exit loop → Proceed to Step 5.5 (Update Plan & Commit)
+
+**If Critical or High Issues Found:**
+- Increment `retry_count`
+- If `retry_count >= max_retries`:
+  - Exit loop → Proceed to Step 5.6 (Handle Max Retries Exceeded)
+- Else:
+  - Proceed to Step 5.4.3 (Re-invoke Developer with entire code-reviewer output)
+
+#### Step 5.4.3: Re-invoke Developer with Issues
+
+**Note:** Do NOT unstage the current changes. The developer will make incremental fixes on top of the existing staged work.
+
+**Build enhanced task prompt:**
+```markdown
+# Task Execution Request (CODE REVIEW RETRY - Attempt [retry_count] of [max_retries])
+
+## Task Information
+**Task Name:** [Original task name]
+**Purpose:** [Original purpose]
+
+## Code Review Feedback
+**Status:** Previous implementation had critical/high issues that must be fixed.
+
+The code-reviewer provided the following feedback:
+
+```
+[Paste ENTIRE code-reviewer output here - don't parse or filter]
+```
+
+## Previous Implementation Context
+[Include original task steps, files, context]
+
+## Instructions
+1. Review the code review feedback above
+2. Identify and fix all critical and high priority issues
+3. Make incremental fixes on top of your existing staged changes (DO NOT start from scratch)
+4. Ensure the fixes don't break existing functionality
+5. Stage any additional changes you make
+6. Return completion status
+
+**Important:** Focus on fixing the review issues while maintaining the task's original purpose. You are building on top of your previous work - don't discard partial progress.
+```
+
+**Re-invoke developer:**
+```bash
+task(agent: "pragmatic-developer", prompt: "[Enhanced task prompt above]")
+```
+
+**Handle developer response:**
+- If SUCCESS: Loop back to Step 5.4.1 (Code Review)
+- If FAILED: Exit loop, document failure in plan file (similar to Step 5.3 Task Failed), and stop
+- If BLOCKED: Exit loop, document blocker in plan file (similar to Step 5.3 Task Blocked), and stop
+
+**End Loop**
+
+### 5.5 Update Plan & Commit (SUCCESS PATH)
+
+This step is reached when the code review loop exits successfully (no critical/high issues found).
+
+1. **Update checkbox**: Change from `- [~]` to `- [x]` in the plan file
+2. **Verify edit**: Read plan file to confirm the change was saved
 3. **Commit changes**:
    ```bash
    task(agent: "pragmatic-committer", prompt: "[SUBAGENT] Commit staged changes. Context: Completed task '[Task Name]'. Files: [list of files from developer]")
    ```
 
-### 5.5 Continue to Next Task
+After successful commit, proceed to next task (Step 5.8: Continue to Next Task).
+
+### 5.6 Handle Max Retries Exceeded (FAILURE PATH)
+
+This step is reached when the code review loop exits because max_retries was reached (developer couldn't fix critical/high issues after 3 attempts).
+
+1. **Document in plan file:**
+   ```markdown
+   - [~] **Task Name** (Size)
+     - ⚠️ CODE_REVIEW_FAILED_AFTER_RETRIES: [Summary of remaining critical/high issues]
+     - Attempts: [retry_count] iterations completed
+     - Required: Manual review and fixes needed
+   ```
+
+2. **Do NOT commit** the changes
+3. **Keep files staged** for user to review and fix
+4. **Stop the loop** - require user intervention
+5. **Inform the user:**
+   ```
+   ⚠️ Code review failed after [retry_count] attempts for task: [Task Name]
+
+   Remaining Critical/High Issues:
+   [Paste remaining issues from final code-reviewer output]
+
+   The developer attempted to fix these issues [retry_count] times but was unable to resolve them.
+
+   Next Steps:
+   - Review the staged changes (git diff --staged)
+   - Manually fix the remaining critical/high issues
+   - Re-run the implementation command to retry this task
+   ```
+
+### 5.8 Continue to Next Task
 
 1. **Read the plan file** to find the next unchecked task (`- [ ]` or `[~]`)
 2. **Prioritize in-progress tasks** (`[~]`) over pending tasks (`[ ]`)
 3. **Repeat from Step 5.1** for the next task
 
-### 5.6 All Tasks Completed
+### 5.9 All Tasks Completed
 
 If all tasks have checkbox `[x]` (completed):
 
-#### Step 5.6.1: Holistic Code Review
+#### Step 5.9.1: Holistic Code Review
 
 After all tasks complete, perform a holistic review of the entire feature:
 
@@ -261,7 +395,7 @@ After all tasks complete, perform a holistic review of the entire feature:
    - Security considerations across the feature")
    ```
 
-#### Step 5.6.2: Archive Plan
+#### Step 5.9.2: Archive Plan
 
 After successful holistic review, move the plan file to the archive:
 
@@ -279,7 +413,7 @@ git add ".opencode/plans/${PLAN_NAME}.md" ".opencode/plans/archive/${PLAN_NAME}-
 task(agent: "pragmatic-committer", prompt: "[SUBAGENT] Commit staged changes. Context: Plan '${PLAN_NAME}' completed and archived")
 ```
 
-#### Step 5.6.3: Final Summary
+#### Step 5.9.3: Final Summary
 
 Provide a final summary to the user:
 
