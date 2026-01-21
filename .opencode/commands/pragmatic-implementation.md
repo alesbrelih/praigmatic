@@ -4,6 +4,24 @@ description: Load plan file and orchestrate plan-driven implementation
 
 Load plan file and begin plan-driven implementation:
 
+## Overview
+
+This command uses the **plan-tasks** tool for all task status operations in plan files. The tool provides:
+
+- **`getTaskStatus`** - Get task status from plan file
+- **`markInProgress`** - Mark task as in-progress
+- **`markCompleted`** - Mark task as completed
+- **`addNote`** - Add note to task
+
+**Tool benefits:**
+- Path validation (prevents directory traversal)
+- Task index validation
+- Consistent error handling
+- Line ending preservation
+- Automatic indentation handling
+
+**All plan file operations now use the plan-tasks tool instead of manual editing.**
+
 ## Step 1: Find Plan File
 
 The **find-plan** tool locates the most recent plan file in `.opencode/plans/`.
@@ -56,6 +74,8 @@ Parse the JSON string returned by the tool and check `valid` field:
    - Status: `[ ]` = pending, `[~]` = in-progress, `[x]` = completed
    - Size: `(Small)`, `(Medium)`, `(Large)`
 
+**Note:** The command uses the plan-tasks tool for task status operations. The Read tool is still used to get the overall plan structure and context.
+
 ## Step 4: Show Plan Summary
 
 ```
@@ -80,16 +100,32 @@ For **each task** (prioritizing in-progress first):
 
 Before invoking the developer agent, update the plan file to mark the task as in-progress:
 
-1. **Edit** the plan file: Change checkbox from `- [ ]` to `- [~]`
-2. **Verify** the edit: Read the plan file to confirm the change was saved
+Use the **plan-tasks** tool with the `markInProgress` operation:
 
 ```bash
-# Example using Edit tool:
-# Edit tool: Replace `- [ ] **Task Name**` with `- [~] **Task Name**`
-
-# Then verify:
-# Read tool: Read the plan file to confirm the change
+# Use plan-tasks tool to mark task as in-progress
+plan-tasks({
+  operation: "markInProgress",
+  planName: "example-plan.md",  // Or omit for most recent plan
+  taskIndex: 0,  // Zero-based index of the task
+})
 ```
+
+**Returns:** JSON string with task information:
+```json
+{
+  "planPath": ".opencode/plans/example-plan.md",
+  "lineIndex": 10,
+  "status": "IN_PROGRESS",
+  "content": "Task Name",
+  "note": null
+}
+```
+
+**Error handling:**
+- If the return value starts with "Error:", display the error and stop execution
+- If the task is already in-progress or done, the tool will return an error
+- The tool validates task index and plan path automatically
 
 ### 5.2 Invoke Developer Agent
 
@@ -170,11 +206,20 @@ If the developer returns success:
 #### ❌ Task Failed
 
 If the developer returns failure:
-1. **Document the failure** in the plan file by adding a sub-item:
-   ```markdown
-   - [ ] **Task Name**
-     - ⚠️ FAILED: [Extracted error from developer's Error section]
-   ```
+1. **Document the failure** using the plan-tasks tool:
+
+```bash
+# Use plan-tasks tool to add a failure note
+plan-tasks({
+  operation: "addNote",
+  planName: "example-plan.md",  // Or omit for most recent plan
+  taskIndex: 0,  // Zero-based index of the task
+  note: "FAILED: [Extracted error from developer's Error section]"
+})
+```
+
+**Note format:** The note should start with "FAILED:" followed by the error message. The tool will automatically add the "⚠️" prefix and proper indentation.
+
 2. **Do not commit** the changes (developer may have partial changes)
 3. **Stop the loop** - require user intervention to resolve the failure
 4. **Inform the user** of the failure and next steps needed
@@ -200,12 +245,28 @@ If the developer returns failure:
 #### ⚠️ Task Blocked
 
 If the developer returns blocked status:
-1. **Document the blocker** in the plan file:
-   ```markdown
-   - [ ] **Task Name**
-     - ⚠️ BLOCKED: [Extracted blocker from developer's Blocker section]
-     - Required: [Extracted required action from developer's Required Action section]
-   ```
+1. **Document the blocker** using the plan-tasks tool:
+
+```bash
+# Add first note for the blocker
+plan-tasks({
+  operation: "addNote",
+  planName: "example-plan.md",  // Or omit for most recent plan
+  taskIndex: 0,  // Zero-based index of the task
+  note: "BLOCKED: [Extracted blocker from developer's Blocker section]"
+})
+
+# Add second note for the required action
+plan-tasks({
+  operation: "addNote",
+  planName: "example-plan.md",
+  taskIndex: 0,
+  note: "Required: [Extracted required action from developer's Required Action section]"
+})
+```
+
+**Note format:** The notes should clearly indicate the blocker and the required action. The tool will automatically add the "⚠️" prefix and proper indentation.
+
 2. **Do not commit** the changes (task not completed)
 3. **Stop the loop** - require user to provide missing information or resolve blocker
 4. **Inform the user** of what's blocking and what's needed
@@ -330,9 +391,33 @@ task(agent: "pragmatic-developer", prompt: "[Enhanced task prompt above]")
 
 This step is reached when the code review loop exits successfully (no critical/high issues found).
 
-1. **Update checkbox**: Change from `- [~]` to `- [x]` in the plan file
-2. **Verify edit**: Read plan file to confirm the change was saved
-3. **Commit changes**:
+1. **Mark task as completed** using the plan-tasks tool:
+
+```bash
+# Use plan-tasks tool to mark task as completed
+plan-tasks({
+  operation: "markCompleted",
+  planName: "example-plan.md",  // Or omit for most recent plan
+  taskIndex: 0,  // Zero-based index of the task
+})
+```
+
+**Returns:** JSON string with task information:
+```json
+{
+  "planPath": ".opencode/plans/example-plan.md",
+  "lineIndex": 10,
+  "status": "DONE",
+  "content": "Task Name",
+  "note": null
+}
+```
+
+**Error handling:**
+- If the return value starts with "Error:", display the error and stop execution
+- The tool validates task index and plan path automatically
+
+2. **Commit changes**:
    ```bash
    task(agent: "pragmatic-committer", prompt: "[SUBAGENT] Commit staged changes. Context: Completed task '[Task Name]'. Files: [list of files from developer]")
    ```
@@ -343,13 +428,35 @@ After successful commit, proceed to next task (Step 5.8: Continue to Next Task).
 
 This step is reached when the code review loop exits because max_retries was reached (developer couldn't fix critical/high issues after 3 attempts).
 
-1. **Document in plan file:**
-   ```markdown
-   - [~] **Task Name** (Size)
-     - ⚠️ CODE_REVIEW_FAILED_AFTER_RETRIES: [Summary of remaining critical/high issues]
-     - Attempts: [retry_count] iterations completed
-     - Required: Manual review and fixes needed
-   ```
+1. **Document in plan file** using the plan-tasks tool:
+
+```bash
+# Add note for the code review failure
+plan-tasks({
+  operation: "addNote",
+  planName: "example-plan.md",  // Or omit for most recent plan
+  taskIndex: 0,  // Zero-based index of the task
+  note: "CODE_REVIEW_FAILED_AFTER_RETRIES: [Summary of remaining critical/high issues]"
+})
+
+# Add note for attempts count
+plan-tasks({
+  operation: "addNote",
+  planName: "example-plan.md",
+  taskIndex: 0,
+  note: "Attempts: [retry_count] iterations completed"
+})
+
+# Add note for required action
+plan-tasks({
+  operation: "addNote",
+  planName: "example-plan.md",
+  taskIndex: 0,
+  note: "Required: Manual review and fixes needed"
+})
+```
+
+**Note format:** Each note should be added separately to create a clear record of the failure, attempts, and required action.
 
 2. **Do NOT commit** the changes
 3. **Keep files staged** for user to review and fix
@@ -453,12 +560,18 @@ Plan archived to: .opencode/plans/archive/[plan-name]-[date].md
 ### Blocked Task
 
 **Handling:**
-1. Keep task checkbox as `- [ ]`
-2. Add blocker note as sub-item:
-   ```markdown
-   - [ ] **Task Name**
-     - ⚠️ BLOCKED: Missing dependency X
-   ```
+1. Keep task checkbox as `- [ ]` (not modified)
+2. Use plan-tasks tool to add a blocker note:
+
+```bash
+plan-tasks({
+  operation: "addNote",
+  planName: "example-plan.md",
+  taskIndex: 0,
+  note: "BLOCKED: Missing dependency X"
+})
+```
+
 3. Stop the implementation loop
 4. Do not commit partial changes
 5. Inform user of blocker and required action
@@ -469,17 +582,23 @@ If the plan has tasks that can be executed in parallel:
 1. Display a note in the summary
 2. Let the user choose execution order
 3. Execute tasks in the order specified by user
-4. Update checkboxes as tasks complete
+4. Use plan-tasks tool to mark tasks as in-progress and completed as they finish
 
 ### Failed Task
 
 **Handling:**
-1. Keep task checkbox as `- [ ]`
-2. Add failure note to plan file:
-   ```markdown
-   - [ ] **Task Name**
-     - ⚠️ FAILED: [Error message]
-   ```
+1. Keep task checkbox as `- [ ]` (not modified)
+2. Use plan-tasks tool to add a failure note:
+
+```bash
+plan-tasks({
+  operation: "addNote",
+  planName: "example-plan.md",
+  taskIndex: 0,
+  note: "FAILED: [Error message]"
+})
+```
+
 3. Do not commit changes (may be partial/incorrect)
 4. Stop the implementation loop
 5. Inform user of error and recovery steps
