@@ -10,6 +10,8 @@ permission:
     "*": deny
     pragmatic-explorer: allow
     pragmatic-brainstormer: allow
+    pragmatic-code-reviewer: allow
+    pragmatic-committer: allow
     pragmatic-researcher: allow
     pragmatic-developer: ask
 tools:

@@ -260,57 +260,7 @@ Use `archive-plan` tool with planPath. Stage and commit archive move: `git add "
 
 **Final Summary:**
 
-Display one of the following based on outcome:
-
-**Success Case (no holistic failures):**
-```
-✅ All tasks completed successfully!
-Plan: [Name], Tasks: [N] completed, Commits: [N] made, Files: [N] modified
-Holistic Review: Passed on first attempt
-Archived to: .opencode/plans/archive/[plan]-[date].md
-```
-
-**Success Case (holistic review passed without code changes):**
-```
-✅ All tasks completed successfully!
-Plan: [Name], Tasks: [N] completed, Commits: [N] made, Files: [N] modified
-Holistic Review: Passed after [holistic_retry_count] iterations (no code changes required)
-Archived to: .opencode/plans/archive/[plan]-[date].md
-```
-
-**Success Case (holistic fixes applied):**
-```
-✅ All tasks completed successfully!
-Plan: [Name], Tasks: [N] completed, Commits: [N + 1] made ([N] task commits + 1 holistic fix), Files: [N] modified
-Holistic Review: Fixed [N] issues after [holistic_retry_count] iterations
-Archived to: .opencode/plans/archive/[plan]-[date].md
-```
-
-**Warning Case (holistic failures):**
-```
-⚠️ Plan archived with unresolved issues
-Plan: [Name], Tasks: [N] completed, Commits: [N] made, Files: [N] modified
-Holistic Review: Failed after [holistic_retry_count] attempts
-Remaining Issues: [summary from plan notes]
-Archived to: .opencode/plans/archive/[plan]-[date].md
-
-Next Steps:
-- Review plan notes for detailed issue descriptions
-- Review staged changes: [run 'git status' to see files]
-- Manual fixes may be needed before proceeding
-```
-
-**Failure Case (task failed):**
-```
-❌ Plan archived with failed task
-Plan: [Name], Tasks: [N] completed, Failed: [task name]
-Error: [error message from task note]
-Archived to: .opencode/plans/archive/[plan]-[date].md
-
-Next Steps:
-- Review plan notes for detailed error information
-- Fix the issue and resume implementation from the failed task
-```
+Display summary what was done.
 
 ## Edge Cases
 

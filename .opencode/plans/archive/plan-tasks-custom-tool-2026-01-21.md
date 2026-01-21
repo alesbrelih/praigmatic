@@ -61,7 +61,7 @@ Create a custom tool (`plan-tasks.ts`) that provides a structured API for managi
   - Files: `.opencode/tools/plan-tasks.ts`
   - Dependencies: None
 
-- [ ] **Implement helper functions for parsing** (Medium)
+- [x] **Implement helper functions for parsing** (Medium)
   - Purpose: Create reusable functions to parse task lines and identify task state
   - Steps:
     - Implement `parseTaskLine()` function using regex pattern `^(\s*)([-*+])\s+(\[[ xX~]\])\s+(.*)$`
@@ -71,7 +71,7 @@ Create a custom tool (`plan-tasks.ts`) that provides a structured API for managi
   - Files: `.opencode/tools/plan-tasks.ts`
   - Dependencies: Task 1
 
-- [ ] **Implement task finding logic** (Medium)
+- [x] **Implement task finding logic** (Medium)
   - Purpose: Create robust logic to find specific tasks by name in the plan
   - Steps:
     - Implement `findTaskIndex()` to locate task by exact name match
@@ -81,7 +81,7 @@ Create a custom tool (`plan-tasks.ts`) that provides a structured API for managi
   - Files: `.opencode/tools/plan-tasks.ts`
   - Dependencies: Task 2
 
-- [ ] **Implement checkbox update logic** (Small)
+- [x] **Implement checkbox update logic** (Small)
   - Purpose: Create functions to update task checkboxes while preserving formatting
   - Steps:
     - Implement `updateTaskCheckbox()` to change checkbox state (preserve indent, bullet, content)
@@ -91,7 +91,7 @@ Create a custom tool (`plan-tasks.ts`) that provides a structured API for managi
   - Files: `.opencode/tools/plan-tasks.ts`
   - Dependencies: Task 2
 
-- [ ] **Implement getTaskStatus operation** (Small)
+- [x] **Implement getTaskStatus operation** (Small)
   - Purpose: Provide API to query all tasks with their status from a plan file
   - Steps:
     - Create `getTaskStatus` tool operation using `tool()` helper
