@@ -163,5 +163,5 @@ Document all issues with clear explanations and code examples for the fix. The d
 | 3-4 | Multiple significant issues |
 | 0-2 | Major rewrite needed |
 
-**Weights**: Security (40%), Performance (25%), Maintainability (25%), Testing (10%)
+**Weights**: Security (40%), Performance (22%), Maintainability (23%), Testing (15%)
 
