@@ -182,11 +182,13 @@ Display "🔄 Holistic improvement attempt [holistic_retry_count]/[max_holistic_
 
    Invoke developer: `task(agent: "pragmatic-developer", prompt: "[prompt above]")`
 
- 2. **Handle Developer Response:**
+   2. **Handle Developer Response:**
 
-    Parse response for completion status:
-    - **Success**: Stage changes with `git add`. Request new holistic review.
-    - **Failed/Blocked**: Exit loop, add note to plan, inform user.
+      Parse response for completion status:
+      - **Success**: Stage changes with `git add`. Request new holistic review.
+      - **Failed/Blocked**: Exit loop immediately → do NOT continue retrying → proceed to failure path below
+
+      (Note: Developer failure/blocked status immediately ends the improvement loop, regardless of retry count remaining. The "max retries" limit only applies to successful iteration cycles where the developer completes work but the code-reviewer still finds critical/high issues.)
 
 3. **Request Updated Holistic Review:**
 
@@ -202,31 +204,91 @@ Display "🔄 Holistic improvement attempt [holistic_retry_count]/[max_holistic_
 **Commit Holistic Fixes (Success Path):**
 Commit fixes with: `task(agent: "pragmatic-committer", prompt: "[SUBAGENT] Commit staged changes. Context: Fixed holistic review issues for plan '[Plan Name]'. Attempt [holistic_retry_count] of [max_holistic_retries]. Files: [file list]")`
 
-**Handle Max Retries Exceeded (Failure Path):**
+**Handle Max Retries Exceeded / Developer Failed-Blocked (Failure Path):**
+
+This section is triggered when:
+- Max retries exceeded (`holistic_retry_count >= max_holistic_retries`) AND critical/high issues remain
+- Developer returned "Failed" status during holistic retry
+- Developer returned "Blocked" status during holistic retry
+
+**Document Issues in Plan:**
+
 Add notes to plan using `plan-tasks` → `addNote`:
-- "HOLISTIC_REVIEW_FAILED_AFTER_RETRIES: [summary of remaining issues]"
+- "HOLISTIC_REVIEW_FAILED: [summary of remaining issues from code-reviewer or developer]"
 - "Attempts: [holistic_retry_count] iterations completed"
 - "Required: Manual review and fixes needed"
 
-Do not commit. Keep files staged for user review. Display "⚠️ Holistic review max retries reached. Some issues remain. Reviewing staged changes..." Inform user of remaining issues and next steps.
+**Staged Changes Handling:**
+
+Do not commit any changes. Keep all staged changes for user manual review.
+
+**User Notification:**
+
+Display: "⚠️ Holistic review max retries reached. Some issues remain. Reviewing staged changes..."
+
+Inform user of:
+1. Summary of remaining issues (from code-reviewer output or developer response)
+2. Number of retry attempts completed
+3. Staged changes available for review
+4. Next steps: User should review staged changes and decide whether to:
+   - Manually fix remaining issues and re-run implementation
+   - Proceed to archive with current state
+
+After displaying this information, the plan will be archived with the failure notes for future reference.
+
+**Proceed to Archive:**
+
+After user notification, proceed to archive plan (changes remain staged, plan contains failure notes). Archive summary will include warnings about unresolved issues.
 
 **Archive Plan:**
 Use `archive-plan` tool with planPath. Stage and commit archive move: `git add "[plan]" "[archive]" && task(agent: "pragmatic-committer", prompt: "[SUBAGENT] Commit staged changes. Context: Plan '[Name]' completed and archived")`
 
 **Final Summary:**
+
+Display one of the following based on outcome:
+
+**Success Case (no holistic failures):**
 ```
 ✅ All tasks completed successfully!
 Plan: [Name], Tasks: [N] completed, Commits: [N] made, Files: [N] modified
 Archived to: .opencode/plans/archive/[plan]-[date].md
 ```
 
+**Warning Case (holistic failures):**
+```
+⚠️ Plan archived with unresolved issues
+Plan: [Name], Tasks: [N] completed, Commits: [N] made, Files: [N] modified
+Holistic Review: Failed after [holistic_retry_count] attempts
+Remaining Issues: [summary from plan notes]
+Archived to: .opencode/plans/archive/[plan]-[date].md
+
+Next Steps:
+- Review plan notes for detailed issue descriptions
+- Review staged changes: [run 'git status' to see files]
+- Manual fixes may be needed before proceeding
+```
+
+**Failure Case (task failed):**
+```
+❌ Plan archived with failed task
+Plan: [Name], Tasks: [N] completed, Failed: [task name]
+Error: [error message from task note]
+Archived to: .opencode/plans/archive/[plan]-[date].md
+
+Next Steps:
+- Review plan notes for detailed error information
+- Fix the issue and resume implementation from the failed task
+```
+
 ## Edge Cases
 
 **Blocked Task:** Add blocker note with `plan-tasks` → `addNote`. Stop loop. Do not commit. Inform user.
 
-**Parallel Tasks:** Display note in summary. Let user choose execution order. Execute in specified order.
-
 **Failed Task:** Add failure note with `plan-tasks` → `addNote`. Stop loop. Do not commit. Inform user.
+
+**Holistic Review Failed:** Add failure note with `plan-tasks` → `addNote` (HOLISTIC_REVIEW_FAILED, attempts, manual fix required). Keep changes staged. Proceed to archive with warnings in summary.
+
+**Parallel Tasks:** Display note in summary. Let user choose execution order. Execute in specified order.
 
 **Resume Capability:** Automatically resumes from tasks with `[~]` (in-progress) before any `[ ]` (pending) tasks.
 
