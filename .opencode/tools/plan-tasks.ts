@@ -157,7 +157,7 @@ function wrapError(error: unknown, context: string): Error {
  * Parse task status from markdown checkbox pattern
  */
 function parseTaskStatus(line: string): TaskStatus | null {
-  const taskMatch = line.match(/^\s*-\s\[[xX~ ]\]\s/);
+  const taskMatch = line.match(/^\s*-\s\[([xX~ ])\]\s/);
   if (!taskMatch) {
     return null;
   }
@@ -176,8 +176,8 @@ function parseTaskStatus(line: string): TaskStatus | null {
  * Extract task content from markdown line
  */
 function parseTaskContent(line: string): string {
-  const match = line.match(/^\s*-\s\[[xX~ ]\]\s*(.*)/);
-  return match ? match[1].trim() : "";
+  const match = line.match(/^\s*-\s\[([xX~ ])\]\s*(.*)/);
+  return match ? match[2].trim() : "";
 }
 
 /**
