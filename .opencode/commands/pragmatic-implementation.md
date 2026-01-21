@@ -114,7 +114,14 @@ task(agent: "pragmatic-developer", prompt: "[Paste the structured prompt above]"
 
 ### 5.3 Handle Developer Response
 
-The developer agent will return one of three completion statuses. Handle each appropriately:
+The developer agent will return one of three completion statuses. The command detects these by parsing the developer's output for specific patterns.
+
+#### Detection Patterns
+
+The command searches for these exact patterns in the developer's response:
+- **Success**: `✅ **Task Completed:**`
+- **Failed**: `❌ **Task Failed:**`
+- **Blocked**: `⚠️ **Task Blocked:**`
 
 #### ✅ Task Completed
 
@@ -126,17 +133,51 @@ If the developer returns success:
    ```
 3. **Proceed to Step 5.4** (Update Plan & Commit)
 
+**Example developer response:**
+```markdown
+✅ **Task Completed:** Add user authentication
+
+**Files Modified:**
+- `src/auth.ts` - Created authentication service
+- `src/middleware/auth.ts` - Created JWT verification middleware
+
+**Summary:** Implemented JWT-based authentication with bcrypt password hashing.
+```
+
+**Handling:**
+- Extract file list: `src/auth.ts`, `src/middleware/auth.ts`
+- Stage changes: `git add src/auth.ts src/middleware/auth.ts`
+- Continue to commit
+
 #### ❌ Task Failed
 
 If the developer returns failure:
 1. **Document the failure** in the plan file by adding a sub-item:
    ```markdown
    - [ ] **Task Name**
-     - ⚠️ FAILED: [Error message from developer]
+     - ⚠️ FAILED: [Extracted error from developer's Error section]
    ```
 2. **Do not commit** the changes (developer may have partial changes)
 3. **Stop the loop** - require user intervention to resolve the failure
 4. **Inform the user** of the failure and next steps needed
+
+**Example developer response:**
+```markdown
+❌ **Task Failed:** Add user authentication
+
+**Error:** Cannot find module 'bcrypt' after running npm install
+
+**Attempted Changes:**
+- `src/auth.ts` - Created authentication service (imports bcrypt)
+
+**Next Steps:** Install bcrypt dependency or check npm configuration
+```
+
+**Resulting plan file update:**
+```markdown
+- [ ] **Add user authentication** (Medium)
+  - ⚠️ FAILED: Cannot find module 'bcrypt' after running npm install
+```
 
 #### ⚠️ Task Blocked
 
@@ -144,12 +185,30 @@ If the developer returns blocked status:
 1. **Document the blocker** in the plan file:
    ```markdown
    - [ ] **Task Name**
-     - ⚠️ BLOCKED: [Blocker description from developer]
-     - Required: [Required action from developer's response]
+     - ⚠️ BLOCKED: [Extracted blocker from developer's Blocker section]
+     - Required: [Extracted required action from developer's Required Action section]
    ```
 2. **Do not commit** the changes (task not completed)
 3. **Stop the loop** - require user to provide missing information or resolve blocker
 4. **Inform the user** of what's blocking and what's needed
+
+**Example developer response:**
+```markdown
+⚠️ **Task Blocked:** Add OAuth authentication
+
+**Blocker:** Missing client credentials configuration
+
+**Attempts Made:** Attempted to use environment variables but none found (OAUTH_CLIENT_ID, OAUTH_CLIENT_SECRET)
+
+**Required Action:** User must provide OAuth client credentials via environment variables
+```
+
+**Resulting plan file update:**
+```markdown
+- [ ] **Add OAuth authentication** (Medium)
+  - ⚠️ BLOCKED: Missing client credentials configuration
+  - Required: User must provide OAuth client credentials via environment variables
+```
 
 ### 5.4 Update Plan & Commit (for Successful Tasks)
 
@@ -165,28 +224,6 @@ If the developer returns blocked status:
 1. **Read the plan file** to find the next unchecked task (`- [ ]` or `[~]`)
 2. **Prioritize in-progress tasks** (`[~]`) over pending tasks (`[ ]`)
 3. **Repeat from Step 5.1** for the next task
-
-### 5.2 Update Plan & Commit
-1. Edit checkbox: `- [~]` → `- [x]` (or `- [ ]` → `- [x]` if no in-progress was set)
-2. Verify edit (Read plan file)
-3. Commit changes (use pragmatic-committer)
-4. Find next unchecked task, repeat from 5.1
-
-### 5.3 All Tasks Completed
-- Verify all checkboxes: `- [x]`
-- Perform holistic code review
-- Archive plan:
-  ```bash
-  TIMESTAMP=$(date +%Y-%m-%d)
-  PLAN_NAME=$(basename "$PLAN_FILE" .md)
-  mv "$PLAN_FILE" ".opencode/plans/archive/${PLAN_NAME}-${TIMESTAMP}.md"
-  echo "✅ Plan archived: .opencode/plans/archive/${PLAN_NAME}-${TIMESTAMP}.md"
-  ```
-- Stage and commit the archive move:
-  ```bash
-  git add ".opencode/plans/${PLAN_NAME}.md" ".opencode/plans/archive/${PLAN_NAME}-${TIMESTAMP}.md"
-  task(agent: "pragmatic-committer", prompt: "[SUBAGENT] Commit staged changes. Context: Plan '${PLAN_NAME}' completed and archived")
-  ```
 
 ### 5.6 All Tasks Completed
 

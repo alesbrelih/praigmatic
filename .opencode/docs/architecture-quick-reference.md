@@ -238,6 +238,46 @@ task(agent: "pragmatic-committer", prompt: "[SUBAGENT] Commit. Context: [what yo
 
 For users transitioning from old to new architecture:
 
+#### Plan Files
+
+**Good news**: Existing plan files work without changes! The new command reads the same format:
+
+```markdown
+- [ ] **Task Name** (Size)
+
+### Task Name
+**Purpose:** [description]
+**Steps:** [list]
+**Files to Modify:** [list]
+```
+
+**What changed:**
+- Old: Developer read plan file directly
+- New: Command reads plan file and passes context to developer
+
+**No action required**: Your existing plans continue to work as-is.
+
+#### In-Progress Plans
+
+If you have a plan with in-progress tasks (`[~]`):
+
+1. **Don't modify the plan** - New command handles `[~]` tasks correctly
+2. **Run `/pragmatic-implementation`** - It will resume from in-progress task
+3. **No action needed** - Migration is seamless
+
+The new implementation command prioritizes tasks marked `[~]` (in-progress) over `[ ]` (pending), allowing you to resume interrupted work.
+
+#### Daily Workflows
+
+**Unchanged**: Everything works the same from user perspective:
+- Create plans with pragmatic-planner
+- Execute plans with `/pragmatic-implementation`
+- Get commits, reviews, and archival as before
+
+**Changed under the hood**: Better separation of concerns for future extensibility
+
+For users transitioning from old to new architecture:
+
 1. **Developer usage:**
    - Old: Just "follow pragmatic-developer workflow"
    - New: Provide structured prompt with task info

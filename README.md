@@ -13,11 +13,12 @@
 
 ### Commands
 
-- `/pragmatic-implementation` - Load plan file, create todos, start implementation (agent-agnostic)
+- `/pragmatic-implementation` - Load plan file, orchestrate implementation workflow (developer-agnostic)
   - Auto-detects most recent plan or use: `/pragmatic-implementation plan-file.md`
-  - Creates todos from plan task checklist
+  - Creates structured prompts from plan tasks
   - Works in any agent context
   - Updates plan checkboxes as tasks complete
+  - Developer-agnostic: developer agent doesn't need to know about plans
 
 ## File Structure
 

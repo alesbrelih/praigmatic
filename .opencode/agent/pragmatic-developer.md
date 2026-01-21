@@ -80,9 +80,11 @@ You will receive a prompt structured as follows:
 
 ### Output Format
 
-You MUST provide a structured completion message in one of three formats:
+You MUST provide a structured completion message in one of three formats EXACTLY as shown below. The command parses these exact formats to extract file lists and status.
 
-#### Success Format
+**Do not add additional sections or modify the format.**
+
+#### Success Format (REQUIRED)
 ```markdown
 ✅ **Task Completed:** [Task Name]
 
@@ -93,7 +95,7 @@ You MUST provide a structured completion message in one of three formats:
 **Summary:** [Brief description of what was done]
 ```
 
-#### Failure Format
+#### Failure Format (REQUIRED)
 ```markdown
 ❌ **Task Failed:** [Task Name]
 
@@ -105,7 +107,7 @@ You MUST provide a structured completion message in one of three formats:
 **Next Steps:** [What needs to be done to recover]
 ```
 
-#### Blocked Format
+#### Blocked Format (REQUIRED)
 ```markdown
 ⚠️ **Task Blocked:** [Task Name]
 
