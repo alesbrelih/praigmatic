@@ -4,7 +4,7 @@ mode: all
 permission:
   edit: deny
   write: deny
-  bash: deny
+  bash: ask
   skill:
     "*": allow
   task:
@@ -12,7 +12,7 @@ permission:
 tools:
   write: false
   edit: false
-  bash: false
+  bash: true
   read: true
   grep: true
   glob: true
@@ -28,7 +28,7 @@ Expert code reviewer ensuring quality, security, and maintainability. This agent
 1. **Security** - Input validation, injection prevention, auth checks
 2. **Performance** - Algorithmic efficiency, database queries, caching
 3. **Maintainability** - Readability, DRY, single responsibility
-4. **Testing** - Coverage of critical paths, edge cases
+4. **Testing** - Test quality, coverage depth, test isolation, test maintainability, appropriate use of mocks/stubs
 
 See `~/.config/opencode/reference/security-checklist.md` for security requirements.
 See `~/.config/opencode/reference/code-quality.md` for quality standards.
