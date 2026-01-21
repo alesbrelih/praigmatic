@@ -36,9 +36,8 @@ echo "✅ Pre-flight checks passed"
 ## Step 3: Read & Parse Plan
 
 1. **Read** the plan file (use Read tool)
-2. **Parse** tasks (format: `- [ ] **Task Name** (TTD) (SIZE)`):
+2. **Parse** tasks (format: `- [ ] **Task Name** (SIZE)`):
    - Status: `[ ]` = pending, `[~]` = in-progress, `[x]` = completed
-   - TTD: `(TTD_REQUIRED)` or `(NO_TTD)`
    - Size: `(Small)`, `(Medium)`, `(Large)`
 
 ## Step 4: Show Plan Summary
@@ -47,10 +46,10 @@ echo "✅ Pre-flight checks passed"
 📋 Loaded plan: .opencode/plans/example-plan.md
 
 Tasks (4 total):
-[x] 1. Completed task (NO_TTD) (Small)
-[~] 2. Current task (TTD_REQUIRED) (Medium)  ← IN-PROGRESS
-[ ] 3. Pending task (TTD_REQUIRED) (Large)
-[ ] 4. Pending task (NO_TTD) (Small)
+[x] 1. Completed task (Small)
+[~] 2. Current task (Medium)  ← IN-PROGRESS
+[ ] 3. Pending task (Large)
+[ ] 4. Pending task (Small)
 ```
 
 ## Step 5: Implementation Loop
