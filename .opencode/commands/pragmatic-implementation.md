@@ -71,15 +71,21 @@ Parse response for completion status patterns:
 #### 4.4 Code Review Loop (MANDATORY)
 
 Initialize: `retry_count = 0`, `max_retries = 3`
+// Note: 3 retries allows for initial attempt + 2 fixes. Beyond this,
+// issues typically require manual review to avoid infinite loops.
 
 While `retry_count < max_retries`:
 
-1. **Review Staged Changes**: Verify files staged with `git status`. Request code review with `task(agent: "pragmatic-code-reviewer", prompt: "Review STAGED changes for: [Task Name]. Task Purpose: [from plan]. Iteration: Attempt [retry_count + 1] of [max_retries]. Focus on implementation according to task requirements.")`
+Increment: `retry_count = retry_count + 1`
+
+Display "🔄 Code review attempt [retry_count]/[max_retries]..."
+
+1. **Review Staged Changes**: Verify files staged with `git status`. Request code review with `task(agent: "pragmatic-code-reviewer", prompt: "Review STAGED changes for: [Task Name]. Task Purpose: [from plan]. Iteration: Attempt [retry_count] of [max_retries]. Focus on implementation according to task requirements.")`
 
 2. **Decision Point**: Check if code-reviewer indicates critical/high issues.
 
    - **No critical/high issues**: Exit loop → proceed to commit
-   - **Critical/high issues found**: Increment `retry_count`. If `retry_count >= max_retries`, exit loop → handle max retries. Otherwise, continue.
+   - **Critical/high issues found**: If `retry_count >= max_retries`, exit loop → handle max retries. Otherwise, continue.
 
 3. **Re-invoke Developer** (if issues found and retries remain):
    Build retry prompt:
@@ -98,16 +104,20 @@ While `retry_count < max_retries`:
    ## Previous Implementation Context
    [Include original task steps, files, context]
 
-   ## Instructions
-   1. Review code review feedback
-   2. Fix all critical/high priority issues
-   3. Make incremental fixes on staged changes (DO NOT start from scratch)
-   4. Ensure fixes don't break existing functionality
-   5. Stage additional changes
-   6. Return completion status
-   ```
+    ## Instructions
+    1. Review code review feedback
+    2. Fix all critical/high priority issues
+    3. Make incremental fixes on staged changes (DO NOT start from scratch)
+    4. Ensure fixes don't break existing functionality
+    5. Stage additional changes
+    6. Return completion status with ✅, ❌, or ⚠️
+    ```
 
-   Invoke developer. If success, loop back to step 1. If failed/blocked, exit loop and document.
+   Invoke developer.
+   - **If success**: Loop back to step 1
+   - **If failed/blocked**: Exit loop immediately → do NOT continue to next task → proceed to handle max retries path (even if max_retries not reached)
+
+   (Note: Similar to holistic loop, developer failure/blocked ends the task execution. The "max retries" limit only applies to successful iteration cycles where developer completes work but code-reviewer still finds critical/high issues.)
 
 #### 4.5 Commit (Success Path)
 
@@ -134,6 +144,8 @@ Read plan to find next unchecked task. Prioritize `[~]` over `[ ]`. Repeat from 
 
 **Holistic Improvement Loop (Conditional):**
 Initialize: `holistic_retry_count = 0`, `max_holistic_retries = 3`
+// Note: 3 retries allows for initial attempt + 2 fixes. Beyond this,
+// issues typically require manual review to avoid infinite loops.
 
 Store holistic review output for potential retry use.
 
@@ -202,7 +214,11 @@ Display "🔄 Holistic improvement attempt [holistic_retry_count]/[max_holistic_
     - **Critical/high issues found**: If `holistic_retry_count >= max_holistic_retries`, exit loop → handle max retries. Otherwise, continue loop.
 
 **Commit Holistic Fixes (Success Path):**
-Commit fixes with: `task(agent: "pragmatic-committer", prompt: "[SUBAGENT] Commit staged changes. Context: Fixed holistic review issues for plan '[Plan Name]'. Attempt [holistic_retry_count] of [max_holistic_retries]. Files: [file list]")`
+Check if any files are staged with `git status`.
+- **If no files staged**: Skip commit, display "ℹ️ Holistic review resolved without code changes. Proceeding to archive."
+- **If files staged**: Commit with: `task(agent: "pragmatic-committer", prompt: "[SUBAGENT] Commit staged changes. Context: Fixed holistic review issues for plan '[Plan Name]'. After [holistic_retry_count] of [max_holistic_retries] retry iterations. Files: [file list]. This commit includes all changes from [holistic_retry_count] retry iterations.")`
+
+**Note:** All staged changes from retry iterations are included in a single commit. For complex holistic fixes spanning multiple issues, consider manual commit breakdown for better auditability.
 
 **Handle Max Retries Exceeded / Developer Failed-Blocked (Failure Path):**
 
@@ -236,9 +252,8 @@ Inform user of:
 
 After displaying this information, the plan will be archived with the failure notes for future reference.
 
-**Proceed to Archive:**
-
-After user notification, proceed to archive plan (changes remain staged, plan contains failure notes). Archive summary will include warnings about unresolved issues.
+**Archive Decision:**
+Proceed to archive plan after user notification (changes remain staged, plan contains failure notes). Archive summary will include warnings about unresolved issues.
 
 **Archive Plan:**
 Use `archive-plan` tool with planPath. Stage and commit archive move: `git add "[plan]" "[archive]" && task(agent: "pragmatic-committer", prompt: "[SUBAGENT] Commit staged changes. Context: Plan '[Name]' completed and archived")`
@@ -251,6 +266,23 @@ Display one of the following based on outcome:
 ```
 ✅ All tasks completed successfully!
 Plan: [Name], Tasks: [N] completed, Commits: [N] made, Files: [N] modified
+Holistic Review: Passed on first attempt
+Archived to: .opencode/plans/archive/[plan]-[date].md
+```
+
+**Success Case (holistic review passed without code changes):**
+```
+✅ All tasks completed successfully!
+Plan: [Name], Tasks: [N] completed, Commits: [N] made, Files: [N] modified
+Holistic Review: Passed after [holistic_retry_count] iterations (no code changes required)
+Archived to: .opencode/plans/archive/[plan]-[date].md
+```
+
+**Success Case (holistic fixes applied):**
+```
+✅ All tasks completed successfully!
+Plan: [Name], Tasks: [N] completed, Commits: [N + 1] made ([N] task commits + 1 holistic fix), Files: [N] modified
+Holistic Review: Fixed [N] issues after [holistic_retry_count] iterations
 Archived to: .opencode/plans/archive/[plan]-[date].md
 ```
 
@@ -293,3 +325,7 @@ Next Steps:
 **Resume Capability:** Automatically resumes from tasks with `[~]` (in-progress) before any `[ ]` (pending) tasks.
 
 **Plan State Tracking:** Checkboxes track task state, git tracks code changes, one commit per task.
+
+**Empty Holistic Review Output:** If code-reviewer returns no Critical/High sections, skip improvement loop and proceed to archive.
+
+**Staged Changes from Previous Iteration:** If a previous iteration had staged changes that weren't committed, those changes remain staged when next iteration begins.
