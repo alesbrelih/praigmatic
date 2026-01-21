@@ -200,7 +200,7 @@ Display "🔄 Holistic improvement attempt [holistic_retry_count]/[max_holistic_
     - **Critical/high issues found**: If `holistic_retry_count >= max_holistic_retries`, exit loop → handle max retries. Otherwise, continue loop.
 
 **Commit Holistic Fixes (Success Path):**
-Commit fixes with: `task(agent: "pragmatic-committer", prompt: "[SUBAGENT] Commit staged changes. Context: Holistic review improvements for '[Plan Name]'. Files: [file list]")`
+Commit fixes with: `task(agent: "pragmatic-committer", prompt: "[SUBAGENT] Commit staged changes. Context: Fixed holistic review issues for plan '[Plan Name]'. Attempt [holistic_retry_count] of [max_holistic_retries]. Files: [file list]")`
 
 **Handle Max Retries Exceeded (Failure Path):**
 Add notes to plan using `plan-tasks` → `addNote`:
