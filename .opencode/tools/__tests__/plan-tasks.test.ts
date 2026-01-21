@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { readFile, writeFile, readdir, stat } from 'node:fs/promises';
 import planTasks from '../plan-tasks.js';
-import { parseTaskLine } from '../plan-tasks.js';
+import { parseTaskLine, updateTaskCheckbox, reconstructTaskLine } from '../plan-tasks.js';
 
 // Mock file system operations
 vi.mock('node:fs/promises', () => ({
@@ -1084,6 +1084,271 @@ More text
           taskIndex: 0,
         })
       ).rejects.toThrow();
+    });
+  });
+
+  describe('updateTaskCheckbox', () => {
+    describe('Checkbox updates with hyphen bullet', () => {
+      it('should update checkbox to in-progress with hyphen bullet', () => {
+        const result = updateTaskCheckbox("- [ ] Task", "in-progress");
+        expect(result).toBe("- [~] Task");
+      });
+
+      it('should update checkbox to completed with hyphen bullet', () => {
+        const result = updateTaskCheckbox("- [~] Task", "completed");
+        expect(result).toBe("- [x] Task");
+      });
+
+      it('should update checkbox to pending with hyphen bullet', () => {
+        const result = updateTaskCheckbox("- [x] Task", "pending");
+        expect(result).toBe("- [ ] Task");
+      });
+    });
+
+    describe('Checkbox updates with asterisk bullet', () => {
+      it('should update checkbox to in-progress with asterisk bullet', () => {
+        const result = updateTaskCheckbox("* [ ] Task", "in-progress");
+        expect(result).toBe("* [~] Task");
+      });
+
+      it('should update checkbox to completed with asterisk bullet', () => {
+        const result = updateTaskCheckbox("* [~] Task", "completed");
+        expect(result).toBe("* [x] Task");
+      });
+
+      it('should update checkbox to pending with asterisk bullet', () => {
+        const result = updateTaskCheckbox("* [x] Task", "pending");
+        expect(result).toBe("* [ ] Task");
+      });
+    });
+
+    describe('Checkbox updates with plus bullet', () => {
+      it('should update checkbox to in-progress with plus bullet', () => {
+        const result = updateTaskCheckbox("+ [ ] Task", "in-progress");
+        expect(result).toBe("+ [~] Task");
+      });
+
+      it('should update checkbox to completed with plus bullet', () => {
+        const result = updateTaskCheckbox("+ [~] Task", "completed");
+        expect(result).toBe("+ [x] Task");
+      });
+
+      it('should update checkbox to pending with plus bullet', () => {
+        const result = updateTaskCheckbox("+ [x] Task", "pending");
+        expect(result).toBe("+ [ ] Task");
+      });
+    });
+
+    describe('Indentation preservation', () => {
+      it('should preserve single-space indentation', () => {
+        const result = updateTaskCheckbox(" - [ ] Indented task", "in-progress");
+        expect(result).toBe(" - [~] Indented task");
+      });
+
+      it('should preserve two-space indentation', () => {
+        const result = updateTaskCheckbox("  - [ ] Indented task", "in-progress");
+        expect(result).toBe("  - [~] Indented task");
+      });
+
+      it('should preserve four-space indentation', () => {
+        const result = updateTaskCheckbox("    - [ ] Indented task", "in-progress");
+        expect(result).toBe("    - [~] Indented task");
+      });
+
+      it('should preserve tab indentation', () => {
+        const result = updateTaskCheckbox("\t- [ ] Indented task", "in-progress");
+        expect(result).toBe("\t- [~] Indented task");
+      });
+    });
+
+    describe('Content preservation', () => {
+      it('should preserve content with special characters', () => {
+        const result = updateTaskCheckbox("- [ ] Task with (3 points)", "completed");
+        expect(result).toBe("- [x] Task with (3 points)");
+      });
+
+      it('should preserve content with numbers', () => {
+        const result = updateTaskCheckbox("- [ ] Task version 2.0", "in-progress");
+        expect(result).toBe("- [~] Task version 2.0");
+      });
+
+      it('should preserve content with parentheses', () => {
+        const result = updateTaskCheckbox("- [ ] Task (priority: high)", "completed");
+        expect(result).toBe("- [x] Task (priority: high)");
+      });
+
+      it('should preserve content with multiple words', () => {
+        const result = updateTaskCheckbox("- [ ] Implement the feature completely", "in-progress");
+        expect(result).toBe("- [~] Implement the feature completely");
+      });
+    });
+
+    describe('Checkbox state transitions', () => {
+      it('should handle pending to in-progress transition', () => {
+        expect(updateTaskCheckbox("- [ ] Task", "in-progress")).toBe("- [~] Task");
+      });
+
+      it('should handle in-progress to completed transition', () => {
+        expect(updateTaskCheckbox("- [~] Task", "completed")).toBe("- [x] Task");
+      });
+
+      it('should handle completed to pending transition', () => {
+        expect(updateTaskCheckbox("- [x] Task", "pending")).toBe("- [ ] Task");
+      });
+
+      it('should handle direct pending to completed transition', () => {
+        expect(updateTaskCheckbox("- [ ] Task", "completed")).toBe("- [x] Task");
+      });
+
+      it('should handle direct completed to pending transition', () => {
+        expect(updateTaskCheckbox("- [x] Task", "pending")).toBe("- [ ] Task");
+      });
+
+      it('should handle uppercase [X] to lowercase [x]', () => {
+        expect(updateTaskCheckbox("- [X] Task", "pending")).toBe("- [ ] Task");
+      });
+    });
+
+    describe('Error handling', () => {
+      it('should return null for non-task lines', () => {
+        const result = updateTaskCheckbox("Not a task line", "in-progress");
+        expect(result).toBeNull();
+      });
+
+      it('should return null for empty string', () => {
+        const result = updateTaskCheckbox("", "in-progress");
+        expect(result).toBeNull();
+      });
+
+      it('should return null for plain text', () => {
+        const result = updateTaskCheckbox("# Header", "in-progress");
+        expect(result).toBeNull();
+      });
+
+      it('should return null for list without checkbox', () => {
+        const result = updateTaskCheckbox("- Just a list item", "in-progress");
+        expect(result).toBeNull();
+      });
+    });
+  });
+
+  describe('reconstructTaskLine', () => {
+    describe('Line reconstruction with different statuses', () => {
+      it('should reconstruct line with pending status', () => {
+        const result = reconstructTaskLine(
+          { indent: "  ", bullet: "-", content: "Task" },
+          "pending"
+        );
+        expect(result).toBe("  - [ ] Task");
+      });
+
+      it('should reconstruct line with in-progress status', () => {
+        const result = reconstructTaskLine(
+          { indent: "", bullet: "*", content: "Task" },
+          "in-progress"
+        );
+        expect(result).toBe("* [~] Task");
+      });
+
+      it('should reconstruct line with completed status', () => {
+        const result = reconstructTaskLine(
+          { indent: "    ", bullet: "+", content: "Task" },
+          "completed"
+        );
+        expect(result).toBe("    + [x] Task");
+      });
+    });
+
+    describe('Line reconstruction with different bullets', () => {
+      it('should reconstruct line with hyphen bullet', () => {
+        const result = reconstructTaskLine(
+          { indent: "", bullet: "-", content: "Task" },
+          "in-progress"
+        );
+        expect(result).toBe("- [~] Task");
+      });
+
+      it('should reconstruct line with asterisk bullet', () => {
+        const result = reconstructTaskLine(
+          { indent: "", bullet: "*", content: "Task" },
+          "in-progress"
+        );
+        expect(result).toBe("* [~] Task");
+      });
+
+      it('should reconstruct line with plus bullet', () => {
+        const result = reconstructTaskLine(
+          { indent: "", bullet: "+", content: "Task" },
+          "in-progress"
+        );
+        expect(result).toBe("+ [~] Task");
+      });
+    });
+
+    describe('Line reconstruction with content preservation', () => {
+      it('should reconstruct line with complex content', () => {
+        const result = reconstructTaskLine(
+          { indent: "", bullet: "-", content: "Implement feature (3 points)" },
+          "in-progress"
+        );
+        expect(result).toBe("- [~] Implement feature (3 points)");
+      });
+
+      it('should reconstruct line with special characters', () => {
+        const result = reconstructTaskLine(
+          { indent: "", bullet: "-", content: "Fix bug #123 (priority: high)" },
+          "completed"
+        );
+        expect(result).toBe("- [x] Fix bug #123 (priority: high)");
+      });
+
+      it('should reconstruct line with emoji', () => {
+        const result = reconstructTaskLine(
+          { indent: "", bullet: "-", content: "Add 🎉 celebration" },
+          "completed"
+        );
+        expect(result).toBe("- [x] Add 🎉 celebration");
+      });
+    });
+
+    describe('Line reconstruction with indentation', () => {
+      it('should reconstruct line with no indentation', () => {
+        const result = reconstructTaskLine(
+          { indent: "", bullet: "-", content: "Task" },
+          "pending"
+        );
+        expect(result).toBe("- [ ] Task");
+      });
+
+      it('should reconstruct line with spaces', () => {
+        const result = reconstructTaskLine(
+          { indent: "    ", bullet: "-", content: "Task" },
+          "pending"
+        );
+        expect(result).toBe("    - [ ] Task");
+      });
+
+      it('should reconstruct line with tabs', () => {
+        const result = reconstructTaskLine(
+          { indent: "\t\t", bullet: "-", content: "Task" },
+          "pending"
+        );
+        expect(result).toBe("\t\t- [ ] Task");
+      });
+    });
+
+    describe('Error handling', () => {
+      it('should throw error for invalid status', () => {
+        expect(() =>
+          reconstructTaskLine({ indent: "", bullet: "-", content: "Task" }, "invalid" as any)
+        ).toThrow("Invalid status: invalid");
+      });
+
+      it('should throw error with detailed message for invalid status', () => {
+        expect(() =>
+          reconstructTaskLine({ indent: "", bullet: "-", content: "Task" }, "unknown" as any)
+        ).toThrow("Must be one of: pending, in-progress, completed");
+      });
     });
   });
 });

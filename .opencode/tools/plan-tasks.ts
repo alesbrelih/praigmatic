@@ -250,6 +250,86 @@ function parseTaskLine(line: string): ParsedTaskLine | null {
 }
 
 /**
+ * Checkbox state mapping
+ * Maps status strings to their checkbox representations
+ */
+const CHECKBOX_MAP: Record<"pending" | "in-progress" | "completed", string> = {
+  "pending": "[ ]",
+  "in-progress": "[~]",
+  "completed": "[x]",
+};
+
+/**
+ * Reconstruct a task line from parsed components with a new checkbox state.
+ * Preserves all original formatting (indentation, bullet type, content).
+ *
+ * @param components - Parsed task line components
+ * @param newStatus - The new status for the checkbox ("pending", "in-progress", or "completed")
+ * @returns The reconstructed task line string
+ * @throws {Error} If newStatus is invalid
+ * @example
+ * reconstructTaskLine({ indent: "  ", bullet: "-", content: "Implement feature" }, "in-progress");
+ * // Returns: "  - [~] Implement feature"
+ */
+export function reconstructTaskLine(
+  components: Pick<ParsedTaskLine, "indent" | "bullet" | "content">,
+  newStatus: "pending" | "in-progress" | "completed"
+): string {
+  // Validate newStatus
+  if (!(newStatus in CHECKBOX_MAP)) {
+    throw new Error(`Invalid status: ${newStatus}. Must be one of: pending, in-progress, completed`);
+  }
+
+  const newCheckbox = CHECKBOX_MAP[newStatus];
+
+  // Reconstruct line: indent + " " + bullet + " " + newCheckbox + " " + content
+  return `${components.indent}${components.bullet} ${newCheckbox} ${components.content}`;
+}
+
+/**
+ * Update the checkbox state of a task line while preserving all formatting.
+ * Supports all checkbox transitions: pending → in-progress → completed
+ * Handles all bullet types: -, *, +
+ *
+ * @param line - The original task line to update
+ * @param newStatus - The new status for the checkbox ("pending", "in-progress", or "completed")
+ * @returns The updated task line, or null if the input line is invalid
+ * @example
+ * updateTaskCheckbox("  - [ ] Implement feature", "in-progress");
+ * // Returns: "  - [~] Implement feature"
+ *
+ * updateTaskCheckbox("  * [~] Test component", "completed");
+ * // Returns: "  * [x] Test component"
+ */
+export function updateTaskCheckbox(
+  line: string,
+  newStatus: "pending" | "in-progress" | "completed"
+): string | null {
+  // Parse the line to extract components
+  const parsed = parseTaskLine(line);
+
+  // Return null for invalid lines (not matching task pattern)
+  if (!parsed) {
+    return null;
+  }
+
+  // Reconstruct the line with the new checkbox state
+  try {
+    return reconstructTaskLine(
+      {
+        indent: parsed.indent,
+        bullet: parsed.bullet,
+        content: parsed.content,
+      },
+      newStatus
+    );
+  } catch (error) {
+    console.error('Failed to reconstruct task line:', error);
+    return null;
+  }
+}
+
+/**
  * Parse an entire plan file and extract all tasks
  * @param planPath - Path to the plan file
  * @returns Array of parsed task lines with their line indices
