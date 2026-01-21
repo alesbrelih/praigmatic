@@ -4,7 +4,7 @@ mode: all
 permission:
   edit: ask   # Allow editing plan files based on user feedback
   write: ask  # Allow writing plan files to .opencode/plans/
-  bash: deny
+  bash: ask
   webfetch: ask
   task:
     "*": deny
@@ -15,7 +15,7 @@ permission:
 tools:
   write: true   # Enable for plan file creation
   edit: true    # Enable for plan file editing based on feedback
-  bash: false
+  bash: true
   read: true
   grep: true
   glob: true

@@ -11,10 +11,10 @@ permission:
   task:
     "*": deny
     pragmatic-explorer: allow
-    pragmatic-brainstormer: ask
-    pragmatic-code-reviewer: deny  # Orchestration commands handle code review
-    pragmatic-committer: ask  # Orchestration commands handle commits
-    pragmatic-researcher: ask
+    pragmatic-brainstormer: allow
+    pragmatic-code-reviewer: allow  # Orchestration commands handle code review
+    pragmatic-committer: allow  # Orchestration commands handle commits
+    pragmatic-researcher: allow
     pragmatic-developer: allow
 tools:
   write: true

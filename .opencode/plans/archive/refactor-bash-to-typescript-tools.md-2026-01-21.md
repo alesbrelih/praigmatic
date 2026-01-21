@@ -66,7 +66,7 @@ Replace embedded bash code blocks in `pragmatic-implementation.md` with properly
   - Files: `.opencode/tools/validate-git-state.ts`
   - Dependencies: None
 
-- [ ] **Create archive-plan tool** (Small)
+- [x] **Create archive-plan tool** (Small)
   - Purpose: Replace bash plan archiving logic with a custom tool that moves plan files to archive directory with timestamp
   - Steps:
     - Create `.opencode/tools/archive-plan.ts` file
@@ -82,7 +82,7 @@ Replace embedded bash code blocks in `pragmatic-implementation.md` with properly
   - Files: `.opencode/tools/archive-plan.ts`
   - Dependencies: None
 
-- [ ] **Update pragmatic-implementation command** (Small)
+- [x] **Update pragmatic-implementation command** (Small)
   - Purpose: Replace bash code blocks with tool invocations while maintaining identical functionality
   - Steps:
     - Replace Step 1 bash block (lines 9-21) with reference to use find-plan tool
