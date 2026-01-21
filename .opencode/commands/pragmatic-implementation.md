@@ -150,27 +150,35 @@ Increment: `holistic_retry_count = holistic_retry_count + 1`
 
 Display "🔄 Holistic improvement attempt [holistic_retry_count]/[max_holistic_retries]..."
 
-1. **Re-invoke Developer with Holistic Feedback:**
-   Build retry prompt:
-   ```markdown
-    # Task Execution Request (HOLISTIC REVIEW RETRY - Attempt [holistic_retry_count] of [max_holistic_retries])
+ 1. **Re-invoke Developer with Holistic Feedback:**
+    Build retry prompt:
+    ```markdown
+     # Holistic Review Improvement Request (Attempt [holistic_retry_count] of [max_holistic_retries])
 
-   ## Task Information
-   **Task Name:** Holistic Improvement for [Plan Name]
-   **Purpose:** Fix critical/high issues found during holistic review
+    ## Plan Information
+    **Plan Name:** [from plan]
+    **Plan Purpose:** [from plan]
+    **Tasks Completed:** [count]
 
-   ## Holistic Review Feedback
-   **Status:** Holistic review identified critical/high issues that span multiple tasks/components.
+    ## Holistic Review Feedback
+    **Status:** Previous implementation has critical/high issues that must be fixed.
 
-   [Paste ENTIRE holistic code-reviewer output here]
+    [Paste ENTIRE code-reviewer output here]
 
-   ## Instructions
-   1. Review holistic feedback carefully
-   2. Identify which tasks/components need fixes based on the issues
-   3. Fix all critical/high priority issues
-   4. Stage additional changes
-   5. Return completion status with file list
-   ```
+    ## Implementation Context
+    [Relevant commits from git log]
+    [Task list from plan]
+
+    **Note:** Changes to address cross-cutting issues may span multiple tasks and files. Review all affected areas.
+
+    ## Instructions
+    1. Review holistic review feedback for critical/high issues
+    2. Fix cross-cutting architectural, integration, or security issues
+    3. Make incremental changes on staged changes (DO NOT start from scratch)
+    4. Ensure fixes don't break functionality from completed tasks
+    5. Stage additional changes
+    6. Return completion status with ✅, ❌, or ⚠️
+    ```
 
    Invoke developer: `task(agent: "pragmatic-developer", prompt: "[prompt above]")`
 
