@@ -95,7 +95,7 @@ fi
 # Load full plan content
 read(filePath: ".opencode/plans/feature-name.md")
 
-# Parse task format: `- [ ] **Task Name** (TTD) (SIZE)`
+# Parse task format: `- [ ] **Task Name** (SIZE)`
 ```
 
 ### Parse Tasks
@@ -106,13 +106,12 @@ Task format pattern: `- [ ] **Task Name** (METADATA)`
 # Extract task components:
 # - Status: `- [ ]` = pending, `- [x]` = completed
 # - Task name: Text between `**` markers
-# - TTD: `(TTD_REQUIRED)` or `(NO_TTD)`
 # - Size: `(Small)`, `(Medium)`, `(Large)`
 
 # Example tasks:
-- [ ] **Implement user authentication** (TTD_REQUIRED) (Medium)
-- [x] **Install dependencies** (NO_TTD) (Small)
-- [ ] **Add database migrations** (TTD_REQUIRED) (Large)
+- [ ] **Implement user authentication** (Medium)
+- [x] **Install dependencies** (Small)
+- [ ] **Add database migrations** (Large)
 ```
 
 ### Find Next Task
@@ -130,8 +129,8 @@ grep -n "^\- \[ \]" "$PLAN_FILE" | head -1
 # Use Edit tool to change checkbox from unchecked to checked
 edit(
   filePath: ".opencode/plans/feature-name.md",
-  oldString: "- [ ] **Task Name** (TTD_REQUIRED) (Medium)",
-  newString: "- [x] **Task Name** (TTD_REQUIRED) (Medium)"
+  oldString: "- [ ] **Task Name** (Medium)",
+  newString: "- [x] **Task Name** (Medium)"
 )
 
 # CRITICAL: Verify edit succeeded
@@ -164,8 +163,8 @@ mv "$PLAN_FILE" ".opencode/plans/archive/${PLAN_NAME}-${TIMESTAMP}.md"
 # Add sub-item under task for blocker
 edit(
   filePath: ".opencode/plans/feature-name.md",
-  oldString: "- [ ] **Task Name** (TTD_REQUIRED) (Medium)",
-  newString: "- [ ] **Task Name** (TTD_REQUIRED) (Medium)
+  oldString: "- [ ] **Task Name** (Medium)",
+  newString: "- [ ] **Task Name** (Medium)
   - ⚠️ BLOCKED: Missing dependency X"
 )
 ```
