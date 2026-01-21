@@ -114,22 +114,38 @@ interface PlanTask {
 }
 
 /**
+ * Helper function to wrap errors with context
+ * Provides consistent error handling across all operations
+ */
+function wrapError(error: unknown, context: string): Error {
+  const message = error instanceof Error ? error.message : String(error);
+  return new Error(`${context}: ${message}`);
+}
+
+/**
  * Parse task status from markdown checkbox pattern
  */
 function parseTaskStatus(line: string): TaskStatus | null {
-  const taskMatch = line.match(/^\s*-\s\[(x|X| )\]\s/);
+  const taskMatch = line.match(/^\s*-\s\[[xX~ ]\]\s/);
   if (!taskMatch) {
     return null;
   }
 
-  return taskMatch[1] === " " ? TaskStatus.TODO : TaskStatus.DONE;
+  const statusChar = taskMatch[1];
+  if (statusChar === " ") {
+    return TaskStatus.TODO;
+  } else if (statusChar === "~") {
+    return TaskStatus.IN_PROGRESS;
+  } else {
+    return TaskStatus.DONE;
+  }
 }
 
 /**
  * Extract task content from markdown line
  */
 function parseTaskContent(line: string): string {
-  const match = line.match(/^\s*-\s\[[xX ]\]\s*(.*)/);
+  const match = line.match(/^\s*-\s\[[xX~ ]\]\s*(.*)/);
   return match ? match[1].trim() : "";
 }
 
@@ -151,7 +167,7 @@ function extractTaskNote(line: string): string | undefined {
 /**
  * Get task status from a plan file
  */
-async function getTaskStatus(planPath: string, taskIndex: number): Promise<PlanTask | null> {
+async function getTaskStatus(planPath: string, taskIndex: number): Promise<PlanTask> {
   try {
     const content = await readFile(planPath, "utf-8");
     const lines = content.split("\n");
@@ -176,33 +192,93 @@ async function getTaskStatus(planPath: string, taskIndex: number): Promise<PlanT
       }
     }
 
-    return null;
+    throw new Error(`Task index ${taskIndex} not found in plan`);
   } catch (error) {
-    throw new Error(
-      `Failed to get task status: ${error instanceof Error ? error.message : String(error)}`
-    );
+    throw wrapError(error, "Failed to get task status");
+  }
+}
+
+/**
+ * Mark a task as in-progress
+ * @throws {Error} If task doesn't exist or is already in progress/done
+ */
+async function markInProgress(planPath: string, taskIndex: number): Promise<PlanTask> {
+  try {
+    const { writeFile } = await import("node:fs/promises");
+    const content = await readFile(planPath, "utf-8");
+    const lines = content.split("\n");
+
+    let taskCount = 0;
+    for (let i = 0; i < lines.length; i++) {
+      const status = parseTaskStatus(lines[i]);
+      if (status !== null) {
+        if (taskCount === taskIndex) {
+          // Check if task is already in progress or done
+          if (status === TaskStatus.IN_PROGRESS) {
+            throw new Error(`Task ${taskIndex} is already marked as in-progress`);
+          }
+          if (status === TaskStatus.DONE) {
+            throw new Error(`Cannot mark task ${taskIndex} as in-progress: it is already done`);
+          }
+
+          // Replace `- [ ]` with `- [~]` preserving indentation
+          const updatedLine = lines[i].replace(/^(\s*-\s\[)\s(\])/, "$1~$2");
+          lines[i] = updatedLine;
+
+          // Write the modified content back to the file
+          await writeFile(planPath, lines.join("\n"), "utf-8");
+
+          // Return the updated task information
+          const taskContent = parseTaskContent(lines[i]);
+          const note = hasTaskNote(lines[i]) ? extractTaskNote(lines[i]) : undefined;
+
+          return {
+            planPath,
+            lineIndex: i,
+            status: TaskStatus.IN_PROGRESS,
+            content: taskContent,
+            note,
+          };
+        }
+        taskCount++;
+      }
+    }
+
+    throw new Error(`Task index ${taskIndex} not found in plan`);
+  } catch (error) {
+    throw wrapError(error, "Failed to mark task as in-progress");
   }
 }
 
 export default tool({
-  description: "Get task status from plan files",
+  description: "Read or modify task status in plan files. Operations include getting task status or marking tasks as in-progress.",
   args: {
+    operation: tool.schema.enum(["getTaskStatus", "markInProgress"]).describe("Operation to perform on the task"),
     planName: tool.schema.string().optional().describe("Plan file name (without .opencode/plans/ prefix). If not provided, uses the most recent plan file."),
     taskIndex: tool.schema.number().describe("Zero-based index of the task within the plan"),
   },
-  async execute({ planName, taskIndex }) {
+  async execute({ operation, planName, taskIndex }) {
     // Validate inputs
     validateTaskIndex(taskIndex);
 
     // Resolve and validate plan path
     const planPath = await validateAndResolvePlanPath(planName);
 
-    // Get task status
-    const task = await getTaskStatus(planPath, taskIndex);
-    if (!task) {
-      throw new Error(`Task index ${taskIndex} not found in plan`);
-    }
+    // Execute the requested operation
+    switch (operation) {
+      case "getTaskStatus": {
+        const task = await getTaskStatus(planPath, taskIndex);
+        return JSON.stringify(task, null, 2);
+      }
 
-    return JSON.stringify(task, null, 2);
+      case "markInProgress": {
+        const task = await markInProgress(planPath, taskIndex);
+        return JSON.stringify(task, null, 2);
+      }
+
+      default:
+        // TypeScript should prevent this, but for runtime safety
+        throw new Error(`Unknown operation: ${operation}`);
+    }
   },
 });
