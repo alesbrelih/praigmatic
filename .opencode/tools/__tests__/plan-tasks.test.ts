@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { readFile, writeFile, readdir, stat } from 'node:fs/promises';
 import planTasks from '../plan-tasks.js';
+import { parseTaskLine } from '../plan-tasks.js';
 
 // Mock file system operations
 vi.mock('node:fs/promises', () => ({
@@ -658,6 +659,228 @@ More text
       const task = JSON.parse(result);
       expect(task.status).toBe('TODO');
       expect(task.content).toBe('Only task');
+    });
+  });
+
+  describe('Task finding helper functions', () => {
+    const mockTasks: Array<ReturnType<typeof parseTaskLine> & { lineIndex: number }> = [
+      {
+        indent: '',
+        bullet: '-',
+        checkbox: '[ ]',
+        content: 'First task',
+        taskName: 'First task',
+        size: null,
+        status: 'pending',
+        lineIndex: 0,
+      },
+      {
+        indent: '',
+        bullet: '-',
+        checkbox: '[ ]',
+        content: 'Second task',
+        taskName: 'Second task',
+        size: null,
+        status: 'pending',
+        lineIndex: 1,
+      },
+      {
+        indent: '',
+        bullet: '-',
+        checkbox: '[~]',
+        content: 'Third task in progress',
+        taskName: 'Third task in progress',
+        size: null,
+        status: 'in-progress',
+        lineIndex: 2,
+      },
+      {
+        indent: '',
+        bullet: '-',
+        checkbox: '[x]',
+        content: 'Fourth task completed',
+        taskName: 'Fourth task completed',
+        size: null,
+        status: 'completed',
+        lineIndex: 3,
+      },
+    ];
+
+    describe('findTaskIndex', () => {
+      it('should find task by exact name match', async () => {
+        const { findTaskIndex } = await import('../plan-tasks.js');
+        const index = findTaskIndex('Second task', mockTasks);
+        expect(index).toBe(1);
+      });
+
+      it('should return -1 if task not found', async () => {
+        const { findTaskIndex } = await import('../plan-tasks.js');
+        const index = findTaskIndex('Nonexistent task', mockTasks);
+        expect(index).toBe(-1);
+      });
+
+      it('should handle case-insensitive matching', async () => {
+        const { findTaskIndex } = await import('../plan-tasks.js');
+        const index = findTaskIndex('SECOND TASK', mockTasks);
+        expect(index).toBe(1);
+      });
+
+      it('should normalize whitespace in comparison', async () => {
+        const { findTaskIndex } = await import('../plan-tasks.js');
+        const index = findTaskIndex('  Second task  ', mockTasks);
+        expect(index).toBe(1);
+      });
+
+      it('should return first match for multiple similar names', async () => {
+        const { findTaskIndex } = await import('../plan-tasks.js');
+        const tasksWithDuplicates = [
+          ...mockTasks,
+          {
+            indent: '',
+            bullet: '-',
+            checkbox: '[ ]',
+            content: 'Second task (duplicate)',
+            taskName: 'Second task',
+            size: null,
+            status: 'pending',
+            lineIndex: 4,
+          },
+        ];
+        const index = findTaskIndex('Second task', tasksWithDuplicates);
+        expect(index).toBe(1); // Should return first match
+      });
+
+      it('should not match substrings', async () => {
+        const { findTaskIndex } = await import('../plan-tasks.js');
+        const index = findTaskIndex('Second', mockTasks);
+        expect(index).toBe(-1); // Should not match partial name
+      });
+
+      it('should handle empty task name', async () => {
+        const { findTaskIndex } = await import('../plan-tasks.js');
+        const index = findTaskIndex('', mockTasks);
+        expect(index).toBe(-1);
+      });
+
+      it('should handle tasks with size annotations', async () => {
+        const tasksWithSize = [
+          {
+            indent: '',
+            bullet: '-',
+            checkbox: '[ ]',
+            content: 'Task with size (3 points)',
+            taskName: 'Task with size',
+            size: '(3 points)',
+            status: 'pending' as const,
+            lineIndex: 0,
+          },
+        ];
+        const { findTaskIndex } = await import('../plan-tasks.js');
+        const index = findTaskIndex('Task with size', tasksWithSize);
+        expect(index).toBe(0);
+      });
+    });
+
+    describe('findNextPendingTask', () => {
+      it('should find first pending task', async () => {
+        const { findNextPendingTask } = await import('../plan-tasks.js');
+        const task = findNextPendingTask(mockTasks);
+        expect(task).not.toBeNull();
+        expect(task?.taskName).toBe('First task');
+        expect(task?.status).toBe('pending');
+      });
+
+      it('should find first pending task after completed tasks', async () => {
+        const tasksWithCompletedFirst: Array<ReturnType<typeof parseTaskLine> & { lineIndex: number }> = [
+          {
+            indent: '',
+            bullet: '-',
+            checkbox: '[x]',
+            content: 'Completed task',
+            taskName: 'Completed task',
+            size: null,
+            status: 'completed',
+            lineIndex: 0,
+          },
+          {
+            indent: '',
+            bullet: '-',
+            checkbox: '[ ]',
+            content: 'Pending task',
+            taskName: 'Pending task',
+            size: null,
+            status: 'pending',
+            lineIndex: 1,
+          },
+        ];
+        const { findNextPendingTask } = await import('../plan-tasks.js');
+        const task = findNextPendingTask(tasksWithCompletedFirst);
+        expect(task?.taskName).toBe('Pending task');
+      });
+
+      it('should return null if no pending tasks', async () => {
+        const { findNextPendingTask } = await import('../plan-tasks.js');
+        const allCompletedTasks = mockTasks.filter(t => t.status !== 'pending');
+        const task = findNextPendingTask(allCompletedTasks);
+        expect(task).toBeNull();
+      });
+
+      it('should return null for empty tasks array', async () => {
+        const { findNextPendingTask } = await import('../plan-tasks.js');
+        const task = findNextPendingTask([]);
+        expect(task).toBeNull();
+      });
+    });
+
+    describe('findInProgressTask', () => {
+      it('should find first in-progress task', async () => {
+        const { findInProgressTask } = await import('../plan-tasks.js');
+        const task = findInProgressTask(mockTasks);
+        expect(task).not.toBeNull();
+        expect(task?.taskName).toBe('Third task in progress');
+        expect(task?.status).toBe('in-progress');
+      });
+
+      it('should find in-progress task after pending tasks', async () => {
+        const tasksWithPendingFirst: Array<ReturnType<typeof parseTaskLine> & { lineIndex: number }> = [
+          {
+            indent: '',
+            bullet: '-',
+            checkbox: '[ ]',
+            content: 'Pending task',
+            taskName: 'Pending task',
+            size: null,
+            status: 'pending',
+            lineIndex: 0,
+          },
+          {
+            indent: '',
+            bullet: '-',
+            checkbox: '[~]',
+            content: 'In-progress task',
+            taskName: 'In-progress task',
+            size: null,
+            status: 'in-progress',
+            lineIndex: 1,
+          },
+        ];
+        const { findInProgressTask } = await import('../plan-tasks.js');
+        const task = findInProgressTask(tasksWithPendingFirst);
+        expect(task?.taskName).toBe('In-progress task');
+      });
+
+      it('should return null if no in-progress tasks', async () => {
+        const { findInProgressTask } = await import('../plan-tasks.js');
+        const noInProgressTasks = mockTasks.filter(t => t.status !== 'in-progress');
+        const task = findInProgressTask(noInProgressTasks);
+        expect(task).toBeNull();
+      });
+
+      it('should return null for empty tasks array', async () => {
+        const { findInProgressTask } = await import('../plan-tasks.js');
+        const task = findInProgressTask([]);
+        expect(task).toBeNull();
+      });
     });
   });
 

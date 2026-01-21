@@ -284,6 +284,90 @@ async function parsePlanFile(planPath: string): Promise<Array<ParsedTaskLine & {
 }
 
 /**
+ * Find task index by exact name match (not substring).
+ * Performs case-insensitive matching and normalizes whitespace.
+ *
+ * @param taskName - The task name to search for (trimmed before comparison)
+ * @param tasks - Array of parsed task lines with line indices
+ * @returns Line index of the task, or -1 if not found
+ */
+export function findTaskIndex(
+  taskName: string,
+  tasks: Array<ParsedTaskLine & { lineIndex: number }>
+): number {
+  // Validate input
+  if (typeof taskName !== "string" || !Array.isArray(tasks)) {
+    return -1;
+  }
+
+  // Normalize the search task name (trim and lowercase)
+  const normalizedName = taskName.trim().toLowerCase();
+
+  // Handle empty task name
+  if (normalizedName.length === 0) {
+    return -1;
+  }
+
+  // Search for exact match (not substring)
+  for (let i = 0; i < tasks.length; i++) {
+    const task = tasks[i];
+    const normalizedTaskName = task.taskName.toLowerCase();
+    if (normalizedTaskName === normalizedName) {
+      return task.lineIndex;
+    }
+  }
+
+  return -1;
+}
+
+/**
+ * Find the first pending task (status: "pending").
+ * Scans from the beginning of the tasks array.
+ *
+ * @param tasks - Array of parsed task lines with line indices
+ * @returns First pending task object or null if none found
+ */
+export function findNextPendingTask(
+  tasks: Array<ParsedTaskLine & { lineIndex: number }>
+): (ParsedTaskLine & { lineIndex: number }) | null {
+  if (!Array.isArray(tasks)) {
+    return null;
+  }
+
+  for (const task of tasks) {
+    if (task.status === "pending") {
+      return task;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Find the first in-progress task (status: "in-progress").
+ * Enables resume capability for interrupted work.
+ * Scans from the beginning of the tasks array.
+ *
+ * @param tasks - Array of parsed task lines with line indices
+ * @returns First in-progress task object or null if none found
+ */
+export function findInProgressTask(
+  tasks: Array<ParsedTaskLine & { lineIndex: number }>
+): (ParsedTaskLine & { lineIndex: number }) | null {
+  if (!Array.isArray(tasks)) {
+    return null;
+  }
+
+  for (const task of tasks) {
+    if (task.status === "in-progress") {
+      return task;
+    }
+  }
+
+  return null;
+}
+
+/**
  * Parse task status from markdown checkbox pattern.
  * Lightweight function for dash-only tasks, returns TaskStatus enum values.
  * For comprehensive parsing (multiple bullets, size extraction), use parseTaskLine().
