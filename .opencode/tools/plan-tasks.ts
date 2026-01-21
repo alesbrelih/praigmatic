@@ -495,9 +495,9 @@ function extractTaskNote(line: string): string | undefined {
 }
 
 /**
- * Get task status from a plan file
+ * Get status of a single task from a plan file
  */
-async function getTaskStatus(planPath: string, taskIndex: number): Promise<PlanTask> {
+async function getSingleTaskStatus(planPath: string, taskIndex: number): Promise<PlanTask> {
   try {
     const content = await readFile(planPath, "utf-8");
     const lines = content.split("\n");
@@ -692,17 +692,57 @@ async function addNote(planPath: string, taskIndex: number, note: string): Promi
   }
 }
 
+/**
+ * Get status of all tasks from a plan file
+ * @param planPath - Path to the plan file
+ * @returns Object containing plan path and array of all tasks with their status
+ * @throws {Error} If file cannot be read or parsed
+ */
+async function getAllTaskStatus(
+  planPath: string
+): Promise<{
+  planPath: string;
+  tasks: Array<{
+    lineIndex: number;
+    status: "pending" | "in-progress" | "completed";
+    content: string;
+    taskName: string;
+    size: string | null;
+  }>;
+}> {
+  try {
+    // Parse the plan file to get all tasks
+    const tasks = await parsePlanFile(planPath);
+
+    // Return structured response with all tasks
+    return {
+      planPath,
+      tasks: tasks.map((task) => ({
+        lineIndex: task.lineIndex,
+        status: task.status,
+        content: task.content,
+        taskName: task.taskName,
+        size: task.size,
+      })),
+    };
+  } catch (error) {
+    throw wrapError(error, "Failed to get all task statuses");
+  }
+}
+
 export default tool({
-  description: "Read or modify task status in plan files. Operations include getting task status, marking tasks as in-progress, marking tasks as completed, or adding notes to tasks.",
+  description: "Read or modify task status in plan files. Operations include getting all task statuses, getting a single task status, marking tasks as in-progress, marking tasks as completed, or adding notes to tasks.",
   args: {
-    operation: tool.schema.enum(["getTaskStatus", "markInProgress", "markCompleted", "addNote"]).describe("Operation to perform on the task"),
+    operation: tool.schema.enum(["getAllTaskStatus", "getTaskStatus", "markInProgress", "markCompleted", "addNote"]).describe("Operation to perform on the task"),
     planName: tool.schema.string().optional().describe("Plan file name (without .opencode/plans/ prefix). If not provided, uses the most recent plan file."),
-    taskIndex: tool.schema.number().describe("Zero-based index of the task within the plan"),
+    taskIndex: tool.schema.number().describe("Zero-based index of the task within the plan (required for getTaskStatus, markInProgress, markCompleted, and addNote operations)"),
     note: tool.schema.string().optional().describe("Note text (required for addNote operation). Maximum 2000 characters."),
   },
   async execute({ operation, planName, taskIndex, note }) {
-    // Validate inputs
-    validateTaskIndex(taskIndex);
+    // Validate taskIndex for operations that require it
+    if (operation !== "getAllTaskStatus") {
+      validateTaskIndex(taskIndex);
+    }
 
     // Validate note for addNote operation
     if (operation === "addNote") {
@@ -717,8 +757,13 @@ export default tool({
 
     // Execute the requested operation
     switch (operation) {
+      case "getAllTaskStatus": {
+        const result = await getAllTaskStatus(planPath);
+        return JSON.stringify(result, null, 2);
+      }
+
       case "getTaskStatus": {
-        const task = await getTaskStatus(planPath, taskIndex);
+        const task = await getSingleTaskStatus(planPath, taskIndex);
         return JSON.stringify(task, null, 2);
       }
 

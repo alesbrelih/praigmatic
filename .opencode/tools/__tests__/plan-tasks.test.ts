@@ -1232,6 +1232,278 @@ More text
     });
   });
 
+  describe('getAllTaskStatus operation', () => {
+    it('should successfully retrieve all task statuses', async () => {
+      vi.mocked(readFile).mockResolvedValue(mockPlanContent);
+      vi.mocked(stat).mockResolvedValue({ mtimeMs: 1000 } as any);
+
+      const result = await planTasks.execute({
+        operation: 'getAllTaskStatus',
+        planName: 'test-plan.md',
+      });
+
+      const data = JSON.parse(result);
+      expect(data.planPath).toContain('test-plan.md');
+      expect(data.tasks).toHaveLength(7);
+      expect(data.tasks[0].status).toBe('pending');
+      expect(data.tasks[2].status).toBe('in-progress');
+      expect(data.tasks[3].status).toBe('completed');
+      expect(data.tasks[0]).toHaveProperty('taskName');
+      expect(data.tasks[0]).toHaveProperty('size');
+      expect(data.tasks[0]).toHaveProperty('lineIndex');
+    });
+
+    it('should not require taskIndex parameter', async () => {
+      vi.mocked(readFile).mockResolvedValue(mockPlanContent);
+      vi.mocked(stat).mockResolvedValue({ mtimeMs: 1000 } as any);
+
+      const result = await planTasks.execute({
+        operation: 'getAllTaskStatus',
+        planName: 'test-plan.md',
+      });
+
+      const data = JSON.parse(result);
+      expect(data.tasks).toBeDefined();
+      expect(data.tasks).toHaveLength(7);
+    });
+
+    it('should throw error for invalid plan file', async () => {
+      vi.mocked(stat).mockRejectedValue(new Error('File not found'));
+
+      await expect(
+        planTasks.execute({
+          operation: 'getAllTaskStatus',
+          planName: 'nonexistent.md',
+        })
+      ).rejects.toThrow('Plan file not found');
+    });
+
+    it('should extract size information from tasks', async () => {
+      const contentWithSize = `
+# Plan
+
+- [ ] Task one (1 point)
+- [ ] Task two (3 points)
+- [x] Task three (5 points)
+`;
+      vi.mocked(readFile).mockResolvedValue(contentWithSize);
+      vi.mocked(stat).mockResolvedValue({ mtimeMs: 1000 } as any);
+
+      const result = await planTasks.execute({
+        operation: 'getAllTaskStatus',
+        planName: 'test.md',
+      });
+
+      const data = JSON.parse(result);
+      expect(data.tasks[0].size).toBe('(1 point)');
+      expect(data.tasks[1].size).toBe('(3 points)');
+      expect(data.tasks[2].size).toBe('(5 points)');
+    });
+
+    it('should handle tasks with different bullet types', async () => {
+      const contentWithDifferentBullets = `
+# Plan
+
+- [ ] Task with dash
+* [ ] Task with asterisk
++ [ ] Task with plus
+`;
+      vi.mocked(readFile).mockResolvedValue(contentWithDifferentBullets);
+      vi.mocked(stat).mockResolvedValue({ mtimeMs: 1000 } as any);
+
+      const result = await planTasks.execute({
+        operation: 'getAllTaskStatus',
+        planName: 'test.md',
+      });
+
+      const data = JSON.parse(result);
+      expect(data.tasks).toHaveLength(3);
+      expect(data.tasks[0].status).toBe('pending');
+      expect(data.tasks[1].status).toBe('pending');
+      expect(data.tasks[2].status).toBe('pending');
+    });
+
+    it('should handle tasks with indentation', async () => {
+      const indentedContent = `
+# Plan
+
+  - [ ] Indented task
+    - [ ] Nested task
+- [ ] Normal task
+`;
+      vi.mocked(readFile).mockResolvedValue(indentedContent);
+      vi.mocked(stat).mockResolvedValue({ mtimeMs: 1000 } as any);
+
+      const result = await planTasks.execute({
+        operation: 'getAllTaskStatus',
+        planName: 'test.md',
+      });
+
+      const data = JSON.parse(result);
+      expect(data.tasks).toHaveLength(3);
+      expect(data.tasks[0].lineIndex).toBeGreaterThanOrEqual(0);
+      expect(data.tasks[1].lineIndex).toBeGreaterThanOrEqual(0);
+      expect(data.tasks[2].lineIndex).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should return correct task names with size removed', async () => {
+      const contentWithSize = `
+# Plan
+
+- [ ] Implement feature (3 points)
+- [x] Write tests (5 points)
+`;
+      vi.mocked(readFile).mockResolvedValue(contentWithSize);
+      vi.mocked(stat).mockResolvedValue({ mtimeMs: 1000 } as any);
+
+      const result = await planTasks.execute({
+        operation: 'getAllTaskStatus',
+        planName: 'test.md',
+      });
+
+      const data = JSON.parse(result);
+      expect(data.tasks[0].taskName).toBe('Implement feature');
+      expect(data.tasks[0].size).toBe('(3 points)');
+      expect(data.tasks[1].taskName).toBe('Write tests');
+      expect(data.tasks[1].size).toBe('(5 points)');
+    });
+
+    it('should handle tasks without size annotations', async () => {
+      const contentWithoutSize = `
+# Plan
+
+- [ ] Simple task
+- [ ] Another task
+`;
+      vi.mocked(readFile).mockResolvedValue(contentWithoutSize);
+      vi.mocked(stat).mockResolvedValue({ mtimeMs: 1000 } as any);
+
+      const result = await planTasks.execute({
+        operation: 'getAllTaskStatus',
+        planName: 'test.md',
+      });
+
+      const data = JSON.parse(result);
+      expect(data.tasks[0].size).toBeNull();
+      expect(data.tasks[1].size).toBeNull();
+    });
+
+    it('should use most recent plan when no plan name provided', async () => {
+      vi.mocked(readdir).mockResolvedValue([
+        'plan1.md',
+        'plan2.md',
+        'README.md',
+      ]);
+      vi.mocked(stat)
+        .mockResolvedValueOnce({ mtimeMs: 1000 } as any)
+        .mockResolvedValueOnce({ mtimeMs: 2000 } as any)
+        .mockResolvedValueOnce({ mtimeMs: 2000 } as any);
+      vi.mocked(readFile).mockResolvedValue(mockPlanContent);
+
+      const result = await planTasks.execute({
+        operation: 'getAllTaskStatus',
+      });
+
+      const data = JSON.parse(result);
+      expect(data.planPath).toContain('plan2.md');
+      expect(data.tasks).toBeDefined();
+    });
+
+    it('should handle empty plan file', async () => {
+      vi.mocked(readFile).mockResolvedValue('');
+      vi.mocked(stat).mockResolvedValue({ mtimeMs: 1000 } as any);
+
+      const result = await planTasks.execute({
+        operation: 'getAllTaskStatus',
+        planName: 'empty.md',
+      });
+
+      const data = JSON.parse(result);
+      expect(data.tasks).toHaveLength(0);
+    });
+
+    it('should ignore non-task lines', async () => {
+      const mixedContent = `# Header
+
+Some description text
+
+- [ ] First task
+
+## Section
+
+More text
+
+- [x] Second task
+
+- [~] Third task
+`;
+      vi.mocked(readFile).mockResolvedValue(mixedContent);
+      vi.mocked(stat).mockResolvedValue({ mtimeMs: 1000 } as any);
+
+      const result = await planTasks.execute({
+        operation: 'getAllTaskStatus',
+        planName: 'test.md',
+      });
+
+      const data = JSON.parse(result);
+      expect(data.tasks).toHaveLength(3);
+      expect(data.tasks[0].status).toBe('pending');
+      expect(data.tasks[1].status).toBe('completed');
+      expect(data.tasks[2].status).toBe('in-progress');
+    });
+
+    it('should handle mixed status tasks', async () => {
+      vi.mocked(readFile).mockResolvedValue(mockPlanContent);
+      vi.mocked(stat).mockResolvedValue({ mtimeMs: 1000 } as any);
+
+      const result = await planTasks.execute({
+        operation: 'getAllTaskStatus',
+        planName: 'test.md',
+      });
+
+      const data = JSON.parse(result);
+      const pendingTasks = data.tasks.filter((t: any) => t.status === 'pending');
+      const inProgressTasks = data.tasks.filter((t: any) => t.status === 'in-progress');
+      const completedTasks = data.tasks.filter((t: any) => t.status === 'completed');
+
+      expect(pendingTasks.length).toBeGreaterThan(0);
+      expect(inProgressTasks.length).toBe(1);
+      expect(completedTasks.length).toBe(2);
+    });
+
+    it('should handle uppercase X in completed tasks', async () => {
+      const contentWithUppercase = `
+# Plan
+
+- [x] Lowercase x
+- [X] Uppercase X
+`;
+      vi.mocked(readFile).mockResolvedValue(contentWithUppercase);
+      vi.mocked(stat).mockResolvedValue({ mtimeMs: 1000 } as any);
+
+      const result = await planTasks.execute({
+        operation: 'getAllTaskStatus',
+        planName: 'test.md',
+      });
+
+      const data = JSON.parse(result);
+      expect(data.tasks[0].status).toBe('completed');
+      expect(data.tasks[1].status).toBe('completed');
+    });
+
+    it('should handle file read errors gracefully', async () => {
+      vi.mocked(readFile).mockRejectedValue(new Error('Read error'));
+      vi.mocked(stat).mockResolvedValue({ mtimeMs: 1000 } as any);
+
+      await expect(
+        planTasks.execute({
+          operation: 'getAllTaskStatus',
+          planName: 'test.md',
+        })
+      ).rejects.toThrow('Failed to get all task statuses');
+    });
+  });
+
   describe('reconstructTaskLine', () => {
     describe('Line reconstruction with different statuses', () => {
       it('should reconstruct line with pending status', () => {
