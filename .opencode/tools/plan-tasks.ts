@@ -93,6 +93,26 @@ function validateTaskIndex(index: number): void {
 }
 
 /**
+ * Validate note content
+ * @param note - The note text to validate
+ * @throws {Error} If the note is invalid
+ */
+function validateNote(note: string): void {
+  const trimmed = note.trim();
+
+  if (trimmed.length === 0) {
+    throw new Error("Invalid note: note cannot be empty");
+  }
+
+  if (trimmed.length > 2000) {
+    throw new Error("Invalid note: note exceeds maximum length of 2000 characters");
+  }
+
+  // Basic sanitization: remove leading/trailing whitespace for storage
+  // We keep the trimmed version
+}
+
+/**
  * Parsed task line information
  */
 interface TaskLine {
@@ -111,6 +131,17 @@ interface PlanTask {
   status: TaskStatus;
   content: string;
   note?: string;
+}
+
+/**
+ * Result of adding a note to a task
+ */
+interface AddNoteResult {
+  planPath: string;
+  taskIndex: number;
+  taskLineIndex: number;
+  addedNote: string;
+  noteIndentation: string;
 }
 
 /**
@@ -299,16 +330,88 @@ async function markCompleted(planPath: string, taskIndex: number): Promise<PlanT
   }
 }
 
+/**
+ * Add a note to a task as a nested sub-item
+ * @throws {Error} If task doesn't exist
+ */
+async function addNote(planPath: string, taskIndex: number, note: string): Promise<AddNoteResult> {
+  try {
+    // Validate the note
+    validateNote(note);
+    const trimmedNote = note.trim();
+
+    const { writeFile } = await import("node:fs/promises");
+    const content = await readFile(planPath, "utf-8");
+    // Detect line endings to preserve them (CRLF or LF)
+    const lineEnding = content.includes("\r\n") ? "\r\n" : "\n";
+    const lines = content.split(lineEnding);
+
+    let taskCount = 0;
+    let taskLineIndex = -1;
+    let taskIndentation = "";
+
+    // First pass: find the task and determine its indentation
+    for (let i = 0; i < lines.length; i++) {
+      const status = parseTaskStatus(lines[i]);
+      if (status !== null) {
+        if (taskCount === taskIndex) {
+          taskLineIndex = i;
+          // Extract indentation (leading whitespace before the dash)
+          const indentMatch = lines[i].match(/^(\s*)/);
+          taskIndentation = indentMatch ? indentMatch[1] : "";
+          break;
+        }
+        taskCount++;
+      }
+    }
+
+    if (taskLineIndex === -1) {
+      throw new Error(`Task index ${taskIndex} not found in plan`);
+    }
+
+    // Calculate indentation for the note (one level deeper than the task)
+    // We add two more spaces for the nested level
+    const noteIndentation = taskIndentation + "  ";
+    const noteLine = `${noteIndentation}- ⚠️ NOTE: ${trimmedNote}`;
+
+    // Insert the note line after the task line
+    lines.splice(taskLineIndex + 1, 0, noteLine);
+
+    // Write the modified content back to the file, preserving original line endings
+    await writeFile(planPath, lines.join(lineEnding), "utf-8");
+
+    // Return the result of the addNote operation
+    return {
+      planPath,
+      taskIndex,
+      taskLineIndex,
+      addedNote: trimmedNote,
+      noteIndentation,
+    };
+  } catch (error) {
+    throw wrapError(error, "Failed to add note to task");
+  }
+}
+
 export default tool({
-  description: "Read or modify task status in plan files. Operations include getting task status, marking tasks as in-progress, or marking tasks as completed.",
+  description: "Read or modify task status in plan files. Operations include getting task status, marking tasks as in-progress, marking tasks as completed, or adding notes to tasks.",
   args: {
-    operation: tool.schema.enum(["getTaskStatus", "markInProgress", "markCompleted"]).describe("Operation to perform on the task"),
+    operation: tool.schema.enum(["getTaskStatus", "markInProgress", "markCompleted", "addNote"]).describe("Operation to perform on the task"),
     planName: tool.schema.string().optional().describe("Plan file name (without .opencode/plans/ prefix). If not provided, uses the most recent plan file."),
     taskIndex: tool.schema.number().describe("Zero-based index of the task within the plan"),
+    note: tool.schema.string().optional().describe("Note text (required for addNote operation). Maximum 2000 characters."),
   },
-  async execute({ operation, planName, taskIndex }) {
+  async execute({ operation, planName, taskIndex, note }) {
     // Validate inputs
     validateTaskIndex(taskIndex);
+
+    // Validate note for addNote operation
+    if (operation === "addNote") {
+      if (!note) {
+        throw new Error("Note is required for addNote operation");
+      }
+      validateNote(note);
+    }
 
     // Resolve and validate plan path
     const planPath = await validateAndResolvePlanPath(planName);
@@ -328,6 +431,11 @@ export default tool({
       case "markCompleted": {
         const task = await markCompleted(planPath, taskIndex);
         return JSON.stringify(task, null, 2);
+      }
+
+      case "addNote": {
+        const result = await addNote(planPath, taskIndex, note!);
+        return JSON.stringify(result, null, 2);
       }
 
       default:
