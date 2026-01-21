@@ -14,12 +14,13 @@ export default tool({
       await access(args.planPath, constants.R_OK);
 
       // Extract the basename from the plan path using Node.js path utilities
-      const sourceBasename = basename(args.planPath);
+      // Remove .md extension to prevent double extension (e.g., plan.md-2026-01-21.md)
+      const sourceBasename = basename(args.planPath, '.md');
 
       // Generate timestamp for the archive file using JavaScript Date API
       const timestamp = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
-      // Generate new archive filename
+      // Generate new archive filename with timestamp before .md extension
       const archiveFilename = `${sourceBasename}-${timestamp}.md`;
       const archivePath = `.opencode/plans/archive/${archiveFilename}`;
 

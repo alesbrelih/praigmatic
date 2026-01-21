@@ -6,32 +6,48 @@ Load plan file and begin plan-driven implementation:
 
 ## Step 1: Find Plan File
 
-```bash
-if [ -n "$1" ]; then
-  PLAN_FILE=".opencode/plans/$1"
-else
-  PLAN_FILE=$(ls -t .opencode/plans/*.md 2>/dev/null | grep -v README | head -1)
-fi
+The **find-plan** tool locates the most recent plan file in `.opencode/plans/`.
 
-if [ -z "$PLAN_FILE" ] || [ ! -f "$PLAN_FILE" ]; then
-  echo "❌ No plan file found. Usage: /pragmatic-implementation [plan-file.md]"
-  exit 1
-fi
-echo "📋 Found plan: $PLAN_FILE"
-```
+**Usage:**
+- Call the tool with no arguments to automatically find the most recent plan file
+- Or provide `planName` argument to get a specific plan (e.g., `example-plan.md`)
+
+**Returns:**
+- File path to plan on success (e.g., `.opencode/plans/example-plan.md`)
+- Error string prefixed with "Error:" if no plans found or specified plan doesn't exist
+
+**Error handling:**
+Check if the returned string starts with "Error:":
+- If it does (error detected):
+  1. Display "❌ No plan file found. Usage: /pragmatic-implementation [plan-file.md]"
+  2. Display the error message from the tool
+  3. Exit workflow execution
+- If it doesn't (success): Proceed to next step with the returned plan path
 
 ## Step 2: Pre-flight Validation
 
-```bash
-if ! git diff-index --quiet HEAD --; then
-  echo "⚠️  WARNING: Uncommitted changes detected"
-  git status --short
-  echo "Recommended: Commit or stash changes first"
-  read -p "Continue anyway? (y/N): " confirm
-  [ "$confirm" != "y" ] && [ "$confirm" != "Y" ] && exit 1
-fi
-echo "✅ Pre-flight checks passed"
-```
+The **validate-git-state** tool checks for uncommitted changes in the repository.
+
+**Usage:**
+- Call the tool with no arguments to check for uncommitted changes
+- Or provide `allowUncommitted: true` to skip the check
+
+**Returns:**
+- JSON string that must be parsed: `"{ \"valid\": boolean, \"message\": string, \"files\": string[] }"`
+  - `valid`: `true` if git state is clean, `false` if uncommitted changes exist
+  - `message`: Human-readable status message
+  - `files`: Array of changed file paths (from `git status --short`)
+
+**Error handling:**
+Parse the JSON string returned by the tool and check `valid` field:
+- If `valid` is `true`: Proceed to next step
+- If `valid` is `false` (uncommitted changes detected):
+  1. Display the list of changed files from the `files` field
+  2. Display message from the `message` field
+  3. Recommend user to commit or stash changes first
+  4. Prompt user: "Continue anyway? (y/N):"
+  5. Only proceed if user confirms with 'y' or 'Y'
+  6. Otherwise exit workflow execution
 
 ## Step 3: Read & Parse Plan
 
@@ -397,20 +413,24 @@ After all tasks complete, perform a holistic review of the entire feature:
 
 #### Step 5.9.2: Archive Plan
 
-After successful holistic review, move the plan file to the archive:
+After successful holistic review, move the plan file to the archive.
+
+The **archive-plan** tool moves plan files to the archive directory with a timestamp.
+
+**Usage:**
+- Call the tool with required `planPath` argument (e.g., `.opencode/plans/example-plan.md`)
+
+**Returns:**
+- New archive path (e.g., `.opencode/plans/archive/example-plan-2026-01-21.md`)
+
+**Throws:**
+- Error if the move operation fails (file not found, permission denied, etc.)
+
+After archiving, stage and commit the archive move:
 
 ```bash
-TIMESTAMP=$(date +%Y-%m-%d)
-PLAN_NAME=$(basename "$PLAN_FILE" .md)
-mv "$PLAN_FILE" ".opencode/plans/archive/${PLAN_NAME}-${TIMESTAMP}.md"
-echo "✅ Plan archived: .opencode/plans/archive/${PLAN_NAME}-${TIMESTAMP}.md"
-```
-
-Stage and commit the archive move:
-
-```bash
-git add ".opencode/plans/${PLAN_NAME}.md" ".opencode/plans/archive/${PLAN_NAME}-${TIMESTAMP}.md"
-task(agent: "pragmatic-committer", prompt: "[SUBAGENT] Commit staged changes. Context: Plan '${PLAN_NAME}' completed and archived")
+git add ".opencode/plans/[PLAN_NAME].md" ".opencode/plans/archive/[PLAN_NAME]-[TIMESTAMP].md"
+task(agent: "pragmatic-committer", prompt: "[SUBAGENT] Commit staged changes. Context: Plan '[PLAN_NAME]' completed and archived")
 ```
 
 #### Step 5.9.3: Final Summary
