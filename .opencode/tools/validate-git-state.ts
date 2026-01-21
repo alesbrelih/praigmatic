@@ -40,7 +40,7 @@ export default tool({
     } catch (error) {
       return JSON.stringify({
         valid: false,
-        message: `Error checking git state: ${error.message}`,
+        message: `Error checking git state: ${error instanceof Error ? error.message : String(error)}`,
         files: [],
       });
     }
