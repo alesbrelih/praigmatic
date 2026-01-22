@@ -157,7 +157,7 @@ function wrapError(error: unknown, context: string): Error {
  * Task line parsing result
  */
 interface ParsedTaskLine {
-  indent: string;
+  indent: string; // Includes indentation AND any header prefix (e.g. "### ")
   bullet: string;
   checkbox: string;
   content: string;
@@ -168,32 +168,19 @@ interface ParsedTaskLine {
 
 /**
  * Regex pattern for parsing task lines
- * Groups: 1=indent, 2=bullet, 3=checkbox, 4=content
+ * Groups: 1=indent/prefix, 2=bullet, 3=checkbox, 4=content
+ * Supports optional header prefix (e.g. "### - [ ]")
  */
-const TASK_LINE_PATTERN = /^(\s*)([-*+])\s+(\[[ xX~]\])\s+(.*)$/;
+const TASK_LINE_PATTERN = /^(\s*(?:#+\s+)?)?([-*+])\s+(\[[ xX~]\])\s+(.*)$/;
 
 /**
  * Parse a single task line and extract structured data.
  * Supports multiple bullet types (-, *, +) and all checkbox states.
+ * Supports Markdown headers as task lines (e.g. "### - [ ] Task").
  * Extracts size info when present at end of content (e.g., "(3 points)").
- *
- * This function provides more comprehensive parsing than parseTaskStatus() which
- * only handles dash bullets and returns TaskStatus enum values.
  *
  * @param line - The task line to parse (must be a string)
  * @returns Parsed task information or null if line doesn't match task pattern or input is invalid
- * @example
- * parseTaskLine("  - [ ] Implement feature (3 points)");
- * // Returns:
- * // {
- * //   indent: "  ",
- * //   bullet: "-",
- * //   checkbox: "[ ]",
- * //   content: "Implement feature (3 points)",
- * //   taskName: "Implement feature",
- * //   size: "(3 points)",
- * //   status: "pending"
- * // }
  */
 function parseTaskLine(line: string): ParsedTaskLine | null {
   // Input validation: handle null, undefined, and non-string inputs
@@ -211,7 +198,8 @@ function parseTaskLine(line: string): ParsedTaskLine | null {
     return null;
   }
 
-  const [, indent, bullet, checkbox, content] = match;
+  const [, indentOrPrefix, bullet, checkbox, content] = match;
+  const indent = indentOrPrefix || ""; // Group 1 is optional
 
   // Determine status from checkbox
   let status: "pending" | "in-progress" | "completed";
@@ -229,13 +217,9 @@ function parseTaskLine(line: string): ParsedTaskLine | null {
 
   // Extract task name and size from content
   // Size is expected at the END of content with parentheses like "(1 point)" or "(3 pts)"
-  // The regex is defensive: only captures if the number and optional "point(s)" appear together
   const sizeMatch = content.match(/\((\d+)\s*(?:point|points|pt|pts)?\)\s*$/i);
   const size = sizeMatch ? sizeMatch[0] : null;
 
-  // Extract task name by removing size if present, otherwise use trimmed content
-  // Note: This may not handle all edge cases (e.g., multiple parentheticals)
-  // The size extraction is best-effort and expects the size to be the last parenthetical
   const taskName = size ? content.replace(sizeMatch![0], "").trim() : content.trim();
 
   return {
@@ -262,17 +246,10 @@ const CHECKBOX_MAP: Record<"pending" | "in-progress" | "completed", string> = {
 /**
  * Reconstruct a task line from parsed components with a new checkbox state.
  * Preserves all original formatting (indentation, bullet type, content).
- *
- * @param components - Parsed task line components
- * @param newStatus - The new status for the checkbox ("pending", "in-progress", or "completed")
- * @returns The reconstructed task line string
- * @throws {Error} If newStatus is invalid
- * @example
- * reconstructTaskLine({ indent: "  ", bullet: "-", content: "Implement feature" }, "in-progress");
- * // Returns: "  - [~] Implement feature"
  */
 export function reconstructTaskLine(
-  components: Pick<ParsedTaskLine, "indent" | "bullet" | "content">,
+  components: Pick<ParsedTaskLine, "indent" | "bullet" | "content">
+,
   newStatus: "pending" | "in-progress" | "completed"
 ): string {
   // Validate newStatus
@@ -282,24 +259,12 @@ export function reconstructTaskLine(
 
   const newCheckbox = CHECKBOX_MAP[newStatus];
 
-  // Reconstruct line: indent + " " + bullet + " " + newCheckbox + " " + content
+  // Reconstruct line: indent + bullet + " " + newCheckbox + " " + content
   return `${components.indent}${components.bullet} ${newCheckbox} ${components.content}`;
 }
 
 /**
  * Update the checkbox state of a task line while preserving all formatting.
- * Supports all checkbox transitions: pending → in-progress → completed
- * Handles all bullet types: -, *, +
- *
- * @param line - The original task line to update
- * @param newStatus - The new status for the checkbox ("pending", "in-progress", or "completed")
- * @returns The updated task line, or null if the input line is invalid
- * @example
- * updateTaskCheckbox("  - [ ] Implement feature", "in-progress");
- * // Returns: "  - [~] Implement feature"
- *
- * updateTaskCheckbox("  * [~] Test component", "completed");
- * // Returns: "  * [x] Test component"
  */
 export function updateTaskCheckbox(
   line: string,
@@ -331,9 +296,6 @@ export function updateTaskCheckbox(
 
 /**
  * Parse an entire plan file and extract all tasks
- * @param planPath - Path to the plan file
- * @returns Array of parsed task lines with their line indices
- * @throws {Error} If file cannot be read
  */
 async function parsePlanFile(planPath: string): Promise<Array<ParsedTaskLine & { lineIndex: number }>> {
   try {
@@ -365,30 +327,21 @@ async function parsePlanFile(planPath: string): Promise<Array<ParsedTaskLine & {
 
 /**
  * Find task index by exact name match (not substring).
- * Performs case-insensitive matching and normalizes whitespace.
- *
- * @param taskName - The task name to search for (trimmed before comparison)
- * @param tasks - Array of parsed task lines with line indices
- * @returns Line index of the task, or -1 if not found
  */
 export function findTaskIndex(
   taskName: string,
   tasks: Array<ParsedTaskLine & { lineIndex: number }>
 ): number {
-  // Validate input
   if (typeof taskName !== "string" || !Array.isArray(tasks)) {
     return -1;
   }
 
-  // Normalize the search task name (trim and lowercase)
   const normalizedName = taskName.trim().toLowerCase();
 
-  // Handle empty task name
   if (normalizedName.length === 0) {
     return -1;
   }
 
-  // Search for exact match (not substring)
   for (let i = 0; i < tasks.length; i++) {
     const task = tasks[i];
     const normalizedTaskName = task.taskName.toLowerCase();
@@ -401,11 +354,7 @@ export function findTaskIndex(
 }
 
 /**
- * Find the first pending task (status: "pending").
- * Scans from the beginning of the tasks array.
- *
- * @param tasks - Array of parsed task lines with line indices
- * @returns First pending task object or null if none found
+ * Find the first pending task
  */
 export function findNextPendingTask(
   tasks: Array<ParsedTaskLine & { lineIndex: number }>
@@ -424,12 +373,7 @@ export function findNextPendingTask(
 }
 
 /**
- * Find the first in-progress task (status: "in-progress").
- * Enables resume capability for interrupted work.
- * Scans from the beginning of the tasks array.
- *
- * @param tasks - Array of parsed task lines with line indices
- * @returns First in-progress task object or null if none found
+ * Find the first in-progress task
  */
 export function findInProgressTask(
   tasks: Array<ParsedTaskLine & { lineIndex: number }>
@@ -448,50 +392,27 @@ export function findInProgressTask(
 }
 
 /**
- * Parse task status from markdown checkbox pattern.
- * Lightweight function for dash-only tasks, returns TaskStatus enum values.
- * For comprehensive parsing (multiple bullets, size extraction), use parseTaskLine().
- *
- * @param line - The task line to parse
- * @returns TaskStatus enum value or null if line doesn't match pattern
+ * Helper to extract note from the next line if it exists
  */
-function parseTaskStatus(line: string): TaskStatus | null {
-  const taskMatch = line.match(/^\s*-\s\[([xX~ ])\]\s/);
-  if (!taskMatch) {
-    return null;
+function getTaskNote(lines: string[], lineIndex: number): string | undefined {
+  if (lineIndex + 1 >= lines.length) {
+    return undefined;
   }
+  const nextLine = lines[lineIndex + 1];
+  // Note pattern: optional whitespace + bullet + ⚠️ NOTE: + content
+  const noteMatch = nextLine.match(/^\s*[-*+]\s+⚠️\s+NOTE:\s+(.*)$/);
+  return noteMatch ? noteMatch[1].trim() : undefined;
+}
 
-  const statusChar = taskMatch[1];
-  if (statusChar === " ") {
-    return TaskStatus.TODO;
-  } else if (statusChar === "~") {
-    return TaskStatus.IN_PROGRESS;
-  } else {
-    return TaskStatus.DONE;
+/**
+ * Convert parsed status to TaskStatus enum
+ */
+function toTaskStatus(status: "pending" | "in-progress" | "completed"): TaskStatus {
+  switch (status) {
+    case "pending": return TaskStatus.TODO;
+    case "in-progress": return TaskStatus.IN_PROGRESS;
+    case "completed": return TaskStatus.DONE;
   }
-}
-
-/**
- * Extract task content from markdown line
- */
-function parseTaskContent(line: string): string {
-  const match = line.match(/^\s*-\s\[([xX~ ])\]\s*(.*)/);
-  return match ? match[2].trim() : "";
-}
-
-/**
- * Check if task line has a note
- */
-function hasTaskNote(line: string): boolean {
-  return line.includes("<!-- Note:");
-}
-
-/**
- * Extract note content from task line
- */
-function extractTaskNote(line: string): string | undefined {
-  const match = line.match(/<!--\s*Note:\s*(.*?)\s*-->/);
-  return match ? match[1].trim() : undefined;
 }
 
 /**
@@ -500,21 +421,19 @@ function extractTaskNote(line: string): string | undefined {
 async function getSingleTaskStatus(planPath: string, taskIndex: number): Promise<PlanTask> {
   try {
     const content = await readFile(planPath, "utf-8");
-    const lines = content.split("\n");
+    const lines = content.split(/\r?\n/); // Handle mixed line endings for reading
 
     let taskCount = 0;
     for (let i = 0; i < lines.length; i++) {
-      const status = parseTaskStatus(lines[i]);
-      if (status !== null) {
+      const parsed = parseTaskLine(lines[i]);
+      if (parsed) {
         if (taskCount === taskIndex) {
-          const content = parseTaskContent(lines[i]);
-          const note = hasTaskNote(lines[i]) ? extractTaskNote(lines[i]) : undefined;
-
+          const note = getTaskNote(lines, i);
           return {
             planPath,
             lineIndex: i,
-            status,
-            content,
+            status: toTaskStatus(parsed.status),
+            content: parsed.content,
             note,
           };
         }
@@ -530,43 +449,39 @@ async function getSingleTaskStatus(planPath: string, taskIndex: number): Promise
 
 /**
  * Mark a task as in-progress
- * @throws {Error} If task doesn't exist or is already in progress/done
  */
 async function markInProgress(planPath: string, taskIndex: number): Promise<PlanTask> {
   try {
     const { writeFile } = await import("node:fs/promises");
     const content = await readFile(planPath, "utf-8");
-    const lines = content.split("\n");
+    // Detect line endings to preserve them
+    const lineEnding = content.includes("\r\n") ? "\r\n" : "\n";
+    const lines = content.split(lineEnding);
 
     let taskCount = 0;
     for (let i = 0; i < lines.length; i++) {
-      const status = parseTaskStatus(lines[i]);
-      if (status !== null) {
+      const parsed = parseTaskLine(lines[i]);
+      if (parsed) {
         if (taskCount === taskIndex) {
-          // Check if task is already in progress or done
-          if (status === TaskStatus.IN_PROGRESS) {
+          if (parsed.status === "in-progress") {
             throw new Error(`Task ${taskIndex} is already marked as in-progress`);
           }
-          if (status === TaskStatus.DONE) {
+          if (parsed.status === "completed") {
             throw new Error(`Cannot mark task ${taskIndex} as in-progress: it is already done`);
           }
 
-          // Replace `- [ ]` with `- [~]` preserving indentation
-          const updatedLine = lines[i].replace(/^(\s*-\s\[)\s(\])/, "$1~$2");
+          // Update the line
+          const updatedLine = reconstructTaskLine(parsed, "in-progress");
           lines[i] = updatedLine;
 
-          // Write the modified content back to the file
-          await writeFile(planPath, lines.join("\n"), "utf-8");
+          await writeFile(planPath, lines.join(lineEnding), "utf-8");
 
-          // Return the updated task information
-          const taskContent = parseTaskContent(lines[i]);
-          const note = hasTaskNote(lines[i]) ? extractTaskNote(lines[i]) : undefined;
-
+          const note = getTaskNote(lines, i);
           return {
             planPath,
             lineIndex: i,
             status: TaskStatus.IN_PROGRESS,
-            content: taskContent,
+            content: parsed.content,
             note,
           };
         }
@@ -582,40 +497,34 @@ async function markInProgress(planPath: string, taskIndex: number): Promise<Plan
 
 /**
  * Mark a task as completed
- * @throws {Error} If task doesn't exist or is already done
  */
 async function markCompleted(planPath: string, taskIndex: number): Promise<PlanTask> {
   try {
     const { writeFile } = await import("node:fs/promises");
     const content = await readFile(planPath, "utf-8");
-    const lines = content.split("\n");
+    const lineEnding = content.includes("\r\n") ? "\r\n" : "\n";
+    const lines = content.split(lineEnding);
 
     let taskCount = 0;
     for (let i = 0; i < lines.length; i++) {
-      const status = parseTaskStatus(lines[i]);
-      if (status !== null) {
+      const parsed = parseTaskLine(lines[i]);
+      if (parsed) {
         if (taskCount === taskIndex) {
-          // Check if task is already done
-          if (status === TaskStatus.DONE) {
+          if (parsed.status === "completed") {
             throw new Error(`Task ${taskIndex} is already marked as completed`);
           }
 
-          // Replace `- [ ]` or `- [~]` with `- [x]` preserving indentation
-          const updatedLine = lines[i].replace(/^(\s*-\s\[)[ ~xX](\])/, "$1x$2");
+          const updatedLine = reconstructTaskLine(parsed, "completed");
           lines[i] = updatedLine;
 
-          // Write the modified content back to the file
-          await writeFile(planPath, lines.join("\n"), "utf-8");
+          await writeFile(planPath, lines.join(lineEnding), "utf-8");
 
-          // Return the updated task information
-          const taskContent = parseTaskContent(lines[i]);
-          const note = hasTaskNote(lines[i]) ? extractTaskNote(lines[i]) : undefined;
-
+          const note = getTaskNote(lines, i);
           return {
             planPath,
             lineIndex: i,
             status: TaskStatus.DONE,
-            content: taskContent,
+            content: parsed.content,
             note,
           };
         }
@@ -631,33 +540,39 @@ async function markCompleted(planPath: string, taskIndex: number): Promise<PlanT
 
 /**
  * Add a note to a task as a nested sub-item
- * @throws {Error} If task doesn't exist
  */
 async function addNote(planPath: string, taskIndex: number, note: string): Promise<AddNoteResult> {
   try {
-    // Validate the note
     validateNote(note);
     const trimmedNote = note.trim();
 
     const { writeFile } = await import("node:fs/promises");
     const content = await readFile(planPath, "utf-8");
-    // Detect line endings to preserve them (CRLF or LF)
     const lineEnding = content.includes("\r\n") ? "\r\n" : "\n";
     const lines = content.split(lineEnding);
 
     let taskCount = 0;
     let taskLineIndex = -1;
-    let taskIndentation = "";
+    let noteIndent = "";
 
-    // First pass: find the task and determine its indentation
     for (let i = 0; i < lines.length; i++) {
-      const status = parseTaskStatus(lines[i]);
-      if (status !== null) {
+      const parsed = parseTaskLine(lines[i]);
+      if (parsed) {
         if (taskCount === taskIndex) {
           taskLineIndex = i;
-          // Extract indentation (leading whitespace before the dash)
-          const indentMatch = lines[i].match(/^(\s*)/);
-          taskIndentation = indentMatch ? indentMatch[1] : "";
+          
+          // Calculate note indentation
+          // If task is a header (e.g. "### "), we want the note to be indented visually suitable.
+          // We'll strip the '#' chars but keep the leading whitespace, and add 2 spaces.
+          
+          if (parsed.indent.includes("#")) {
+             const leadSpaceMatch = parsed.indent.match(/^\s*/);
+             const leadSpace = leadSpaceMatch ? leadSpaceMatch[0] : "";
+             noteIndent = leadSpace + "  ";
+          } else {
+             // Normal list item, just indent 2 spaces deeper
+             noteIndent = parsed.indent + "  ";
+          }
           break;
         }
         taskCount++;
@@ -668,24 +583,19 @@ async function addNote(planPath: string, taskIndex: number, note: string): Promi
       throw new Error(`Task index ${taskIndex} not found in plan`);
     }
 
-    // Calculate indentation for the note (one level deeper than the task)
-    // We add two more spaces for the nested level
-    const noteIndentation = taskIndentation + "  ";
-    const noteLine = `${noteIndentation}- ⚠️ NOTE: ${trimmedNote}`;
+    const noteLine = `${noteIndent}- ⚠️ NOTE: ${trimmedNote}`;
 
     // Insert the note line after the task line
     lines.splice(taskLineIndex + 1, 0, noteLine);
 
-    // Write the modified content back to the file, preserving original line endings
     await writeFile(planPath, lines.join(lineEnding), "utf-8");
 
-    // Return the result of the addNote operation
     return {
       planPath,
       taskIndex,
       taskLineIndex,
       addedNote: trimmedNote,
-      noteIndentation,
+      noteIndentation: noteIndent,
     };
   } catch (error) {
     throw wrapError(error, "Failed to add note to task");
@@ -694,15 +604,12 @@ async function addNote(planPath: string, taskIndex: number, note: string): Promi
 
 /**
  * Get status of all tasks from a plan file
- * @param planPath - Path to the plan file
- * @returns Object containing plan path and array of all tasks with their status
- * @throws {Error} If file cannot be read or parsed
  */
 async function getAllTaskStatus(
   planPath: string
 ): Promise<{
   planPath: string;
-  tasks: Array<{
+  tasks: Array<{ 
     lineIndex: number;
     status: "pending" | "in-progress" | "completed";
     content: string;
@@ -711,10 +618,8 @@ async function getAllTaskStatus(
   }>;
 }> {
   try {
-    // Parse the plan file to get all tasks
     const tasks = await parsePlanFile(planPath);
 
-    // Return structured response with all tasks
     return {
       planPath,
       tasks: tasks.map((task) => ({
@@ -739,12 +644,10 @@ export default tool({
     note: tool.schema.string().optional().describe("Note text (required for addNote operation). Maximum 2000 characters."),
   },
   async execute({ operation, planName, taskIndex, note }) {
-    // Validate taskIndex for operations that require it
     if (operation !== "getAllTaskStatus") {
       validateTaskIndex(taskIndex);
     }
 
-    // Validate note for addNote operation
     if (operation === "addNote") {
       if (!note) {
         throw new Error("Note is required for addNote operation");
@@ -752,10 +655,8 @@ export default tool({
       validateNote(note);
     }
 
-    // Resolve and validate plan path
     const planPath = await validateAndResolvePlanPath(planName);
 
-    // Execute the requested operation
     switch (operation) {
       case "getAllTaskStatus": {
         const result = await getAllTaskStatus(planPath);
@@ -783,7 +684,6 @@ export default tool({
       }
 
       default:
-        // TypeScript should prevent this, but for runtime safety
         throw new Error(`Unknown operation: ${operation}`);
     }
   },

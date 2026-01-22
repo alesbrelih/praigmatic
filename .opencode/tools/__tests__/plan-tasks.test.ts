@@ -19,7 +19,8 @@ describe('plan-tasks tool', () => {
 - [ ] First task
   Some description
 
-- [ ] Second task with note <!-- Note: This is important -->
+- [ ] Second task with note
+  - ⚠️ NOTE: This is important
 
 - [~] Third task in progress
 
@@ -934,7 +935,7 @@ More text
     });
 
     it('should handle tasks with notes', async () => {
-      const content = `- [ ] Task with note <!-- Note: Important -->`;
+      const content = `- [ ] Task with note\n  - ⚠️ NOTE: Important`;
       vi.mocked(readFile).mockResolvedValue(content);
       vi.mocked(stat).mockResolvedValue({ mtimeMs: 1000 } as any);
 
@@ -945,7 +946,7 @@ More text
       });
 
       const task = JSON.parse(result);
-      expect(task.content).toBe('Task with note <!-- Note: Important -->');
+      expect(task.content).toBe('Task with note');
       expect(task.note).toBe('Important');
     });
   });
@@ -1621,6 +1622,78 @@ More text
           reconstructTaskLine({ indent: "", bullet: "-", content: "Task" }, "unknown" as any)
         ).toThrow("Must be one of: pending, in-progress, completed");
       });
+    });
+  });
+
+  describe('Header-style task parsing', () => {
+    it('should parse task with header prefix', async () => {
+      const content = `### - [ ] Header task`;
+      vi.mocked(readFile).mockResolvedValue(content);
+      vi.mocked(stat).mockResolvedValue({ mtimeMs: 1000 } as any);
+
+      const result = await planTasks.execute({
+        operation: 'getAllTaskStatus',
+        planName: 'test.md',
+      });
+
+      const data = JSON.parse(result);
+      expect(data.tasks[0].content).toBe('Header task');
+      expect(data.tasks[0].status).toBe('pending');
+    });
+
+    it('should preserve header format when updating status', async () => {
+      const content = `### - [ ] Header task`;
+      vi.mocked(readFile).mockResolvedValue(content);
+      vi.mocked(writeFile).mockResolvedValue();
+      vi.mocked(stat).mockResolvedValue({ mtimeMs: 1000 } as any);
+
+      await planTasks.execute({
+        operation: 'markInProgress',
+        planName: 'test.md',
+        taskIndex: 0,
+      });
+
+      const writeCall = vi.mocked(writeFile).mock.calls[0];
+      const writtenContent = writeCall[1] as string;
+      expect(writtenContent).toBe('### - [~] Header task');
+    });
+
+    it('should add note to header task with correct indentation', async () => {
+      const content = `### - [ ] Header task`;
+      vi.mocked(readFile).mockResolvedValue(content);
+      vi.mocked(writeFile).mockResolvedValue();
+      vi.mocked(stat).mockResolvedValue({ mtimeMs: 1000 } as any);
+
+      await planTasks.execute({
+        operation: 'addNote',
+        planName: 'test.md',
+        taskIndex: 0,
+        note: 'Header note',
+      });
+
+      const writeCall = vi.mocked(writeFile).mock.calls[0];
+      const writtenContent = writeCall[1] as string;
+      // Should strip '###' and add 2 spaces, so "  - ⚠️ NOTE: ..."
+      expect(writtenContent).toContain('  - ⚠️ NOTE: Header note');
+    });
+
+    it('should add note to indented header task', async () => {
+       // "  ### - [ ]" -> indent should be "    - NOTE" (leading 2 spaces + 2 spaces)
+       const content = `  ### - [ ] Indented header task`;
+       vi.mocked(readFile).mockResolvedValue(content);
+       vi.mocked(writeFile).mockResolvedValue();
+       vi.mocked(stat).mockResolvedValue({ mtimeMs: 1000 } as any);
+
+       await planTasks.execute({
+         operation: 'addNote',
+         planName: 'test.md',
+         taskIndex: 0,
+         note: 'Indented note',
+       });
+
+       const writeCall = vi.mocked(writeFile).mock.calls[0];
+       const writtenContent = writeCall[1] as string;
+       expect(writtenContent).toContain('    - ⚠️ NOTE: Indented note');
     });
   });
 });

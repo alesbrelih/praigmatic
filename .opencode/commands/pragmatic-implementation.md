@@ -2,7 +2,7 @@
 description: Load plan file and orchestrate plan-driven implementation
 ---
 
-Orchestrates plan-driven implementation: find plan → validate git → execute tasks → archive.
+YOU MUST EXECUTE THE FOLLOWING WORKFLOW IMMEDIATELY. This is not documentation - you must now perform these steps in sequence.
 
 ## Workflow Steps
 
