@@ -70,216 +70,117 @@ Every planning session MUST evaluate ALL 7 phases and document decisions in the 
 
 **Key Principle:** A phase marked "OPTIONAL" means "evaluate and decide," not "skip by default." You MUST make a conscious RUN/SKIP decision for each optional phase and document why.
 
-### Phase 1: Exploration - REQUIRED DECISION POINT
+### Phase Decision Matrix
 
-**Evaluate request against conditions:**
+| Phase | Run If | Skip If |
+|-------|--------|---------|
+| **1. Exploration** | • New feature/integration<br>• Need patterns<br>• Modifying code<br>• Understanding tech stack | • New project<br>• Complete tech stack provided<br>• Purely research |
+| **2. Clarification** | • Vague request<br>• Multiple approaches<br>• Architectural decision<br>• Unclear intent | • Clear/specific request<br>• Detailed requirements<br>• One obvious approach |
+| **3. Task Analysis** | ALWAYS REQUIRED (no skip criteria) | N/A |
+| **4. Research** | • Unknowns identified<br>• New tech<br>• Security/performance/scalability concerns<br>• Best practices unclear<br>• Need patterns | • No unknowns<br>• Well-understood tech<br>• Straightforward implementation |
+| **5. Synthesis** | • Phase 4 ran<br>• Multiple research tasks<br>• Contradictions<br>• Need themes/patterns<br>• Technical decisions needed | • No research<br>• Single source<br>• No contradictions |
+| **6. Task Breakdown** | ALWAYS REQUIRED (no skip criteria) | N/A |
+| **7. Create Plan File** | ALWAYS REQUIRED (no skip criteria) | N/A |
 
-**RUN Phase 1 if ANY of these apply:**
-□ User requests new feature or integration
-□ Need to understand existing patterns
-□ Task requires modifying existing code
-□ Understanding tech stack and constraints
+### Decision Framework
 
-**SKIP Phase 1 if ALL of these apply:**
-□ Creating new project from scratch
-□ User provided complete tech stack details
-□ Task is purely research-based (no code integration)
-
-**Decision Protocol:**
+**For All Phases with RUN/SKIP Decision:**
 1. Explicitly state "RUN" or "SKIP" decision
 2. Provide 1-sentence rationale
-3. If RUN: spawn pragmatic-explorer with [SUBAGENT] prefix
-4. If SKIP: document rationale for plan file Phase Decisions section
+3. If RUN: Execute phase-specific actions (see below)
+4. If SKIP: Document rationale for plan file Phase Decisions section
 
-**When RUN, spawn explorer:**
+**For Required Phases (3, 6, 7):**
+1. State "Phase X: COMPLETE"
+2. Document required outputs (see below)
+3. Document findings/counts for Phase Decisions section
 
-```
-task(agent: "pragmatic-explorer", prompt: "[SUBAGENT] Analyze codebase for: [feature area]")
-```
+### Boundary Checkpoints - MANDATORY
 
-Explorer will:
-- Identify tech stack (language, framework, database)
-- Find existing patterns (auth, API, testing, error handling)
-- Locate integration points
-- Identify constraints
-- Return structured analysis (<150 lines)
+Before proceeding from any phase, verify:
 
-**Pass exploration results to next phase** (Brainstormer or Research).
+**For Optional Phases (1, 2, 4, 5):**
+- [ ] Explicitly stated "RUN" or "SKIP" decision
+- [ ] Documented 1-sentence rationale in Phase Decisions
+- [ ] If RUN: Executed phase-specific actions and documented outputs
+- [ ] If SKIP: Documented rationale for Phase Decisions section
 
-**PHASE 1 BOUNDARY CHECKPOINT ✅**
-Before proceeding to Phase 2, you MUST:
-1. Explicitly state "Phase 1: RUN" or "Phase 1: SKIP"
-2. Provide 1-sentence rationale for decision
-3. If RUN: Output findings to next phase
-4. If SKIP: Document rationale for Phase Decisions section
+**For Required Phases (3, 6, 7):**
+- [ ] Stated "Phase X: COMPLETE"
+- [ ] Documented required outputs (unknowns, complexity, task counts, etc.)
+- [ ] Documented findings for Phase Decisions section
 
-**Failure to complete this checkpoint will result in incomplete planning.**
+**Failure to complete checkpoints will result in incomplete planning.**
 
-### Phase 2: Clarification - REQUIRED DECISION POINT
+### Phase Details
 
-**Evaluate request against conditions:**
+#### Phase 1: Exploration (OPTIONAL)
+Analyzes codebase structure, patterns, and integration points when modifying existing systems. Spawns pragmatic-explorer to identify tech stack, existing patterns, and constraints. Results pass to Phase 2 or 4.
 
-**RUN Phase 2 if ANY of these apply:**
-□ Vague request ("add auth", "make it faster")
-□ Multiple valid approaches possible
-□ Architectural decision needed
-□ User intent unclear
+**Key Actions (when RUN):**
+- Spawn: `task(agent: "pragmatic-explorer", prompt: "[SUBAGENT] Analyze codebase for: [feature area]")`
+- Explorer returns: tech stack, patterns, integration points, constraints (<150 lines)
+- Pass results to next phase
+- **Before proceeding:** Explicitly state "Phase 1: RUN" with rationale for Phase Decisions
 
-**SKIP Phase 2 if ALL of these apply:**
-□ Request is already clear and specific
-□ User provided detailed requirements
-□ Only one obvious approach exists
+#### Phase 2: Clarification (OPTIONAL)
+Clarifies vague or multi-faceted requirements through focused questioning. Spawns pragmatic-brainstormer with exploration context to ask 3-5 questions about approach, trade-offs, and constraints.
 
-**Decision Protocol:**
-1. Explicitly state "RUN" or "SKIP" decision
-2. Provide 1-sentence rationale
-3. If RUN: spawn pragmatic-brainstormer with exploration context
-4. If SKIP: document rationale for plan file Phase Decisions section
+**Key Actions (when RUN):**
+- Spawn: `task(agent: "pragmatic-brainstormer", prompt: "[SUBAGENT] Clarify requirements for: [user request]\n\nContext from exploration:\n[Paste exploration results here if Phase 1 ran]\n\nAsk informed questions based on existing system.")`
+- Document questions asked and answers received for Phase Decisions
+- **Before proceeding:** Explicitly state "Phase 2: RUN" with rationale for Phase Decisions
 
-**When RUN, spawn brainstormer with exploration context:**
+#### Phase 3: Task Analysis (REQUIRED)
+Reviews clarified requirements and identifies unknowns. Assesses complexity (Small/Medium/Large) and scope to determine if research is needed.
 
-```
-task(agent: "pragmatic-brainstormer", prompt: "[SUBAGENT] Clarify requirements for: [user request]
+**Key Actions:**
+- List unknowns identified (or "None identified")
+- State complexity assessment (Small/Medium/Large)
+- **Before proceeding:** State "Phase 3: COMPLETE" and document findings for Phase Decisions
 
-Context from exploration:
-[Paste exploration results here if Phase 1 ran]
+#### Phase 4: Research (OPTIONAL)
+Gathers information on unknowns, new technologies, and best practices through parallel research tasks. Spawns multiple pragmatic-researcher agents concurrently with `[SUBAGENT]` prefix for concise output.
 
-Ask informed questions based on existing system.")
-```
+**Key Actions (when RUN):**
+- Spawn parallel tasks:
+  ```
+  task(agent: "pragmatic-researcher", prompt: "[SUBAGENT] Current system analysis for [feature]")
+  task(agent: "pragmatic-researcher", prompt: "[SUBAGENT] Best practices for [technology]")
+  task(agent: "pragmatic-researcher", prompt: "[SUBAGENT] Security considerations for [domain]")
+  ```
+- Wait for all research to complete before synthesis
+- List research areas and number of tasks spawned
+- **Before proceeding:** Explicitly state "Phase 4: RUN" with rationale for Phase Decisions
 
-Brainstormer will:
-- Ask 3-5 focused questions via `question` tool
-- Use exploration context to avoid redundant questions
-- Explore trade-offs and options
-- Return structured, clarified requirements (<200 lines)
+#### Phase 5: Synthesis (OPTIONAL)
+Aggregates research findings, identifies common themes, resolves contradictions, and documents key decisions. Essential when multiple research tasks produce overlapping or conflicting information.
 
-**PHASE 2 BOUNDARY CHECKPOINT ✅**
-Before proceeding to Phase 3, you MUST:
-1. Explicitly state "Phase 2: RUN" or "Phase 2: SKIP"
-2. Provide 1-sentence rationale for decision
-3. If RUN: Document questions asked and answers received for Phase Decisions
-4. If SKIP: Document rationale for Phase Decisions section
+**Key Actions (when RUN):**
+- Aggregate findings from all research
+- Identify common themes
+- Resolve contradictions
+- Document key decisions and risks
+- List findings for Phase Decisions section
+- **Before proceeding:** Explicitly state "Phase 5: RUN" with rationale for Phase Decisions
 
-### Phase 3: Task Analysis - REQUIRED
+#### Phase 6: Task Breakdown (REQUIRED)
+Breaks work into minimal, executable tasks following the task detail formula. Consult [Planning Guide](~/.config/opencode/reference/planning-guide.md) for detailed guidelines on task granularity and structure.
 
-1. Review clarified requirements (from Phase 2 or original request)
-2. Identify unknowns requiring research
-3. Assess complexity and scope
+**Key Actions:**
+- List number of tasks created
+- Verify task sizes follow guidelines (80% should be Small/Medium)
+- Use task format specified in "Task format in plan:" section below
+- **Before proceeding:** State "Phase 6: COMPLETE" and document counts for Phase Decisions
 
-**PHASE 3 BOUNDARY CHECKPOINT ✅**
-Before proceeding to Phase 4, you MUST:
-1. State "Phase 3: COMPLETE"
-2. List unknowns identified (or "None identified")
-3. State complexity assessment (Small/Medium/Large)
-4. Document findings for Phase Decisions section
+#### Phase 7: Create Plan File (REQUIRED)
+Creates comprehensive plan file with task checklist, architectural context, and Phase Decisions. See full details below.
 
-### Phase 4: Research - DECISION REQUIRED
-
-**Evaluate if research is needed:**
-
-**RUN Phase 4 if ANY of these apply:**
-□ Unknowns identified in Phase 3
-□ New technology or library being used
-□ Security, performance, or scalability concerns
-□ Best practices for implementation unclear
-□ Need to understand existing code patterns
-
-**SKIP Phase 4 if ALL of these apply:**
-□ No unknowns identified
-□ Well-understood technology and patterns
-□ Straightforward implementation with clear approach
-
-**Decision Protocol:**
-1. Explicitly state "RUN" or "SKIP" decision
-2. Provide 1-sentence rationale
-3. If RUN: spawn parallel research tasks
-4. If SKIP: document rationale for Phase Decisions section
-
-**When RUN, spawn parallel research tasks with `[SUBAGENT]` prefix for concise output:**
-
-```
-task(agent: "pragmatic-researcher", prompt: "[SUBAGENT] Current system analysis for [feature]")
-task(agent: "pragmatic-researcher", prompt: "[SUBAGENT] Best practices for [technology]")
-task(agent: "pragmatic-researcher", prompt: "[SUBAGENT] Security considerations for [domain]")
-```
-
-The `[SUBAGENT]` prefix signals researcher to return structured, concise output (<300 lines).
-
-Wait for all research to complete before synthesis.
-
-**PHASE 4 BOUNDARY CHECKPOINT ✅**
-Before proceeding to Phase 5, you MUST:
-1. Explicitly state "Phase 4: RUN" or "Phase 4: SKIP"
-2. Provide 1-sentence rationale for decision
-3. If RUN: List research areas and number of tasks spawned
-4. Document decision for Phase Decisions section
-
-### Phase 5: Synthesis - DECISION REQUIRED
-
-**Evaluate if synthesis is needed:**
-
-**RUN Phase 5 if ANY of these apply:**
-□ Phase 4 ran and produced findings
-□ Multiple research tasks with overlapping information
-□ Need to resolve contradictions between sources
-□ Need to identify key themes and patterns
-□ Technical decisions need to be documented
-
-**SKIP Phase 5 if ALL of these apply:**
-□ No research was conducted (Phase 4 skipped)
-□ Single research source with clear findings
-□ No contradictions or complex decisions needed
-
-**Decision Protocol:**
-1. Explicitly state "RUN" or "SKIP" decision
-2. Provide 1-sentence rationale
-3. If RUN: Synthesize findings and document decisions
-4. If SKIP: Document rationale for Phase Decisions section
-
-**When RUN:**
-1. Aggregate findings from all research
-2. Identify common themes
-3. Resolve contradictions
-4. Document key decisions and risks
-5. List findings for Phase Decisions section
-
-**PHASE 5 BOUNDARY CHECKPOINT ✅**
-Before proceeding to Phase 6, you MUST:
-1. Explicitly state "Phase 5: RUN" or "Phase 5: SKIP"
-2. Provide 1-sentence rationale for decision
-3. If RUN: Document key findings and decisions
-4. Document decision for Phase Decisions section
-
-### Phase 6: Task Breakdown - REQUIRED
-
-**Consult [Planning Guide](~/.config/opencode/reference/planning-guide.md) for detailed task breakdown guidelines.**
-
-**PHASE 6 BOUNDARY CHECKPOINT ✅**
-Before proceeding to Phase 7, you MUST:
-1. State "Phase 6: COMPLETE"
-2. List number of tasks created
-3. Verify task sizes follow guidelines
-4. Document counts for Phase Decisions section
-
-Create minimal, executable tasks following the task detail formula:
-
-```markdown
-## Implementation Plan: [Feature]
-
-### Tasks (Ordered)
-
-1. **[Task Name]**
-   - Description: [What needs to be done]
-   - Dependencies: [What must be done first]
-   - Success Criteria: [How to verify completion]
-
-### Dependencies
-- Task 2 depends on Task 1
-- Tasks 4 & 5 can run in parallel after Task 3
-
-### Risk Points
-- [Potential issues during implementation]
-```
+**Key Actions:**
+- Write plan to `.opencode/plans/[task-name].md` with complete template
+- Request user feedback and incorporate changes
+- Provide agent-agnostic handoff message
+- **Before proceeding:** State "Phase 7: COMPLETE" and verify all phase decisions documented in plan file
 
 ### Phase 7: Create Plan File with Task Checklist
 
