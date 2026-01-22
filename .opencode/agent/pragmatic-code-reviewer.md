@@ -4,19 +4,18 @@ mode: all
 permission:
   edit: deny
   write: deny
-  bash: ask
+  bash:
+    "*": ask
+    "ls": allow
+    "cat": allow
+    "git log*": allow
+    "git diff*": allow
+    "git show*": allow
+    "grep": allow
   skill:
     "*": allow
   task:
     "*": deny
-tools:
-  write: false
-  edit: false
-  bash: true
-  read: true
-  grep: true
-  glob: true
-  skill: true
 ---
 
 # Pragmatic Code Reviewer

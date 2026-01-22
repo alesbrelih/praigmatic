@@ -4,7 +4,13 @@ mode: all
 permission:
   edit: ask
   write: ask
-  bash: ask
+  bash:
+    "*": ask
+    "tail": allow
+    "head": allow
+    "cat": allow
+    "ls": allow
+    "grep": allow
   webfetch: allow
   skill:
     "*": allow
@@ -16,14 +22,6 @@ permission:
     pragmatic-committer: allow  # Orchestration commands handle commits
     pragmatic-researcher: allow
     pragmatic-developer: allow
-tools:
-  write: true
-  edit: true
-  bash: true
-  read: true
-  grep: true
-  glob: true
-  skill: true
 ---
 
 # Pragmatic Developer

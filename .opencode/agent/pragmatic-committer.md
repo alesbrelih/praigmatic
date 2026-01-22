@@ -4,14 +4,14 @@ mode: all
 permission:
   edit: deny
   write: deny
-  bash: ask
+  read: allow
+  bash:
+    "*": ask
+    "git commit*": allow
+    "git log*": allow
+    "git status*": allow
   task:
     "*": deny
-tools:
-  bash: true
-  read: true
-  grep: true
-  glob: true
 ---
 
 # Pragmatic Committer
