@@ -275,23 +275,15 @@ AskUserQuestion({
 ```
 
 **Step 3: Handle user feedback**
+If "Approve and proceed": Skip to Step 4
 
-**If user selects "Approve and proceed":**
-- Skip to Step 4 (Finalize)
+If "Other" feedback:
+1. Parse changes
+2. Edit plan: Tasks (edit/add/remove/reorder), Technical Decisions, Architecture
+3. Document in Implementation Notes if needed
+4. Re-present (return to Step 2)
 
-**If user provides "Other" text feedback:**
-
-1. **Read and understand feedback**: Carefully parse what changes are requested
-2. **Make appropriate edits** to plan file sections:
-   - Task changes → Edit Tasks section
-   - Technical decisions → Edit Technical Decisions section
-   - Scope changes → Add/remove tasks
-   - Priority changes → Reorder tasks
-   - Architecture changes → Edit Architecture Overview
-3. **Document changes made**: Optionally add note to Implementation Notes about user feedback
-4. **Return to Step 2**: Present updated summary for re-approval
-
-**Iteration limit**: Allow up to 3 feedback rounds. After 3 rounds, proceed with current plan and note remaining concerns in Implementation Notes section.
+Max 3 rounds. After 3, proceed and note concerns.
 
 **Step 4: Finalize and return control (agent-agnostic handoff)**
 
