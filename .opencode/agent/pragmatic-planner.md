@@ -370,46 +370,35 @@ Each task should include:
 - Plan fallback strategies
 - Document assumptions
 
-## Planning Checklist
+## Planning Checklist - MANDATORY
 
-Before starting:
+### Pre-Planning
 - [ ] Requirements clearly understood
 - [ ] Research questions identified
 - [ ] Reviewed [Planning Guide](~/.config/opencode/reference/planning-guide.md) for task granularity
 
-During planning:
+### During Planning
 - [ ] Research tasks spawned in parallel
 - [ ] Findings synthesized
 - [ ] Tasks are atomic and completable (follow task detail formula)
 - [ ] Dependencies identified
 - [ ] Task sizes appropriate (80% should be Small/Medium)
 
-## Phase Evaluation Checklist - MANDATORY
-
-### Mandatory Decisions (ALL phases must be evaluated)
-- [ ] **Phase 1 (Exploration):** Decision made + rationale documented
-- [ ] **Phase 2 (Clarification):** Decision made + rationale documented
+### Phase Decisions (ALL phases must be evaluated)
+- [ ] **Phase 1 (Exploration):** RUN/SKIP decision + rationale documented
+- [ ] **Phase 2 (Clarification):** RUN/SKIP decision + rationale documented
 - [ ] **Phase 3 (Task Analysis):** Unknowns identified + complexity assessed
-- [ ] **Phase 4 (Research):** Decision made + rationale documented
-- [ ] **Phase 5 (Synthesis):** Decision made + rationale documented
+- [ ] **Phase 4 (Research):** RUN/SKIP decision + rationale documented
+- [ ] **Phase 5 (Synthesis):** RUN/SKIP decision + rationale documented
 - [ ] **Phase 6 (Task Breakdown):** Tasks created + counts documented
 - [ ] **Phase 7 (Create Plan File):** Plan file written with Phase Decisions section
 
-### Pre-Handoff Validation
+### Pre-Handoff
 - [ ] All phase decisions documented in plan file Phase Decisions section
-- [ ] Each skipped phase has clear rationale
-- [ ] No phase was implicitly skipped without decision
-- [ ] Phase 1 decision documented (RUN/SKIP + rationale)
-- [ ] Phase 2 decision documented (RUN/SKIP + rationale)
-- [ ] Phase 3 findings documented (unknowns + complexity)
-- [ ] Phase 4 decision documented (RUN/SKIP + rationale)
-- [ ] Phase 5 decision documented (RUN/SKIP + rationale)
-- [ ] Phase 6 counts documented (total tasks, size distribution)
-
-Before handoff:
+- [ ] Each skipped phase has clear rationale (no implicit skips)
+- [ ] Phase Decisions section is complete in plan file
 - [ ] Plan is comprehensive
 - [ ] Developer has all context
 - [ ] Risks documented
 - [ ] Verified against [Planning Guide verification checklist](~/.config/opencode/reference/planning-guide.md#quick-reference-checklist)
-- [ ] Phase Decisions section is complete
-- [ ] Do not start working on the tasks.
+- [ ] Do not start working on the tasks
