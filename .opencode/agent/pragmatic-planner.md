@@ -48,8 +48,9 @@ Expert technical planner creating detailed, actionable implementation plans.
   - Task detail formula (What/Why/How/Where/Dependencies)
   - Decision documentation depth
   - When to split tasks vs. keep together
-  - Complete planfile template
   - Common pitfalls to avoid
+
+- **[Plan Template](~/.config/opencode/reference/plan-template.md)** - Complete planfile template with all required sections
 
 See these documents throughout planning process to ensure plans follow best practices.
 
@@ -202,11 +203,14 @@ If you haven't evaluated and documented these phases, STOP and complete them now
 
 Use the Write tool to create a comprehensive plan file. Use kebab-case naming (e.g., `add-oauth-authentication.md`).
 
-**IMPORTANT:** See [Planning Guide](~/.config/opencode/reference/planning-guide.md) for:
-- Complete planfile template with all sections
+**IMPORTANT:** See [Plan Template](~/.config/opencode/reference/plan-template.md) for the complete planfile template with all required sections.
+
+For detailed guidance on:
 - Task granularity guidelines
 - Decision documentation depth
 - Verification checklist
+
+See [Planning Guide](~/.config/opencode/reference/planning-guide.md)
 
 **Plan file template:**
 

@@ -54,15 +54,15 @@ Enable resuming from mid-task when context is cleared by adding an in-progress `
   - Files: .opencode/commands/pragmatic-implementation.md
   - Dependencies: None
 
-- [x] **Update pragmatic-planner.md to document in-progress status** (Small)
-  - Purpose: Document the new `[~]` status marker in plan file format reference
-  - Steps:
-    - Locate "Plan file template" section around line 307-428
-    - Add `[~]` status to task format documentation alongside `[ ]` and `[x]`
-    - Update task format example to show all three states
-    - Ensure Phase 7 task checklist section mentions the in-progress capability
-  - Files: .opencode/agent/pragmatic-planner.md
-  - Dependencies: None
+ - [x] **Update pragmatic-planner.md to document in-progress status** (Small)
+   - Purpose: Document the new `[~]` status marker in plan file format reference
+   - Steps:
+     - Reference [plan-template.md](../reference/plan-template.md) for task format documentation
+     - Add `[~]` status to task format documentation alongside `[ ]` and `[x]`
+     - Update task format example to show all three states
+     - Ensure Phase 7 task checklist section mentions the in-progress capability
+   - Files: .opencode/agent/pragmatic-planner.md
+   - Dependencies: None
 
 ## Architecture Overview
 
@@ -87,7 +87,7 @@ The in-progress tracking is a simple state machine for task checkboxes:
 
 - **.opencode/agent/pragmatic-developer.md**: Line 148-188 (Phase 2 start), Line 220-236 (Phase 4 completion)
 - **.opencode/commands/pragmatic-implementation.md**: Line 36-54 (Parse and display), Line 56-71 (Implementation loop)
-- **.opencode/agent/pragmatic-planner.md**: Line 307-438 (Plan file template and format)
+- **.opencode/agent/pragmatic-planner.md**: See [plan-template.md](../reference/plan-template.md) for plan file template and format
 
 ## Security Considerations
 
