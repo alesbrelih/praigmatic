@@ -6,14 +6,15 @@ permission:
   write: ask  # Allow writing plan files to .opencode/plans/
   bash: ask
   webfetch: ask
-  task:
-    "*": deny
-    pragmatic-explorer: allow
-    pragmatic-brainstormer: allow
-    pragmatic-code-reviewer: allow
-    pragmatic-committer: allow
-    pragmatic-researcher: allow
-    pragmatic-developer: ask
+   task:
+     "*": deny
+     pragmatic-explorer: allow
+     pragmatic-brainstormer: allow
+     pragmatic-code-reviewer: allow
+     pragmatic-committer: allow
+     pragmatic-plan-reviewer: allow
+     pragmatic-researcher: allow
+     pragmatic-developer: ask
 tools:
   write: true   # Enable for plan file creation
   edit: true    # Enable for plan file editing based on feedback
@@ -179,6 +180,7 @@ Creates comprehensive plan file with task checklist, architectural context, and 
 
 **Key Actions:**
 - Write plan to `.opencode/plans/[task-name].md` with complete template
+- Execute plan review loop (max 3 attempts) to catch issues before user feedback
 - Request user feedback and incorporate changes
 - Provide agent-agnostic handoff message
 - **Before proceeding:** State "Phase 7: COMPLETE" and verify all phase decisions documented in plan file
@@ -380,7 +382,68 @@ After the Tasks section, add all architectural context sections as shown in temp
 - Dependencies
 - Implementation Notes
 
-**Step 2: Request feedback from the user**
+**Step 2: Execute plan review loop (max 3 attempts)**
+
+Execute automated review loop to catch issues before user feedback:
+
+**Review Loop Flow:**
+```
+Initialize: retry_count = 0, max_retries = 3
+
+While retry_count < max_retries:
+  Increment: retry_count = retry_count + 1
+  
+  Display "🔄 Plan review attempt [retry_count]/[max_retries]..."
+  
+  1. Invoke plan-reviewer:
+     task(agent: "pragmatic-plan-reviewer", prompt: "[full plan content]")
+  
+  2. Decision Point: Check if reviewer returned critical/high issues
+  
+     - No critical/high issues: Exit loop → proceed to user feedback
+     - Critical/high issues found: If retry_count >= max_retries, exit loop. Otherwise, continue.
+  
+  3. Revise Plan (if issues found and retries remain):
+     - Fix identified issues from review feedback
+     - Loop back to step 1 (write plan)
+```
+
+**Initial Review Prompt Structure:**
+```markdown
+task(agent: "pragmatic-plan-reviewer", prompt: "[SUBAGENT] Review the following plan for quality.
+
+# Plan Content
+[Paste entire plan here]
+
+# Review Context
+- This is a self-review before presenting to user
+- Focus on logic/coherence, simplicity, granularity, completeness, phase decisions
+- Provide actionable feedback with recommended fixes")
+```
+
+**Retry Review Prompt Structure:**
+```markdown
+task(agent: "pragmatic-plan-reviewer", prompt: "[SUBAGENT] Review the following revised plan.
+
+# Plan Content
+[Paste entire plan here]
+
+# Previous Review Feedback
+[Paste previous reviewer output here]
+
+# Review Context
+- This is retry attempt [retry_count] of [max_retries]
+- Focus on whether previous critical/high issues were resolved
+- Check for any new issues introduced by revisions
+- Provide actionable feedback with recommended fixes")
+```
+
+**Decision Logic:**
+- Exit loop if no critical/high issues found
+- Exit loop after max retries reached (even with issues)
+- Only critical/high issues block progression (medium/low are advisory)
+
+**Step 3: Request feedback from the user**
 
 ```
 AskUserQuestion({
@@ -396,18 +459,18 @@ AskUserQuestion({
 })
 ```
 
-**Step 3: Handle user feedback**
-If "Approve and proceed": Skip to Step 4
+**Step 4: Handle user feedback**
+If "Approve and proceed": Skip to Step 5
 
 If "Other" feedback:
 1. Parse changes
 2. Edit plan: Tasks (edit/add/remove/reorder), Technical Decisions, Architecture
 3. Document in Implementation Notes if needed
-4. Re-present (return to Step 2)
+4. Re-present (return to Step 3)
 
 Max 3 rounds. After 3, proceed and note concerns.
 
-**Step 4: Finalize and return control (agent-agnostic handoff)**
+**Step 5: Finalize and return control (agent-agnostic handoff)**
 
 Provide a clear handoff message summarizing what was created. Do NOT reference specific implementation agents - the planner is agent-agnostic.
 
