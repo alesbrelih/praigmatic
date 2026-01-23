@@ -94,6 +94,11 @@ You MUST provide a structured completion message in one of three formats EXACTLY
 - `file1.ts` - [changes made]
 - `file2.ts` - [changes made]
 
+**Scope Verification:**
+- Files match specification: [Yes/No]
+- Changes limited to task steps: [Yes/No]
+- Additional out-of-scope changes: [None / List with justification]
+
 **Summary:** [Brief description of what was done]
 ```
 
@@ -290,6 +295,24 @@ Review the output to confirm:
 - All modified/created files for this task are staged
 - No unrelated files are staged
 - Staging area matches the task scope
+
+**Step 3: Scope Verification (Advisory)**
+
+Review `git diff --cached` to verify scope:
+
+**Allowed (Minor scope creep):**
+- Config files required by feature
+- Refactoring related code for maintainability
+- Utility functions used by implementation
+- Obvious bugs fixed in touched code
+- Document in completion: "Additional out-of-scope changes: [justification]"
+
+**Blocked (Major scope creep):**
+- Adding new functionality not in task steps
+- Implementing features from future tasks
+- Changing architecture without justification
+- Adding defensive patterns beyond security spec
+- Return "Blocked" status with explanation
 
 **Note:** Files are staged for review but NOT committed. The orchestration command will handle code review and committing changes.
 

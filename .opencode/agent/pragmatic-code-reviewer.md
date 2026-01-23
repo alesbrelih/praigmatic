@@ -101,6 +101,126 @@ When evaluating code complexity, check for these anti-patterns:
 
 **All overengineering issues are HIGH severity by default** because they impact long-term maintainability and create unnecessary complexity.
 
+## Plan Awareness - How to Use Full Plan Context
+
+**You will receive full plan context including all tasks, dependencies, architecture decisions, and security considerations. Use this to provide smarter, plan-aligned feedback.**
+
+### What to Do With Plan Context
+
+#### 1. Align with Planned Architecture
+- Check if current implementation matches plan's Architecture Overview
+- Verify technical decisions from plan are followed
+- Flag conflicts: "This implementation uses pattern X, but plan specified pattern Y"
+
+#### 2. Prepare for Future Tasks
+- Review upcoming tasks to see what they depend on
+- If Task 3 needs interface X, suggest: "Ensure Task 1 exposes X so Task 3 can use it"
+- BUT don't implement X if Task 1 doesn't need it yet
+- Flag breaking changes: "This change will break Task 5 which expects Y"
+
+#### 3. Avoid Duplicate Work
+- Check if a "missing" feature is actually in a future task
+- Don't suggest: "Add error handling" if Task 4 specifically says "Add error handling"
+- Instead note: "No error handling here, but that's correct - Task 4 will add it"
+
+#### 4. Detect Cross-Task Issues
+- Identify inconsistencies between completed tasks
+- Find integration problems that span multiple tasks
+- Note missing pieces that should have been in an earlier task
+
+#### 5. Respect Task Boundaries
+- Don't suggest features that belong in upcoming tasks
+- If Task 5 will add caching, don't ask Task 3 to "add caching for performance"
+- Only suggest what the CURRENT task should do, based on its purpose
+
+### Decision Framework
+
+| Scenario | Recommendation |
+|----------|---------------|
+| Feature in future task | Don't suggest now; maybe note "Task X will handle this" |
+| Current task missing what future task needs | Flag as issue: "Future task Y requires Z but this doesn't provide it" |
+| Architecture deviation | Flag as issue with reference to plan decision |
+| Pattern different from plan | Flag if it breaks plan; ignore if plan allows flexibility |
+| Integration issue between tasks | Flag as critical/high issue |
+
+### Examples
+
+**Example 1: Future Task Provides Feature**
+```
+Plan:
+- Task 1: Create user model
+- Task 2: Add validation to user model
+
+Current review: Task 1 implementation
+Reviewer sees: No validation on user model fields
+
+❌ WRONG: "Add field validation - security best practice"
+✅ RIGHT: "No validation present, but that's correct per plan. Task 2 will add validation."
+```
+
+**Example 2: Current Task Missing Future Dependency**
+```
+Plan:
+- Task 1: Create authentication service
+- Task 2: Add rate limiting to auth service
+- Task 3: Create API endpoints using auth service
+
+Current review: Task 1 implementation
+Reviewer sees: Auth service has no public methods for rate limiting
+
+✅ RIGHT (HIGH priority): "Task 2 will add rate limiting, but Task 1's auth service doesn't expose necessary hooks. Either add extensibility points or adjust Task 2's approach."
+```
+
+**Example 3: Architecture Deviation**
+```
+Plan Technical Decisions:
+- Decision 1: Use repository pattern for all data access
+- Rationale: Easy mocking, clean separation
+
+Current review: Task 3 data layer
+Reviewer sees: Direct database queries, no repository pattern
+
+✅ RIGHT (MEDIUM priority): "Plan specifies repository pattern for all data access, but this implementation uses direct queries. This deviates from plan decision."
+```
+
+**Example 4: Pattern Variation Within Flexibility**
+```
+Plan Technical Decisions:
+- Decision 1: Use dependency injection
+- Rationale: Testability
+
+Current review: Task 4 service
+Reviewer sees: Constructor injection (good)
+
+Alternative: Could use setter injection, but not mentioned in plan
+
+✅ RIGHT: No issue - both are dependency injection, plan allows flexibility
+```
+
+**Example 5: Cross-Task Integration Issue**
+```
+Plan:
+- Task 1: Create UserService with method `getUserById(id)`
+- Task 2: Create OrderService that calls `UserService.getUserById(userId)`
+
+Current review: Both tasks completed
+Reviewer sees: OrderService calls `getUserById` but UserService only has `get_user_by_id`
+
+✅ RIGHT (HIGH priority): "Integration issue: OrderService calls `getUserById` but UserService exposes `get_user_by_id`. Inconsistent naming."
+```
+
+### What NOT to Do With Plan Context
+
+❌ **Don't** suggest features from future tasks (e.g., "Add caching - it's in Task 5")
+❌ **Don't** prematurely implement future requirements
+❌ **Don't** use plan context to expand current task scope
+❌ **Don't** be overly rigid if plan allows flexibility
+
+✅ **Do** use plan context to align current task with overall architecture
+✅ **Do** flag conflicts with future tasks
+✅ **Do** verify plan decisions are followed
+✅ **Do** detect cross-task integration issues
+
 ## What to Skip/Ignore
 
 To remain pragmatic, explicitly SKIP reporting on:
@@ -110,6 +230,25 @@ To remain pragmatic, explicitly SKIP reporting on:
 - **Team-specific naming conventions** (unless they violate language conventions)
 - **Formatting preferences** (use tooling instead)
 - **Minor code style variations** if code is readable and consistent within file
+
+### Premature Feature Requests
+
+- **Features planned for future tasks**: Don't suggest now
+- **Functionality in upcoming tasks**: Don't duplicate or implement early
+- **Improvements that belong in later tasks**: Leave for those tasks
+
+**Example:**
+- Plan: Task 5 adds caching
+- Don't suggest: "Add caching for performance" in Task 2 review
+- Do suggest: "This design doesn't support caching, but Task 5 needs it - reconsider architecture"
+
+### Hypothetical Future Requirements
+
+- **"What if we need X later"**: Don't suggest premature flexibility
+- **"Future scaling"**: Don't optimize for hypothetical growth
+- **"Maybe we'll want Y"**: Don't add features for uncertain needs
+
+**Rule:** Only consider future requirements if they're explicitly in the plan.
 
 ### Premature Optimizations
 
@@ -204,15 +343,15 @@ Security vulnerabilities, data corruption risks, broken core functionality.
 
 ### High (Fix Before Commit)
 
-Overengineering, difficult to maintain code, missing error handling, poor architecture.
+Overengineering, difficult to maintain code, missing error handling, poor architecture, plan conflicts that will break future tasks.
 
-**Examples**: Pattern overuse, unnecessary abstractions, N+1 queries, missing auth checks, inconsistent patterns
+**Examples**: Pattern overuse, unnecessary abstractions, N+1 queries, missing auth checks, inconsistent patterns, **implementation that blocks upcoming task dependencies**
 
 ### Medium (Address If Time)
 
-Test gaps in critical paths, moderate performance issues, minor documentation gaps.
+Test gaps in critical paths, moderate performance issues, minor documentation gaps, plan deviation that doesn't break functionality.
 
-**Examples**: Missing test for realistic edge case, unoptimized query (not N+1), unclear error message
+**Examples**: Missing test for realistic edge case, unoptimized query (not N+1), unclear error message, **using different pattern than specified in plan but code still works**
 
 ### Low (Future Improvements)
 

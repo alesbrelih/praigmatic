@@ -342,6 +342,8 @@ For detailed guidance on:
 - Steps: 3-6 high-level implementation steps
 - Files: Primary files to modify
 - Dependencies: What must be done first (if any)
+- Provides for Future Tasks: What this task exposes/creates that future tasks will use
+- Needs from Previous Tasks: What this task expects previous tasks to have provided
 
 **CRITICAL: Purpose Documentation for Code Review**
 
@@ -480,7 +482,44 @@ Each task should include:
 - ❌ Too sparse: "Add authentication", "Fix bug" (insufficient guidance)
 - ✅ Just right: "Implement JWT middleware with validation" + 4-6 step breakdown
 
-### Dependency Management
+### Dependency Management - Enhanced
+
+**Explicit Dependencies:**
+- List all hard dependencies in task Dependencies field
+- Document what previous tasks should provide
+- Note what this task provides for future tasks
+
+**Cross-Task Integration:**
+- Identify shared interfaces, contracts, data structures
+- Document how tasks will interact
+- Note any architectural decisions that affect multiple tasks
+
+**Example:**
+```markdown
+- [ ] **Create User Service** (Medium)
+  - Purpose: Core service for user management operations
+  - Steps:
+    - Define User entity and repository interface
+    - Implement UserService with CRUD operations
+    - Add validation for user data
+  - Files: `src/services/user-service.ts`, `src/repositories/user-repo.ts`
+  - Dependencies: None
+  - Provides for Future Tasks: UserService, User entity, repository pattern
+  - Needs from Previous Tasks: None
+
+- [ ] **Add Authentication to User Service** (Medium)
+  - Purpose: Add login/logout functionality to UserService
+  - Steps:
+    - Add authenticate method to UserService
+    - Implement JWT token generation
+    - Add logout method with token invalidation
+  - Files: `src/services/user-service.ts`, `src/auth/jwt.ts`
+  - Dependencies: Create User Service
+  - Provides for Future Tasks: Authentication methods, JWT utilities
+  - Needs from Previous Tasks: UserService, User entity
+```
+
+**Dependency Management - Basic:**
 - Identify critical path
 - Parallelize independent tasks
 - Minimize blocking dependencies

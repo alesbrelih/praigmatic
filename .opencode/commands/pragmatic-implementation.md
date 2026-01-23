@@ -80,29 +80,80 @@ Increment: `retry_count = retry_count + 1`
 
 Display "🔄 Code review attempt [retry_count]/[max_retries]..."
 
-1. **Review Staged Changes**: Verify files staged with `git status`. Request code review with `task(agent: "pragmatic-code-reviewer", prompt: "Review STAGED changes for: [Task Name]. Task Purpose: [from plan]. Iteration: Attempt [retry_count] of [max_retries]. Focus on implementation according to task requirements.")`
+ 1. **Review Staged Changes**: Verify files staged with `git status`. Request code review with:
+    ```markdown
+    task(agent: "pragmatic-code-reviewer", prompt: "[SUBAGENT] Review STAGED changes for: [Task Name].
+    
+    # Current Task
+    **Task Name:** [Task Name]
+    **Purpose:** [from plan]
+    **Steps:** [from plan as numbered list]
+    **Files Modified:** [staged files list]
+    
+    # Task Context
+    ### Architecture
+    [relevant parts from plan]
+    
+    ### Decisions
+    [relevant parts from plan]
+    
+    ### Security Considerations
+    [if applicable]
+    
+    # Full Plan Context
+    **Total Tasks:** [number]
+    **Completed Tasks:** [number]
+    **Current Task:** [task name]
+    
+    ### Upcoming Tasks
+    - **Task 2:** [Name] - [Purpose]
+    - **Task 3:** [Name] - [Purpose]
+    - **Task 4:** [Name] - [Purpose]
+    - ...
+    
+    ### Task Dependencies
+    - This task depends on: [list]
+    - Tasks that depend on this: [list]
+    
+    ### Overall Architecture
+    [Architecture Overview section from plan]
+    
+    ### Technical Decisions
+    [Technical Decisions section from plan]
+    
+    # Review Instructions
+    Review the current task implementation with full plan context. Consider:
+    - Does this task align with planned architecture?
+    - Will this implementation support upcoming tasks?
+    - Are there any conflicts with future work?
+    - Should this task include more/less to prepare for future tasks?
+    
+    Do NOT suggest features/improvements that are planned for upcoming tasks.
+    
+    Iteration: Attempt [retry_count] of [max_retries].")
+    ```
 
 2. **Decision Point**: Check if code-reviewer indicates critical/high issues.
 
    - **No critical/high issues**: Exit loop → proceed to commit
    - **Critical/high issues found**: If `retry_count >= max_retries`, exit loop → handle max retries. Otherwise, continue.
 
-3. **Re-invoke Developer** (if issues found and retries remain):
-   Build retry prompt:
-   ```markdown
-   # Task Execution Request (CODE REVIEW RETRY - Attempt [retry_count] of [max_retries])
+ 3. **Re-invoke Developer** (if issues found and retries remain):
+    Build retry prompt:
+    ```markdown
+    # Task Execution Request (CODE REVIEW RETRY - Attempt [retry_count] of [max_retries])
 
-   ## Task Information
-   **Task Name:** [original task name]
-   **Purpose:** [original purpose]
+    ## Task Information
+    **Task Name:** [original task name]
+    **Purpose:** [original purpose]
 
-   ## Code Review Feedback
-   **Status:** Previous implementation had critical/high issues that must be fixed.
+    ## Code Review Feedback
+    **Status:** Previous implementation had critical/high issues that must be fixed.
 
-   [Paste ENTIRE code-reviewer output here]
+    [Paste ENTIRE code-reviewer output here]
 
-   ## Previous Implementation Context
-   [Include original task steps, files, context]
+    ## Previous Implementation Context
+    [Include original task steps, files, context, architecture, decisions, security]
 
     ## Instructions
     1. Review code review feedback
@@ -140,7 +191,36 @@ Read plan to find next unchecked task. Prioritize `[~]` over `[ ]`. Repeat from 
 
 **Holistic Review:**
 1. Identify relevant commits with `git log --oneline --all --grep="[Plan Name]"`
-2. Request holistic review: `task(agent: "pragmatic-code-reviewer", prompt: "Perform holistic review of entire functionality. Plan: [Name], Purpose: [purpose], Tasks: [list], Commits: [paste git log]. Review for consistency, architecture coherence, integration issues, overall quality, security.")`
+2. Request holistic review:
+   ```markdown
+   task(agent: "pragmatic-code-reviewer", prompt: "[SUBAGENT] Perform holistic review of entire functionality.
+   
+   # Plan Overview
+   **Plan Name:** [from plan]
+   **Plan Purpose:** [from plan]
+   **Total Tasks:** [number]
+   **All Tasks Completed:** [Yes/No]
+   
+   # Completed Tasks
+   1. **Task 1:** [Name] - [Purpose] - Status: ✅
+   2. **Task 2:** [Name] - [Purpose] - Status: ✅
+   ...
+   
+   # Architecture & Decisions
+   [Architecture Overview section from plan]
+   [Technical Decisions section from plan]
+   
+   # Implementation Context
+   [Commits from git log]
+   
+   # Review Focus
+   - Consistency across all completed tasks
+   - Architecture coherence with plan
+   - Integration issues between tasks
+   - Overall quality, security, maintainability
+   
+   **Note:** Only review completed work. Do not suggest features planned for future tasks.")
+   ```
 
 **Holistic Improvement Loop (Conditional):**
 Initialize: `holistic_retry_count = 0`, `max_holistic_retries = 3`
@@ -202,9 +282,33 @@ Display "🔄 Holistic improvement attempt [holistic_retry_count]/[max_holistic_
 
       (Note: Developer failure/blocked status immediately ends the improvement loop, regardless of retry count remaining. The "max retries" limit only applies to successful iteration cycles where the developer completes work but the code-reviewer still finds critical/high issues.)
 
-3. **Request Updated Holistic Review:**
+ 3. **Request Updated Holistic Review:**
 
-   `task(agent: "pragmatic-code-reviewer", prompt: "Perform holistic review again. Plan: [Name], Commits: [paste updated git log]. Focus on whether previous critical/high issues were resolved.")`
+    ```markdown
+    task(agent: "pragmatic-code-reviewer", prompt: "[SUBAGENT] Perform holistic review again.
+    
+    # Plan Overview
+    **Plan Name:** [from plan]
+    **Plan Purpose:** [from plan]
+    **Total Tasks:** [number]
+    **All Tasks Completed:** [Yes/No]
+    
+    # Completed Tasks
+    [Same task list as initial review]
+    
+    # Architecture & Decisions
+    [Architecture Overview section from plan]
+    [Technical Decisions section from plan]
+    
+    # Implementation Context
+    [Commits from updated git log]
+    
+    # Review Focus
+    Focus on whether previous critical/high issues were resolved.
+    Review for consistency, architecture coherence, integration issues, overall quality, security.
+    
+    **Note:** Only review completed work. Do not suggest features planned for future tasks.")
+    ```
 
  4. **Severity Check (Loop Continuation):**
 
