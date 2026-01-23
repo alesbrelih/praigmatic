@@ -22,7 +22,7 @@ Read plan file and parse tasks (format: `- [ ] **Task Name** (SIZE)`). Status: `
 For each task:
 
 #### 4.1 Mark In-Progress
-Use `plan-tasks` with `markInProgress` operation and task index. Update plan before invoking developer.
+Update plan before invoking developer.
 
 #### 4.2 Invoke Developer
 Construct task prompt following format in `.opencode/design/new-command-developer-interface.md`:
@@ -121,7 +121,7 @@ Display "🔄 Code review attempt [retry_count]/[max_retries]..."
 
 #### 4.5 Commit (Success Path)
 
-Mark task completed with `plan-tasks` → `markCompleted`. Commit with: `task(agent: "pragmatic-committer", prompt: "[SUBAGENT] Commit staged changes. Context: Completed task '[Task Name]'. Files: [file list]")`
+Mark task completed. Completed`. Commit with: `task(agent: "pragmatic-committer", prompt: "[SUBAGENT] Commit staged changes. Context: Completed task '[Task Name]'. Files: [file list]")`
 
 #### 4.6 Handle Max Retries Exceeded (Failure Path)
 

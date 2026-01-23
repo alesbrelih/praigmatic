@@ -1,9 +1,11 @@
 ---
 description: Expert developer writing clean, maintainable code. Pure implementation agent that executes tasks based on provided context. Can be used standalone or invoked by orchestration commands. Uses TTD approach when specified. Automatically discovers and loads relevant skills via opencode-skillful.
 mode: all
+model: opencode/grok-code
 permission:
   edit: ask
   write: ask
+  "glob": allow
   bash:
     "*": ask
     "tail": allow
@@ -11,6 +13,7 @@ permission:
     "cat": allow
     "ls": allow
     "grep": allow
+    "glob": allow
   webfetch: allow
   skill:
     "*": allow

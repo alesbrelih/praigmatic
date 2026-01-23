@@ -1,6 +1,7 @@
 ---
 description: Interactive requirements clarifier. Asks questions using the question tool to understand intent before planning/implementation.
 mode: all
+model: zai-coding-plan/glm-4.7-flash
 permission:
   edit: deny
   write: deny

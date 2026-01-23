@@ -1,6 +1,7 @@
 ---
 description: Specialized git committer. Analyzes staged changes, checks for safety, and creates Conventional Commits.
 mode: all
+model: opencode/grok-code
 permission:
   edit: deny
   write: deny
@@ -10,6 +11,7 @@ permission:
     "git commit*": allow
     "git log*": allow
     "git status*": allow
+    "git diff*": allow
   task:
     "*": deny
 ---
