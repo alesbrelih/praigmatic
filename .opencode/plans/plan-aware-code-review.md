@@ -41,7 +41,7 @@ Add full plan context to code review process so pragmatic-code-reviewer can make
 
 ## Tasks
 
-- [ ] **Update pragmatic-implementation.md code review prompts** (Medium)
+- [x] **Update pragmatic-implementation.md code review prompts** (Medium)
   - Purpose: Pass full plan context to code-reviewer agent so it can make plan-aligned recommendations
   - Steps:
     1. Update individual task code review prompt (line 83) to include architecture, decisions, security, steps, files
@@ -52,7 +52,7 @@ Add full plan context to code review process so pragmatic-code-reviewer can make
   - Files: `.opencode/commands/pragmatic-implementation.md`
   - Dependencies: None
 
-- [ ] **Add Plan Awareness guidelines to pragmatic-code-reviewer.md** (Medium)
+- [x] **Add Plan Awareness guidelines to pragmatic-code-reviewer.md** (Medium)
   - Purpose: Teach code reviewer how to use full plan context for intelligent, plan-aligned feedback
   - Steps:
     1. Add "Plan Awareness" section with examples of using plan context
@@ -63,7 +63,7 @@ Add full plan context to code review process so pragmatic-code-reviewer can make
   - Files: `.opencode/agent/pragmatic-code-reviewer.md`
   - Dependencies: None
 
-- [ ] **Update pragmatic-developer.md scope validation** (Small)
+- [x] **Update pragmatic-developer.md scope validation** (Small)
   - Purpose: Allow developer to refactor for maintainability while blocking new feature creep
   - Steps:
     1. Rename Phase 4 from "Scope Validation" to "Scope Verification (Advisory)"
@@ -73,7 +73,7 @@ Add full plan context to code review process so pragmatic-code-reviewer can make
   - Files: `.opencode/agent/pragmatic-developer.md`
   - Dependencies: None
 
-- [ ] **Enhance task dependencies in pragmatic-planner.md** (Small)
+- [x] **Enhance task dependencies in pragmatic-planner.md** (Small)
   - Purpose: Improve task dependency tracking so reviewer can better assess cross-task integration
   - Steps:
     1. Add "Provides for Future Tasks" field to task format
