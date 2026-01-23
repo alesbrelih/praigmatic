@@ -392,20 +392,28 @@ Initialize: retry_count = 0, max_retries = 3
 
 While retry_count < max_retries:
   Increment: retry_count = retry_count + 1
-  
+
   Display "🔄 Plan review attempt [retry_count]/[max_retries]..."
-  
+
   1. Invoke plan-reviewer:
      task(agent: "pragmatic-plan-reviewer", prompt: "[full plan content]")
-  
+
   2. Decision Point: Check if reviewer returned critical/high issues
-  
+
      - No critical/high issues: Exit loop → proceed to user feedback
-     - Critical/high issues found: If retry_count >= max_retries, exit loop. Otherwise, continue.
-  
-  3. Revise Plan (if issues found and retries remain):
-     - Fix identified issues from review feedback
-     - Loop back to step 1 (write plan)
+     - Critical/high issues found:
+       - If retry_count >= max_retries:
+         Display "⚠️ Plan review max retries reached. Some issues remain. Presenting plan to user for feedback."
+         Exit loop → proceed to user feedback
+       - Otherwise: Proceed to revision step
+
+  3. Revision Step (when critical/high issues found and retries remain):
+     - Parse reviewer feedback to identify specific issues
+     - Fix identified issues:
+       - Edit tasks (add/remove/modify based on feedback)
+       - Update architecture if reviewer found issues
+       - Update phase decisions if quality issues identified
+     - Loop back to step 1 (invoke plan-reviewer)
 ```
 
 **Initial Review Prompt Structure:**
