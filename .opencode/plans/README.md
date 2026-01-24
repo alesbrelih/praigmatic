@@ -16,6 +16,17 @@ This directory contains detailed implementation plans created by the pragmatic-p
 
 2. **Plan file naming**: Plans use kebab-case naming (e.g., `add-oauth-authentication.md`)
 
+3. **Automated plan review**: Before the plan is presented to you, it goes through an automated quality review loop:
+   - **What the review checks**:
+     - **Logic & Coherence**: Task dependencies are correct, sequencing makes sense, no circular dependencies
+     - **Simplicity vs Overengineering**: Appropriate scope, no unnecessary complexity, no redundant tasks
+     - **Task Granularity**: 80%+ tasks are Small/Medium size, clear boundaries, not too large or micromanaged
+     - **Completeness**: All necessary tasks included, integration points identified, testing strategy defined, security considerations addressed
+     - **Phase Decisions Quality**: All phases documented with rationale, optional phases justified
+   - **Retry mechanism**: The planner can attempt up to 3 revisions (initial + 2 fixes) to address Critical or High severity issues
+   - **User feedback flow**: After review passes (no Critical/High issues), you review and approve the plan; if max retries reached with issues, you see the plan with a warning
+   - **Result**: You only see high-quality plans that have passed automated quality checks
+
 ### Implementing Plans
 
 1. **Use the `/pragmatic-implementation` command**: This command reads the plan file and starts implementation (plan checkboxes track progress)
