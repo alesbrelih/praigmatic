@@ -160,30 +160,3 @@ Without purpose documentation, code reviewers may:
 When developer passes changes to reviewer, they include both:
 1. Plan purpose (overall context)
 2. Task purpose (what this specific change achieves)
-
----
-
-## Plan Review Loop Integration
-
-This template is designed to work with the automated plan review loop. After completing your plan using this template structure, the pragmatic-planner agent will:
-
-1. **Self-Review (max 3 attempts):** Automatically invoke pragmatic-plan-reviewer to identify issues
-   - Focus areas: logic/coherence, simplicity, granularity, completeness, phase decisions
-   - Critical/high issues trigger revision before user sees the plan
-   - Medium/low issues are advisory only
-
-2. **User Feedback:** Present the reviewed plan for approval
-   - User can approve, request changes, or ask questions
-   - Plan is updated based on feedback
-
-3. **Implementation:** Approved plans are ready for task-by-task execution
-
-The review loop ensures plans meet quality standards before implementation begins, reducing backtracking and rework.
-
-**Review Process:**
-- Initial review checks for structural completeness and logical coherence
-- Revisions address critical/high issues identified by reviewer
-- Max 3 revision attempts to resolve issues before presenting to user
-- Final review prompt includes previous feedback for context
-
-This template provides all the sections needed for effective plan review and implementation.
