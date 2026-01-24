@@ -129,6 +129,34 @@ Too Sparse                    ✓ OPTIMAL                      Too Detailed
 
 ---
 
+## Plan Review Loop Workflow
+
+**Automated quality review (Phase 7):**
+
+1. Planner writes initial plan to `.opencode/plans/[feature].md`
+2. Planner invokes pragmatic-plan-reviewer with full plan content
+3. Reviewer evaluates plan against quality criteria:
+   - Logic & Coherence (dependencies, sequencing)
+   - Simplicity vs Overengineering (appropriate complexity)
+   - Task Granularity (80% Small/Medium tasks)
+   - Completeness (testing, security, integration points)
+   - Phase Decisions Quality (rationale provided)
+4. If Critical/High issues found:
+   - Planner revises plan to address issues
+   - Re-invoke reviewer (max 3 attempts)
+5. If no Critical/High issues OR max retries reached:
+   - Present plan to user for feedback
+   - User approves or requests changes
+6. Approved plan is ready for implementation
+
+**Key Points:**
+- Max 3 revision attempts (initial + 2 fixes)
+- Only Critical/High issues block progression
+- Medium/Low issues are advisory only
+- User ultimately approves regardless of review outcome
+
+---
+
 ## Decision Documentation Depth
 
 ### Include in Planfile

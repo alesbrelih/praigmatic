@@ -213,6 +213,7 @@ For detailed guidance on:
 - Verification checklist
 
 **Plan file template (quick reference):**
+<!-- Plan template below mirrors plan-template.md - update both together -->
 
 ```markdown
 # [Feature Name] Implementation Plan
