@@ -6,7 +6,7 @@ Create a new OpenCode agent called "SamoBracic" that serves as a project manager
 
 ## Tasks
 
-- [ ] **Create SamoBracic Agent File and Validate Configuration** (Small)
+- [x] **Create SamoBracic Agent File and Validate Configuration** (Small)
   - Purpose: Create the agent markdown file with proper OpenCode configuration and immediately validate setup
   - Steps:
     - Create `.opencode/agent/samo-bracic.md` file
