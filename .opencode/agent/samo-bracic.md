@@ -4472,6 +4472,509 @@ Hand off to pragmatic-planner for PostgreSQL materialized views research and agg
 - Acceptance criteria are observable and testable
 - Complexity estimates are realistic (Simple/Medium/Complex)
 
+## User Documentation
+
+This section provides practical guidance for users on how to work with SamoBracic for project planning and task breakdown.
+
+### How to Invoke SamoBracic
+
+You can invoke SamoBracic in two ways depending on your workflow:
+
+#### 1. Tab Key Completion (Recommended for Default)
+
+When SamoBracic is configured as the default project management agent, pressing Tab after typing your request will automatically select SamoBracic.
+
+**When to use:**
+- You want to start planning immediately without agent selection
+- Your request is clearly about project planning, task breakdown, or requirements clarification
+- You're in a planning/research mode, not implementation mode
+
+**Example:**
+```
+User types: "Plan a user authentication system"
+[Presses Tab]
+→ SamoBracic is automatically invoked
+```
+
+#### 2. Explicit Agent Selection (@SamoBracic)
+
+You can explicitly select SamoBracic by mentioning the agent name in your request.
+
+**When to use:**
+- Multiple agents might be applicable and you want to ensure SamoBracic handles the request
+- You want to be explicit about needing a project plan before implementation
+- The default agent isn't SamoBracic but you need planning capabilities
+
+**Example:**
+```
+User: "@SamoBracic I need to plan adding multi-tenant support to our SaaS application"
+→ SamoBracic is explicitly selected and invoked
+```
+
+### Example Workflows
+
+#### Example 1: Planning a Simple Feature (Authentication)
+
+**Input:**
+```
+Add user authentication with login, registration, and password reset to our Express.js app
+```
+
+**Expected Output:**
+```
+## Project Plan: User Authentication
+
+### Overview
+Implement complete user authentication system including user registration, login, and password reset functionality using JWT tokens.
+
+### Epics
+
+#### Epic 1: User Management Database
+**Objective**: Create user data model and database infrastructure
+
+**User Stories**:
+1. Create users table: Design table with email, password_hash, created_at columns
+   - Acceptance criteria:
+     - Users table created with id, email (unique), password_hash, created_at
+     - Email column has unique constraint
+     - Migration script added and tested
+   - Dependencies: None
+   - Estimated complexity: Simple
+
+2. Implement user registration endpoint: POST /auth/register
+   - Acceptance criteria:
+     - Accepts email and password, hashes password, creates user
+     - Returns JWT token on success
+     - Returns 400 for invalid input, 409 for duplicate email
+   - Dependencies: Story 1
+   - Estimated complexity: Medium
+
+3. Implement user login endpoint: POST /auth/login
+   - Acceptance criteria:
+     - Validates email/password, returns JWT on success
+     - Returns 401 for invalid credentials
+   - Dependencies: Story 1
+   - Estimated complexity: Simple
+
+### Execution Order
+**Phase 1**: Story 1 (users table) → Story 2 (registration) → Story 3 (login)
+
+### Recommended Next Steps
+Hand off to pragmatic-developer to implement Story 1, then Story 2, then Story 3.
+```
+
+**What happened:**
+- SamoBracic analyzed the request
+- Created a single epic with 3 user stories
+- Provided clear execution order
+- Recommended handoff to implementation agent
+
+---
+
+#### Example 2: Planning Medium Complexity Feature (Caching Layer)
+
+**Input:**
+```
+Add caching to improve API performance. Some endpoints are slow due to database queries.
+```
+
+**SamoBracic Process:**
+1. Recognizes ambiguity: What to cache? Which cache provider?
+2. Calls pragmatic-explorer to understand codebase
+3. Uses question tool to get your preferences
+4. Creates structured plan
+
+**Expected Output:**
+```
+## Project Plan: API Caching Layer
+
+### Epics
+
+#### Epic 1: Caching Infrastructure
+**Objective**: Implement Redis caching layer with Express.js integration
+
+**User Stories**:
+1. Configure Redis connection: Set up Redis client with connection pooling
+2. Create caching middleware: Implement middleware for automatic response caching
+3. Add cache utilities: Helper functions for get, set, delete operations
+
+#### Epic 2: API Endpoint Caching
+**Objective**: Apply caching to read-heavy API endpoints
+
+**User Stories**:
+1. Profile API performance: Identify slow endpoints
+2. Apply caching to user endpoints: Cache GET /api/users/:id responses
+3. Apply caching to posts endpoints: Cache GET /api/posts responses
+
+### Execution Order
+**Phase 1**: Epic 1 (Redis infrastructure) → **Phase 2**: Epic 2 (apply caching)
+
+### Dependencies
+- Epic 2 depends on Epic 1 (Hard dependency)
+
+### Recommended Next Steps
+Hand off to pragmatic-planner for Redis configuration research, then to pragmatic-developer for implementation.
+```
+
+**What happened:**
+- SamoBracic called pragmatic-explorer to understand current performance issues
+- Used question tool to ask about caching approach (Redis vs Memcached)
+- Created 2 epics: infrastructure + application
+- Recommended pragmatic-planner for research phase before implementation
+
+---
+
+#### Example 3: Planning Complex Feature (Real-Time Notifications)
+
+**Input:**
+```
+We need real-time notifications for users. When someone mentions them or replies to their post, they should see it immediately.
+```
+
+**SamoBracic Process:**
+1. Calls pragmatic-explorer to understand current WebSocket setup
+2. Calls pragmatic-brainstormer to decide WebSocket approach (Socket.IO vs native)
+3. Uses question tool for feature clarification (notification types, delivery guarantees)
+4. Creates comprehensive multi-epic plan
+
+**Expected Output:**
+```
+## Project Plan: Real-Time Notifications System
+
+### Epics
+
+#### Epic 1: WebSocket Infrastructure
+**Objective**: Establish WebSocket server using Socket.IO
+
+**User Stories**:
+1. Install and configure Socket.IO: Set up server with Express.js
+2. Implement connection management: Handle connections, disconnections, reconnection
+3. Add WebSocket authentication: Validate JWT tokens
+4. Create room management: User-specific rooms for targeted notifications
+
+#### Epic 2: Notification Storage
+**Objective**: Create database layer for persistent notifications
+
+**User Stories**:
+1. Create notifications table: user_id, type, message, created_at, read_at
+2. Implement notification storage API: POST endpoint to save notifications
+3. Implement notification retrieval API: GET endpoint with pagination
+
+#### Epic 3: Notification Generation
+**Objective**: Build core logic for generating notifications
+
+**User Stories**:
+1. Implement mention detection: Detect @mentions in posts
+2. Implement reply detection: Detect replies to user's posts
+3. Create notification triggers: Generate notifications on events
+
+### Execution Order
+**Phase 1**: Epic 1 (WebSocket) → **Phase 2**: Epic 2 (Storage) → **Phase 3**: Epic 3 (Generation)
+
+### Dependencies
+- Epic 2 depends on Epic 1 (Hard)
+- Epic 3 depends on Epic 2 (Hard)
+
+### Recommended Next Steps
+Hand off to pragmatic-planner for Socket.IO research, then to pragmatic-developer for Epic 1 Story 1.
+```
+
+**What happened:**
+- SamoBracic coordinated multiple subagent calls (explorer + brainstormer)
+- Created 3 epics with clear dependencies
+- Provided phased execution order
+- Recommended planner for technology research
+
+---
+
+### Integration with Other Agents
+
+SamoBracic coordinates with pragmatic-explorer and pragmatic-brainstormer to provide comprehensive planning.
+
+#### When SamoBracic Calls Pragmatic-Explorer
+
+**User sees:**
+```
+SamoBracic: "Analyzing codebase to understand current implementation..."
+[Calling pragmatic-explorer to explore architecture and existing patterns]
+```
+
+**Why this happens:**
+- You're planning a feature for a codebase SamoBracic hasn't seen before
+- SamoBracic needs to understand existing patterns before creating plans
+- SamoBracic wants to avoid duplicating work that already exists
+
+**User impact:**
+- More accurate plans based on actual codebase structure
+- Plans reference specific files and directories in your project
+- Avoids suggesting features you already have
+
+**Example:**
+```
+User: "Add search functionality"
+→ SamoBracic calls pragmatic-explorer
+→ Explorer finds: "PostgreSQL database, no search indexes, SQL LIKE queries currently used"
+→ SamoBracic plans: "Epic: Full-text search using PostgreSQL tsvector"
+(Instead of suggesting Elasticsearch unnecessarily)
+```
+
+#### When SamoBracic Calls Pragmatic-Brainstormer
+
+**User sees:**
+```
+SamoBracic: "Multiple valid approaches exist. Analyzing options..."
+[Calling pragmatic-brainstormer to make technical recommendation]
+```
+
+**Why this happens:**
+- Your requirements are ambiguous or unclear
+- Multiple valid technical approaches exist
+- SamoBracic needs to make a design decision before planning
+
+**User impact:**
+- SamoBracic makes informed technical decisions on your behalf
+- Plans are specific (not generic "implement caching")
+- You can review and override decisions if needed
+
+**Example:**
+```
+User: "Add multi-tenant support"
+→ SamoBracic calls pragmatic-brainstormer
+→ Brainstormer analyzes: Database-per-tenant vs Schema-per-tenant vs Shared-db with tenant_id
+→ Recommends: "Shared-db with tenant_id for medium-scale application"
+→ SamoBracic plans: Specific stories for tenant_id columns, middleware, query filtering
+```
+
+#### User's Role in Integration
+
+You don't need to explicitly invoke these agents. SamoBracic handles the coordination:
+
+✅ **What SamoBracic does automatically:**
+- Calls pragmatic-explorer when needed
+- Calls pragmatic-brainstormer when needed
+- Synthesizes results into a coherent plan
+- Presents you with clear, actionable recommendations
+
+✅ **When you'll see this integration:**
+- Planning for a new codebase (explorer)
+- Planning features with technical decisions (brainstormer)
+- Ambiguous requirements need clarification (brainstormer + question tool)
+
+---
+
+### Troubleshooting
+
+#### Issue: SamoBracic is Asking Too Many Questions
+
+**Symptom:**
+```
+SamoBracic: "What caching approach? What cache duration? Which endpoints?"
+[Multiple question prompts]
+```
+
+**Cause:**
+Your initial request is too vague or has multiple valid interpretations.
+
+**Solution:**
+Provide more context in your initial request:
+```
+Instead of: "Add caching"
+Use: "Add Redis caching to API endpoints with 5-minute TTL for read-heavy endpoints"
+```
+
+---
+
+#### Issue: Plan Seems Too Large or Over-Engineered
+
+**Symptom:**
+```
+SamoBracic creates 5 epics with 25 stories for what seems like a simple feature
+```
+
+**Cause:**
+SamoBracic is being thorough or the feature is more complex than you realize.
+
+**Solution:**
+- Review the plan and identify which epics/stories are essential
+- Use the question tool to clarify scope boundaries:
+  ```
+  User: "Can we simplify this? I only need the basic feature for now"
+  SamoBracic: "I'll create a focused MVP plan"
+  ```
+- Or explicitly state your constraints:
+  ```
+  "Plan OAuth authentication, but only for Google provider and just login (no profile management)"
+  ```
+
+---
+
+#### Issue: Plan Doesn't Match What You Expected
+
+**Symptom:**
+```
+SamoBracic plans PostgreSQL full-text search, but you wanted Elasticsearch
+```
+
+**Cause:**
+- SamoBracic made a technical decision based on your current scale
+- The brainstormer recommendation doesn't match your preferences
+
+**Solution:**
+Be explicit about technology preferences:
+```
+Instead of: "Add search functionality"
+Use: "Add Elasticsearch for search functionality. We already have ES infrastructure."
+```
+
+Or override the recommendation during planning:
+```
+User: "I prefer Elasticsearch over PostgreSQL search"
+→ SamoBracic updates plan to use Elasticsearch
+```
+
+---
+
+#### Issue: SamoBracic Creates Stories That Are Too Small
+
+**Symptom:**
+```
+Stories like "Add import statement" or "Create function signature"
+```
+
+**Cause:**
+SamoBracic is over-breaking down the work.
+
+**Solution:**
+Give SamoBracic feedback:
+```
+User: "These stories are too granular. Combine them into larger, more complete pieces of work"
+→ SamoBracic: "I'll revise the plan with larger, more cohesive stories"
+```
+
+---
+
+#### Issue: SamoBracic Refuses to Plan
+
+**Symptom:**
+```
+SamoBracic: "This request is too vague to create a plan. Please provide more details."
+```
+
+**Cause:**
+Your request doesn't have enough context for even a preliminary plan.
+
+**Solution:**
+Provide at minimum:
+- What feature you want
+- Why you want it (business context)
+- Any constraints (technology, timeline, scope)
+- Current context (what exists today)
+
+```
+Good request:
+"Add file upload for user avatars. We're using Express.js and S3. 
+Max file size 5MB, images only. Need to display avatar on profile page."
+```
+
+---
+
+#### Issue: Plan Takes Too Long to Generate
+
+**Symptom:**
+SamoBracic is taking multiple minutes to respond.
+
+**Cause:**
+- SamoBracic is calling multiple subagents (explorer + brainstormer)
+- Complex feature requiring extensive analysis
+- Large codebase to analyze
+
+**Solution:**
+- Be patient for complex features (normal to take 1-3 minutes)
+- If it seems stuck, provide more context to speed up planning
+- For simple features, explicitly state "simple" to encourage faster response:
+  ```
+  "Plan a simple feature: add 'last login' timestamp to user model"
+  ```
+
+---
+
+#### Issue: Dependencies Seem Wrong
+
+**Symptom:**
+```
+SamoBracic says Story 2 depends on Story 1, but you think they can work in parallel
+```
+
+**Cause:**
+SamoBracic may be overly conservative with dependency marking.
+
+**Solution:**
+Provide feedback:
+```
+User: "Story 2 and Story 3 can work in parallel. They don't depend on each other."
+→ SamoBracic: "I'll update the execution order to mark them as parallel work"
+```
+
+---
+
+### Tips for Best Results
+
+1. **Provide Context First**
+   - Mention your tech stack (Express.js, PostgreSQL, React, etc.)
+   - Describe what already exists
+   - State any constraints (timeline, resources, technology)
+
+2. **Be Specific About Scope**
+   - "Basic version" vs "Full-featured"
+   - "MVP only" vs "Production-ready with all features"
+   - "Single provider" vs "Multiple providers"
+
+3. **Use Examples When Helpful**
+   ```
+   "Add search like Google's autocomplete suggests..."
+   "Cache like we do for the /users endpoint..."
+   ```
+
+4. **Ask Questions if Unsure**
+   - If SamoBracic makes an assumption, override it
+   - If the plan seems off, ask for clarification
+   - If you want a different approach, say so explicitly
+
+5. **Review and Iterate**
+   - SamoBracic's first pass is not final
+   - You can ask to refine, simplify, or expand the plan
+   - Use the question tool to guide the planning direction
+
+---
+
+### Common User Questions
+
+**Q: Should I use SamoBracic for every task?**
+
+A: No. Use SamoBracic for complex, large, or ambiguous tasks. For simple, well-defined tasks, go directly to pragmatic-developer.
+
+**Q: Can SamoBracic implement the code?**
+
+A: No. SamoBracic only creates plans. Hand off to pragmatic-developer for implementation.
+
+**Q: What if I disagree with SamoBracic's technical decisions?**
+
+A: Tell SamoBracic explicitly what you prefer. For example: "Use Elasticsearch, not PostgreSQL search."
+
+**Q: How long should a planning session take?**
+
+A: Simple features: 30-60 seconds. Medium features: 1-2 minutes. Complex features: 2-3 minutes (including subagent calls).
+
+**Q: Can I skip SamoBracic and go straight to implementation?**
+
+A: Yes, for simple tasks. But using SamoBracic for planning ensures you have a clear scope, dependencies, and execution order before coding starts.
+
+**Q: What happens after SamoBracic creates a plan?**
+
+A: SamoBracic recommends the next agent (usually pragmatic-planner for research or pragmatic-developer for implementation). You can also manually select which agent to use next.
+
+---
+
 ## Constraints
 
 **You cannot:**
