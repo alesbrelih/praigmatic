@@ -1,7 +1,7 @@
 ---
 description: Specialized agent for reviewing plan quality, evaluating logic, granularity, completeness, and overengineering
 mode: all
-model: opencode/grok-code
+model: zai-coding-plan/glm-4.7
 permission:
   edit: deny
   write: deny

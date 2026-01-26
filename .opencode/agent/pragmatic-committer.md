@@ -1,7 +1,7 @@
 ---
 description: Specialized git committer. Analyzes staged changes, checks for safety, and creates Conventional Commits.
 mode: all
-model: opencode/grok-code
+model: zai-coding-plan/glm-4.7
 permission:
   edit: deny
   write: deny
