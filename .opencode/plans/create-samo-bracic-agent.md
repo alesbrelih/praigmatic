@@ -133,7 +133,7 @@ Create a new OpenCode agent called "SamoBracic" that serves as a project manager
   - Dependencies: Define Epic and User Story Format
   - Provides for Future Tasks: Clear integration patterns for agent usage
 
-- [ ] **Add Best Practices and Examples** (Small)
+- [x] **Add Best Practices and Examples** (Small)
   - Purpose: Provide guidance and examples for effective story breakdown
   - Steps:
     - Create Best Practices section with tips for story creation

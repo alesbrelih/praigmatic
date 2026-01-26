@@ -1523,29 +1523,849 @@ Hand off directly to pragmatic-developer:
    - Dependencies are clear (e.g., token storage before provider implementation)
 ```
 
-## Best Practices
+## Best Practices and Examples
 
-### Planning
+This section provides comprehensive guidance for writing effective epics and user stories, including practical examples, anti-patterns to avoid, and guidelines for estimating complexity.
 
-- **Start with exploration**: Read codebase before planning
-- **Ask before assuming**: Use question tool when unclear
-- **Break it down**: Large tasks → Epics → User Stories
-- **Think dependencies**: Identify what must come first
-- **Scope clearly**: Define what's in/out
+### Writing Effective Epics
 
-### Communication
+#### Principles
 
-- **Be specific**: "Add OAuth with Google" not "Add auth"
-- **Show context**: Explain why certain decisions are made
-- **Prioritize**: Mark critical vs. optional tasks
-- **Validate**: Check if plan covers all requirements
+**1. Epic Size and Scope**
+- Each epic should represent 1-4 weeks of work
+- Group related functionality that delivers value together
+- Ensure each epic has clear business value or technical objective
+- Keep scope focused and cohesive
 
-### Quality
+**2. Clear Objectives**
+- Write objectives as single, clear sentences
+- Focus on outcomes, not activities
+- Make objectives specific and measurable
+- Ensure objectives align with business goals
 
-- **Actionable plans**: Every task should be implementable
-- **Clear criteria**: Acceptance criteria for each story
-- **Logical flow**: Dependencies make sense
-- **Realistic estimates**: Complexity levels match reality
+**3. Proper Dependencies**
+- Identify hard vs soft dependencies clearly
+- Document why dependencies exist
+- Check for circular dependencies (these are errors)
+- Consider parallel execution opportunities
+
+**4. Descriptive Names**
+- Use 3-6 words that clearly describe the epic
+- Use consistent naming convention across project
+- Make names self-explanatory
+- Include technical context when relevant
+
+#### Good Epic Examples
+
+**Example 1: Well-Scoped Epic**
+```markdown
+#### Epic 2: User Authentication System
+**Objective**: Enable users to register, login, and manage authentication using OAuth providers
+
+**Description**: Implements complete user authentication flow including OAuth integration with Google and GitHub, JWT token management, secure session handling, and protected route middleware. This epic provides the foundation for all user-facing features requiring authentication.
+
+**Goals**:
+1. Design and implement OAuth flow with Google and GitHub providers
+2. Create secure JWT token generation and validation system
+3. Implement protected route middleware for API endpoints
+4. Add user session management with refresh token support
+
+**Dependencies**: None (foundation epic)
+```
+
+**Why this is good:**
+- Clear, specific objective
+- Well-defined scope (1-2 weeks)
+- Measurable goals
+- Appropriate size for a focused epic
+
+**Example 2: Foundation Epic**
+```markdown
+#### Epic 1: Database Schema Design
+**Objective**: Create foundational database structure to support user management and authentication
+
+**Description**: Establishes the core database schema including users table, OAuth provider relationships, and necessary indexes. This epic creates the data layer that all subsequent authentication features depend on.
+
+**Goals**:
+1. Design users table with OAuth provider fields
+2. Create migration framework and initial migrations
+3. Add database indexes for performance optimization
+4. Establish data validation rules at database level
+
+**Dependencies**: None (foundation epic)
+```
+
+**Why this is good:**
+- Identifies itself as foundation work
+- Clear sequence (must happen first)
+- Specific technical goals
+- Enables other epics
+
+#### Bad Epic Examples
+
+**Example 1: Overly Broad Epic**
+```markdown
+#### Epic 1: System Improvements
+**Objective**: Make the system better
+**Description**: We need to improve performance and add features
+**Goals**:
+- Add caching
+- Fix bugs
+- Add new endpoints
+- Improve database
+```
+
+**Problems:**
+- ❌ Objective is vague ("make system better")
+- ❌ Mixes unrelated functionality (caching, bugs, features)
+- ❌ Goals are not specific or measurable
+- ❌ Scope is too large (could be months of work)
+
+**Should be broken into:**
+- Epic 1: Database Performance Optimization
+- Epic 2: API Caching Layer
+- Epic 3: Critical Bug Fixes
+- Epic 4: New Feature Development
+
+**Example 2: Too Small Epic**
+```markdown
+#### Epic 1: Create Users Table
+**Objective**: Add users table to database
+**Description**: Create table with columns
+**Goals**:
+1. Create table
+2. Add columns
+```
+
+**Problems:**
+- ❌ Too small (single story, not epic-worthy)
+- ❌ Should be combined with related database work
+- ❌ Lacks broader context or business value
+
+**Should be part of:**
+- Epic 1: User Management Database (includes table creation, models, migrations, indexes)
+
+**Example 3: Vague Objective**
+```markdown
+#### Epic 2: Authentication
+**Objective**: Implement authentication
+**Description**: Add auth stuff
+**Goals**:
+- Make it work
+- Add OAuth
+- Make it secure
+```
+
+**Problems:**
+- ❌ Objective is generic ("implement authentication")
+- ❌ Description is not helpful ("add auth stuff")
+- ❌ Goals are vague ("make it work", "make it secure")
+- ❌ No measurable outcomes
+
+**Should be:**
+```markdown
+#### Epic 2: OAuth Authentication Integration
+**Objective**: Enable secure user authentication using OAuth providers (Google and GitHub)
+
+**Description**: Integrates OAuth 2.0 authentication flow with Google and GitHub, including callback handling, token management, and user profile synchronization.
+
+**Goals**:
+1. Implement OAuth 2.0 flow with Google provider
+2. Implement OAuth 2.0 flow with GitHub provider
+3. Create token validation and refresh mechanism
+4. Synchronize user profile data from providers
+```
+
+### Writing Effective User Stories
+
+#### Principles
+
+**1. Story Size and Focus**
+- Keep stories small enough for 1-3 days of work
+- Focus on a single piece of functionality
+- Ensure story can be implemented by one developer
+- Make story testable independently
+
+**2. Clear Descriptions**
+- Start description with a verb (Create, Implement, Add, Fix)
+- Be specific about what's being done
+- Mention technical approach or patterns
+- Include integration points and affected areas
+
+**3. Testable Acceptance Criteria**
+- Write 3-7 criteria per story
+- Make criteria observable and testable
+- Use specific, measurable conditions
+- Cover happy path and edge cases
+- Include performance or quality requirements when relevant
+
+**4. Context Awareness**
+- List all major files or directories affected
+- Group related files together
+- Use relative paths from project root
+- Briefly explain purpose of each file modification
+
+#### Good User Story Examples
+
+**Example 1: Database Foundation Story**
+```markdown
+1. Create users database table: Design and implement user table schema with OAuth provider fields
+
+**Description**: Creates the users table in PostgreSQL with columns for OAuth providers (Google, GitHub), email, name, and timestamps. Includes unique constraints and indexes for performance. Follows existing database schema patterns in migrations/ directory.
+
+**Acceptance Criteria**:
+1. Users table created with columns: id (UUID, PK), email (VARCHAR, unique), name (VARCHAR), provider (VARCHAR), provider_id (VARCHAR), created_at (TIMESTAMP), updated_at (TIMESTAMP)
+2. Email column has unique constraint with NOT NULL requirement
+3. Database migration script added to migrations/ directory following naming convention (YYYYMMDD_create_users_table.sql)
+4. Indexes added on email and (provider, provider_id) for OAuth lookups
+5. Migration tested successfully in development environment with `npm run migrate:up`
+6. Rollback script created and tested
+
+**Dependencies**: None
+
+**Estimated Complexity**: Simple
+
+**Files Involved**:
+- migrations/001_create_users_table.sql - Database migration script
+- schemas/users.sql - Table schema definition
+- tests/migrations/001_test.js - Migration tests
+```
+
+**Why this is good:**
+- ✅ Clear, specific description
+- ✅ Observable acceptance criteria (6 specific checks)
+- ✅ Lists files with purpose
+- ✅ Appropriate complexity estimate
+- ✅ Includes edge case (rollback)
+
+**Example 2: OAuth Integration Story**
+```markdown
+4. Implement Google OAuth callback handler: Handle OAuth 2.0 callback from Google authentication
+
+**Description**: Creates the OAuth callback endpoint `/auth/google/callback` that receives authorization code, exchanges it for access token, fetches user profile from Google API, and creates or updates user record. Uses passport-google-oauth20 strategy following existing authentication patterns in src/auth/.
+
+**Acceptance Criteria**:
+1. GET /auth/google/callback endpoint accepts code and state parameters
+2. Exchanges authorization code for access token using Google OAuth 2.0 flow
+3. Fetches user profile (email, name, picture) from Google People API
+4. Creates new user record if email doesn't exist, or updates existing user's Google credentials
+5. Generates JWT token with user ID and email
+6. Redirects to frontend callback URL with JWT token in query parameter
+7. Handles errors: invalid code, token exchange failure, profile fetch failure, database errors
+8. Logs all authentication attempts (success and failure) to auth.log
+
+**Dependencies**: Story 1 (Create users database table), Story 3 (JWT token generation utilities)
+
+**Estimated Complexity**: Medium
+
+**Files Involved**:
+- src/auth/google/callback.js - OAuth callback handler
+- src/auth/google/strategy.js - Passport.js strategy configuration
+- src/utils/jwt.js - JWT token generation (existing)
+- tests/auth/google/callback.test.js - OAuth callback tests
+```
+
+**Why this is good:**
+- ✅ Covers happy path and all error cases
+- ✅ Mentions technical approach (passport-google-oauth20)
+- ✅ Correctly identifies dependencies
+- ✅ Includes logging and testing requirements
+- ✅ Complexity estimate is realistic (OAuth is medium, not simple)
+
+**Example 3: Middleware Story**
+```markdown
+7. Add authentication middleware: Create middleware to verify JWT tokens on protected routes
+
+**Description**: Implements Express.js middleware function `authenticateToken()` that validates JWT tokens from Authorization header. Follows existing middleware patterns in src/middleware/. Uses existing JWT utilities and returns 401/403 status codes for invalid tokens.
+
+**Acceptance Criteria**:
+1. Middleware function `authenticateToken()` exported from src/middleware/auth.js
+2. Extracts JWT token from Authorization header (Bearer <token>)
+3. Verifies token using JWT_SECRET environment variable
+4. Attaches decoded user object to `req.user` if token is valid
+5. Returns 401 Unauthorized if token is missing or invalid format
+6. Returns 403 Forbidden if token is expired or malformed
+7. Includes error logging for invalid tokens (without exposing sensitive data)
+8. Unit tests cover all cases: valid token, missing token, invalid token, expired token
+9. Middleware can be used as: `app.get('/api/protected', authenticateToken, handler)`
+
+**Dependencies**: Story 3 (JWT token generation utilities)
+
+**Estimated Complexity**: Simple
+
+**Files Involved**:
+- src/middleware/auth.js - Authentication middleware
+- tests/middleware/auth.test.js - Middleware tests
+- src/routes/protected.js - Example protected route (for documentation)
+```
+
+**Why this is good:**
+- ✅ Shows how to use middleware (practical)
+- ✅ Covers all authentication scenarios
+- ✅ Mentions security considerations (error logging without exposing data)
+- ✅ Includes usage example in acceptance criteria
+- ✅ Simple estimate is correct (standard middleware pattern)
+
+#### Bad User Story Examples
+
+**Example 1: Story Too Large**
+```markdown
+1. Implement complete authentication system
+
+**Acceptance Criteria**:
+- Users can login
+- OAuth works
+- JWT tokens are generated
+- Routes are protected
+
+**Dependencies**: None
+
+**Estimated Complexity**: Simple
+
+**Files Involved**:
+- src/auth/
+```
+
+**Problems:**
+- ❌ Story is too large (weeks of work)
+- ❌ Multiple unrelated features (login, OAuth, JWT, middleware)
+- ❌ Acceptance criteria are vague ("Users can login")
+- ❌ Complexity estimate is wrong (should be Complex or Epic)
+- ❌ Files section is not helpful
+- ❌ No dependencies listed (OAuth depends on users table)
+
+**Should be broken into:**
+- Story 1: Create users database table (Simple)
+- Story 2: Implement password hashing (Simple)
+- Story 3: Generate JWT token utilities (Simple)
+- Story 4: Implement Google OAuth callback (Medium)
+- Story 5: Implement GitHub OAuth callback (Medium)
+- Story 6: Add authentication middleware (Simple)
+- Story 7: Create login endpoint (Medium)
+- Story 8: Add session management (Medium)
+
+**Example 2: Vague Acceptance Criteria**
+```markdown
+2. Add error handling to OAuth callback
+
+**Acceptance Criteria**:
+- Handle errors properly
+- Make it robust
+- Don't crash the server
+- Log errors
+
+**Dependencies**: Story 1
+
+**Estimated Complexity**: Simple
+
+**Files Involved**:
+- src/auth/google/callback.js
+```
+
+**Problems:**
+- ❌ Criteria are not observable or testable ("handle errors properly", "make it robust")
+- ❌ Doesn't specify which errors to handle
+- ❌ No mention of error status codes or error responses
+- ❌ Missing logging details (what to log, format)
+- ❌ No mention of user experience for errors
+
+**Should be:**
+```markdown
+2. Add error handling to Google OAuth callback
+
+**Acceptance Criteria**:
+1. Returns 400 Bad Request if authorization code is missing
+2. Returns 401 Unauthorized if token exchange fails
+3. Returns 502 Bad Gateway if Google API is unavailable
+4. Returns 500 Internal Server Error for unexpected errors
+5. All errors logged to auth.log with timestamp, error code, and user-friendly message
+6. On error, redirects to frontend error page with error_code parameter
+7. Never exposes raw Google API errors or stack traces to client
+8. Validates state parameter to prevent CSRF attacks (returns 403 if invalid)
+
+**Dependencies**: Story 1 (Create users database table)
+
+**Estimated Complexity**: Medium (multiple error cases, security considerations)
+
+**Files Involved**:
+- src/auth/google/callback.js - OAuth callback handler
+- src/middleware/error-handler.js - Error handling middleware
+- tests/auth/google/error-handling.test.js - Error scenario tests
+```
+
+**Example 3: Task-Sized Story (Too Small)**
+```markdown
+3. Add import statement
+
+**Acceptance Criteria**:
+- Import jwt library
+- Add to top of file
+
+**Dependencies**: None
+
+**Estimated Complexity**: Simple
+
+**Files Involved**:
+- src/utils/jwt.js
+```
+
+**Problems:**
+- ❌ Too small (5-minute task, not a story)
+- ❌ Should be part of larger story
+- ❌ No business value on its own
+- ❌ Not a complete piece of work
+
+**Should be part of:**
+- Story: Generate JWT token utilities (includes imports, functions, tests)
+
+### Estimating Story Complexity
+
+#### Complexity Levels
+
+**Simple (0.5-1 day)**
+- Straightforward implementation using well-understood patterns
+- Minimal decision-making required
+- Few or no edge cases
+- Basic testing requirements (unit tests only)
+- Examples:
+  - Add simple CRUD endpoint following existing patterns
+  - Create database table with basic schema
+  - Add validation rule to existing model
+  - Implement basic middleware function
+  - Add environment variable configuration
+
+**Indicators of Simple:**
+- ✅ Similar code already exists in codebase
+- ✅ Using familiar libraries/frameworks
+- ✅ Clear pattern to follow
+- ✅ No new dependencies required
+- ✅ Documentation or examples available
+
+**Medium (1-2 days)**
+- Some complexity or multiple components involved
+- Requires design decisions or research
+- Moderate testing requirements (unit + integration tests)
+- Several edge cases to handle
+- Examples:
+  - Implement OAuth flow with external provider
+  - Add caching layer with invalidation logic
+  - Create REST API client with retry logic
+  - Implement file upload handling
+  - Add rate limiting middleware
+
+**Indicators of Medium:**
+- ⚠️ New library or technology to learn
+- ⚠️ Multiple components need coordination
+- ⚠️ Requires some architecture decisions
+- ⚠️ Several edge cases to consider
+- ⚠️ Integration testing needed
+
+**Complex (2-3 days)**
+- High complexity or many integration points
+- Significant architectural work
+- Extensive testing and validation required (unit + integration + e2e)
+- Multiple edge cases and failure modes
+- Examples:
+  - Multi-tenant data isolation strategy
+  - Complex data migration with rollback
+  - Distributed transaction handling
+  - Real-time synchronization system
+  - Complex permission/authorization system
+
+**Indicators of Complex:**
+- ⚠️ Affects multiple systems or layers
+- ⚠️ Requires architectural changes
+- ⚠️ Multiple failure modes to handle
+- ⚠️ Performance or scalability implications
+- ⚠️ Security considerations (PII, auth, encryption)
+- ⚠️ Requires significant testing strategy
+
+#### Complexity Estimation Examples
+
+**Example 1: Database Query - Simple**
+```markdown
+3. Add user profile lookup endpoint: Create GET /api/users/:id endpoint
+
+**Estimated Complexity**: Simple
+
+**Reasoning**:
+- Follows existing GET endpoint pattern in src/routes/users/
+- Uses existing User model (no new queries needed)
+- Single table lookup (well-understood)
+- Standard error handling pattern available
+- Unit tests only (no integration needed)
+```
+
+**Example 2: OAuth Integration - Medium**
+```markdown
+4. Implement Google OAuth callback handler
+
+**Estimated Complexity**: Medium
+
+**Reasoning**:
+- New library (passport-google-oauth20) to integrate
+- External API integration with Google OAuth 2.0
+- Multiple steps: code exchange → token → profile → user record
+- Error handling: invalid code, API failures, database errors
+- Integration tests needed for OAuth flow
+- Requires configuration (Google client ID, secret)
+```
+
+**Example 3: Data Migration - Complex**
+```markdown
+7. Migrate existing users to multi-tenant structure: Add tenant_id to existing user records
+
+**Estimated Complexity**: Complex
+
+**Reasoning**:
+- Affects all existing user records (data integrity critical)
+- Requires backward compatibility during migration
+- Multiple migration steps: add column → populate → validate → clean
+- Rollback strategy needed (if migration fails)
+- Performance considerations (large dataset)
+- Extensive testing: unit, integration, staging environment test
+- Business logic: determine tenant assignment for existing users
+- Error handling: handle partial failures, track migration progress
+```
+
+### Handling Dependencies
+
+#### Dependency Types
+
+**Hard Dependencies**
+- Must complete before dependent story can start
+- Blocking relationship: Story B cannot begin until Story A is complete
+
+**Examples:**
+- "Add users table" (Story 1) → "Implement user login" (Story 2)
+- "Create JWT utilities" (Story 1) → "Generate tokens in OAuth callback" (Story 2)
+- "Add authentication middleware" (Story 1) → "Protect admin routes" (Story 2)
+
+**Soft Dependencies**
+- Beneficial to complete before dependent story starts
+- Non-blocking: Story B can begin before Story A finishes, but may need rework
+
+**Examples:**
+- "Implement Google OAuth" (Story 1) → "Implement GitHub OAuth" (Story 2)
+- "Add user profile page" (Story 1) → "Add avatar upload" (Story 2)
+- "Create base API client" (Story 1) → "Implement specific endpoints" (Story 2)
+
+**Parallel Work**
+- No dependencies, can work simultaneously
+- Independent tasks that don't affect each other
+
+**Examples:**
+- "Add Google OAuth" and "Add GitHub OAuth" (can work in parallel)
+- Different API endpoints that don't share code
+- Separate UI components
+- Independent feature flags
+
+#### Dependency Documentation
+
+**Format:**
+```markdown
+**Dependencies**:
+- Hard: Story 1 (Create users table) - User login requires user record to exist
+- Soft: Story 2 (Implement Google OAuth) - Will share code with GitHub OAuth
+- Parallel: None
+```
+
+**Example with Multiple Dependencies:**
+```markdown
+8. Implement token refresh logic: Create endpoint to refresh expired JWT tokens using refresh token
+
+**Description**: Creates POST /auth/refresh endpoint that validates refresh token, checks if user still exists, generates new access token, and optionally rotates refresh token. Uses existing JWT utilities and refresh token storage.
+
+**Acceptance Criteria**:
+1. POST /auth/refresh endpoint accepts refresh_token in request body
+2. Validates refresh token signature and expiration
+3. Queries users table to verify user still exists and is active
+4. Generates new access token (JWT) with updated expiration
+5. Optionally generates new refresh token (rotation strategy)
+6. Returns new access_token and refresh_token in JSON response
+7. Returns 401 Unauthorized if refresh token is invalid or expired
+8. Returns 403 Forbidden if user account is disabled or deleted
+9. Logs all refresh attempts (success and failure) to auth.log
+10. Revokes old refresh token if rotation is enabled
+
+**Dependencies**:
+- Hard: Story 3 (JWT token generation utilities) - Required for generating new tokens
+- Hard: Story 5 (Implement OAuth callback handler) - Requires existing refresh token storage strategy
+- Soft: Story 7 (Add authentication middleware) - Can use same validation logic, but not required
+- Parallel: None
+
+**Estimated Complexity**: Medium
+
+**Files Involved**:
+- src/auth/refresh.js - Token refresh endpoint handler
+- src/utils/jwt.js - JWT token generation and validation (existing)
+- src/models/user.js - User model for validation (existing)
+- tests/auth/refresh.test.js - Token refresh tests
+```
+
+#### Dependency Anti-Patterns
+
+**Anti-Pattern 1: Unnecessary Blocking**
+```markdown
+❌ Bad: Story 3 depends on Story 2 (Google OAuth) because "they're both OAuth"
+
+Story 2: Implement Google OAuth
+Story 3: Implement GitHub OAuth (depends on Story 2)
+
+Problem: GitHub OAuth doesn't actually depend on Google OAuth
+Fix: Mark as parallel work
+```
+
+**Anti-Pattern 2: Missing Dependencies**
+```markdown
+❌ Bad: Story 5 has no dependencies listed
+
+Story 5: Add authentication middleware
+Story 6: Protect admin routes
+
+Problem: Story 6 depends on Story 5 (needs middleware), but not documented
+Fix: Add "Hard: Story 5 (Add authentication middleware) - Required for route protection"
+```
+
+**Anti-Pattern 3: Circular Dependencies**
+```markdown
+❌ Bad: Stories depend on each other
+
+Story 3: Create JWT utilities (depends on Story 4)
+Story 4: Implement OAuth callback (depends on Story 3)
+
+Problem: Circular dependency - neither can start
+Fix: Extract common functionality into Story 2 (base utilities), then Stories 3 and 4 depend on Story 2
+```
+
+**Anti-Pattern 4: Over-Specified Dependencies**
+```markdown
+❌ Bad: Story depends on multiple unrelated stories
+
+Story 10: Add user profile page (depends on Story 1, 2, 3, 4, 5, 6, 7, 8, 9)
+
+Problem: Story 10 doesn't actually depend on all those stories
+Fix: Identify actual dependencies (likely just Story 3 for user model and Story 6 for auth)
+```
+
+### Common Anti-Patterns to Avoid
+
+#### Planning Anti-Patterns
+
+**Anti-Pattern 1: Planning Without Codebase Understanding**
+```markdown
+❌ Bad: Creating epics and stories without reading existing code
+
+Example: Planning to add caching when codebase already has Redis caching infrastructure
+
+Fix: Always use pragmatic-explorer or read codebase files before planning
+```
+
+**Anti-Pattern 2: Over-Planning (Analysis Paralysis)**
+```markdown
+❌ Bad: Creating 50 detailed user stories for a 2-week project
+
+Problem: Excessive detail wastes planning time, stories will likely change during implementation
+Fix: Focus on structure and clarity, not every possible scenario. 10-15 stories is typical for 2 weeks
+```
+
+**Anti-Pattern 3: Under-Planning (Vague Stories)**
+```markdown
+❌ Bad: Stories with unclear acceptance criteria
+
+Example: "Implement caching" with criteria "Make it fast"
+
+Fix: Write specific, observable criteria: "Cache API responses for 5 minutes using Redis"
+```
+
+**Anti-Pattern 4: Ignoring Dependencies**
+```markdown
+❌ Bad: Not documenting dependencies, assuming they're obvious
+
+Problem: Implementation team might start wrong story first
+Fix: Always document dependencies, especially hard ones
+```
+
+#### Epic Anti-Patterns
+
+**Anti-Pattern 1: Overly Broad Epics**
+```markdown
+❌ Bad: "System Performance Optimization"
+
+Problem: Too vague, covers too much work (database, caching, code optimization, infrastructure)
+
+Fix: Break into focused epics:
+- Epic 1: Database Query Optimization
+- Epic 2: API Response Caching
+- Epic 3: Code Refactoring
+```
+
+**Anti-Pattern 2: Unclear Objectives**
+```markdown
+❌ Bad: "Database Work" or "Authentication Stuff"
+
+Problem: Doesn't describe what's being achieved
+
+Fix: "User Management Database Schema" or "OAuth Authentication Integration"
+```
+
+**Anti-Pattern 3: Wrong Size**
+```markdown
+❌ Bad (Too Small): Epic with single story for 0.5 days of work
+❌ Bad (Too Large): Epic spanning 2 months of work
+
+Fix: Adjust to 1-4 weeks:
+- Too small: Merge with related epics
+- Too large: Break into multiple focused epics
+```
+
+#### User Story Anti-Patterns
+
+**Anti-Pattern 1: Stories Too Large**
+```markdown
+❌ Bad: "Implement complete OAuth system" (estimated 5+ days)
+
+Problem: Too large to implement and test in one iteration
+Fix: Break into focused stories:
+- Story 1: Create OAuth configuration
+- Story 2: Implement Google OAuth flow
+- Story 3: Implement GitHub OAuth flow
+- Story 4: Add OAuth callback error handling
+```
+
+**Anti-Pattern 2: Vague Acceptance Criteria**
+```markdown
+❌ Bad: "Make it work", "Handle errors properly", "Optimize performance"
+
+Problem: Not testable, unclear when story is complete
+
+Fix: Write specific, observable criteria:
+- "API returns 200 OK with valid user object"
+- "Returns 401 Unauthorized for invalid credentials"
+- "Response time < 200ms for 95th percentile"
+```
+
+**Anti-Pattern 3: Missing Edge Cases**
+```markdown
+❌ Bad: Only happy path criteria
+
+Example: "User can login with Google OAuth"
+
+Problem: Missing error cases, failure modes
+
+Fix: Add error handling criteria:
+- "Returns 401 if Google token exchange fails"
+- "Returns 403 if user account is disabled"
+- "Logs all authentication failures"
+```
+
+**Anti-Pattern 4: No File Context**
+```markdown
+❌ Bad: "Files Involved: src/auth/"
+
+Problem: Developer must explore to find exact files
+
+Fix: List specific files with purpose:
+- src/auth/google/callback.js - OAuth callback handler
+- src/auth/google/strategy.js - Passport strategy config
+- tests/auth/google/callback.test.js - OAuth callback tests
+```
+
+**Anti-Pattern 5: Wrong Complexity Estimate**
+```markdown
+❌ Bad: "Simple" for story requiring new library and external API integration
+
+Example: OAuth integration marked as Simple
+
+Problem: Misaligned expectations, stories take longer than estimated
+
+Fix: Use realistic estimates:
+- New library/technology → Medium or Complex
+- External API integration → Medium
+- Multiple components → Medium or Complex
+- Well-understood pattern → Simple
+```
+
+#### Complexity Estimation Anti-Patterns
+
+**Anti-Pattern 1: Always Simple**
+```markdown
+❌ Bad: Every story marked as Simple
+
+Problem: Unrealistic expectations, planning becomes useless
+
+Fix: Be honest about complexity:
+- Simple: 0.5-1 day, well-understood pattern
+- Medium: 1-2 days, some research or multiple components
+- Complex: 2-3 days, high complexity or many integration points
+```
+
+**Anti-Pattern 2: Always Complex**
+```markdown
+❌ Bad: Every story marked as Complex
+
+Problem: Team becomes risk-averse, estimates inflate
+
+Fix: Assess each story independently:
+- Many stories will be Simple if following existing patterns
+- Medium when introducing new libraries or multiple components
+- Complex reserved for high-impact, high-risk work
+```
+
+**Anti-Pattern 3: Ignoring Testing Complexity**
+```markdown
+❌ Bad: Story with complex testing requirements marked as Simple
+
+Example: OAuth integration needs integration tests, but marked as Simple
+
+Fix: Include testing in complexity assessment:
+- Complex testing (integration, e2e) → increases complexity
+- Multiple failure modes to test → increases complexity
+- External dependencies to mock → increases complexity
+```
+
+### Quick Reference Checklist
+
+#### Before Finalizing Epics
+- [ ] Epic has clear, specific objective (1 sentence)
+- [ ] Epic size is appropriate (1-4 weeks of work)
+- [ ] Dependencies are documented (hard/soft/parallel)
+- [ ] Epic name is descriptive (3-6 words)
+- [ ] Business value is clear
+- [ ] Goals are specific and measurable
+
+#### Before Finalizing User Stories
+- [ ] Story can be completed in 1-3 days
+- [ ] Acceptance criteria are observable and testable (3-7 criteria)
+- [ ] Complexity estimate is realistic (Simple/Medium/Complex)
+- [ ] Files involved are listed with purpose
+- [ ] Dependencies are correct (check for circular dependencies)
+- [ ] Story description is specific and clear
+- [ ] Edge cases and error handling are included in criteria
+
+#### Before Finalizing Plan
+- [ ] All requirements from request are covered
+- [ ] Execution order is logical and dependencies are respected
+- [ ] No circular dependencies exist
+- [ ] Out-of-scope items are documented
+- [ ] Parallel work opportunities are identified
+- [ ] Critical path is clear
+- [ ] Complexity estimates add up realistically
+
+#### Quality Indicators
+**Good Plan:**
+- ✅ Clear hierarchy: Requirements → Epics → Stories
+- ✅ Each story is actionable and implementable
+- ✅ Dependencies are obvious and documented
+- ✅ Complexity estimates are realistic
+- ✅ Plan can be executed by different teams
+
+**Bad Plan:**
+- ❌ Epics are too broad or too narrow
+- ❌ Stories are vague or missing context
+- ❌ Dependencies are unclear or missing
+- ❌ Complexity estimates don't match reality
+- ❌ Plan requires constant clarification during implementation
 
 ## Workflow Examples
 
