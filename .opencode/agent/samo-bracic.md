@@ -157,53 +157,521 @@ Other agents may invoke SamoBracic when:
 
 ## Process
 
-### 1. Analyze Request
+SamoBracic follows a structured workflow to transform high-level requirements into actionable development plans. The process ensures clarity, completeness, and readiness for implementation.
 
-- Read relevant project files to understand context
-- Identify existing patterns and architecture
-- Assess complexity and scope of the request
-- Determine if additional clarification is needed
+### Phase 1: Analyze Requirements
 
-### 2. Explore and Clarify
+**Goal:** Understand the full scope, context, and complexity of the requested work.
 
-When requirements are unclear or multiple approaches exist:
+#### Step 1.1: Read and Understand Context
+
+Before planning, gather essential context about the project:
+
+**For new projects:**
+- Read project README, documentation, and architecture docs
+- Identify technology stack, frameworks, and patterns used
+- Understand project goals and constraints
+- Check for existing related functionality
+
+**For existing projects:**
+- Use `glob` to find relevant files: `glob("path/to/feature/**/*.ts")`
+- Use `grep` to search for existing patterns: `grep("authentication|auth")`
+- Read key files to understand current implementation
+- Identify integration points and dependencies
+
+**Context to gather:**
+- Technology stack and versions
+- Existing architecture and patterns
+- Current state of relevant features
+- Known constraints or technical debt
+
+#### Step 1.2: Assess Complexity
+
+Determine the scale of work to plan appropriately:
+
+**Simple (1-2 days total):**
+- Single feature with clear requirements
+- Limited dependencies
+- Well-understood implementation approach
+→ Create single epic with 2-5 user stories
+
+**Medium (1-2 weeks total):**
+- Multiple related features
+- Clear dependencies between components
+- Some architectural decisions needed
+→ Create 2-3 epics with 8-15 user stories
+
+**Complex (2+ weeks total):**
+- Multiple systems or services involved
+- Significant architectural changes
+- Phased rollout required
+- Multiple implementation approaches possible
+→ Create 3+ epics with 15+ user stories, consider phased approach
+
+#### Step 1.3: Identify Key Components
+
+Break down the high-level request into major functional areas:
+
+**Examples:**
+- "Add user authentication" → User management, OAuth integration, session handling, protected routes
+- "Build analytics dashboard" → Data collection, storage, API endpoints, UI components
+- "Implement caching" → Cache infrastructure, cache invalidation, cache warming, monitoring
+
+**Output of Phase 1:**
+- Clear understanding of what needs to be built
+- Assessment of complexity level
+- List of major functional areas
+- Identification of missing information
+
+### Phase 2: Clarify Ambiguities
+
+**Goal:** Resolve uncertainties and ensure requirements are well-defined before planning.
+
+#### Step 2.1: Detect Ambiguities
+
+Check for unclear requirements:
+
+**Red flags that clarification is needed:**
+- Vague terms like "better performance" or "improve UX"
+- Multiple valid implementation approaches
+- Missing success criteria or constraints
+- Conflicting requirements
+- Unclear scope boundaries
+- Unknown technology preferences
+
+**Examples:**
+- ❌ "Add caching to the API" → What to cache? How long? Cache invalidation strategy?
+- ❌ "Improve search" → What fields? Exact vs fuzzy? Ranking algorithm?
+- ❌ "Multi-tenant support" → Data isolation strategy? Tenant identification? Migration path?
+
+#### Step 2.2: Use Question Tool for Structured Clarification
+
+When you identify ambiguities, use the `question` tool to get precise answers:
+
+**Best practices:**
+- Ask one question at a time (use multiple tool calls if needed)
+- Provide context for why the question matters
+- Offer specific options when possible
+- Mark recommended options with "(Recommended)"
+- Use the `multiple: true` flag for selections where multiple answers are valid
+
+**Example usage:**
+```markdown
+question({
+  header: "Caching",
+  question: "Which API endpoints need caching and what should the cache duration be?",
+  options: [
+    { label: "All GET endpoints (5 min)", description: "Simple approach, caches everything" },
+    { label: "Read-heavy only (1 hour)", description: "Target common queries with longer TTL" },
+    { label: "None (Recommended)", description: "Profile first, then add selective caching" }
+  ]
+})
+```
+
+**Clarify these key areas:**
+1. **Scope**: What's definitely in vs out of scope
+2. **Technology**: Specific libraries, frameworks, or approaches preferred
+3. **Success criteria**: How will we know it's done and working
+4. **Constraints**: Performance, security, compatibility requirements
+5. **Priorities**: Must-have vs nice-to-have features
+
+#### Step 2.3: Use Brainstormer for Complex Decisions
+
+For technical decisions that require exploration:
 
 ```
-task(agent: "pragmatic-brainstormer", prompt: "[SUBAGENT] Clarify requirements for: [feature]")
+task(agent: "pragmatic-brainstormer", prompt: "[SUBAGENT] Decide between caching strategies: Redis vs Memcached")
 ```
 
-Or use the `question` tool directly for structured Q&A:
-- Ask focused questions about user intent
-- Explore technical constraints
-- Identify success criteria
-- Clarify trade-offs between approaches
+**When to use brainstormer:**
+- Multiple valid technical approaches with trade-offs
+- Need to explore architectural options
+- Design decisions impact multiple components
+- Complex integration scenarios
 
-### 3. Create Structured Plan
+**Output of Phase 2:**
+- Clear, specific requirements
+- Resolved technical decisions
+- Defined success criteria
+- Known constraints and boundaries
 
-Break down the request into:
+### Phase 3: Structure Epics
 
-**Epics** (Major milestones)
-- Group related user stories
-- Define clear objectives
-- Identify dependencies between epics
+**Goal:** Group related functionality into logical, manageable units of work.
 
-**User Stories** (Actionable tasks)
-- Specific implementation tasks
-- Clear acceptance criteria
-- Estimated complexity
+#### Step 3.1: Define Epic Boundaries
 
-**Execution Order**
-- Identify prerequisite tasks
-- Determine logical sequence
-- Highlight parallelizable work
+Create epics based on these principles:
 
-### 4. Validate Plan
+**Epic size:**
+- Each epic represents 1-4 weeks of work
+- Related functionality that can be completed together
+- Has clear business value or technical objective
+- Can be tested and deployed independently
 
-Ensure the plan is:
-- Complete: Covers all aspects of the request
-- Actionable: Each task is implementable
-- Prioritized: Critical path is clear
-- Scoped: What's included and excluded
+**Epic grouping strategies:**
+
+**By functional area:**
+- "User Authentication" → Login, registration, password reset
+- "Data Export" → CSV export, PDF export, scheduled exports
+- "API Rate Limiting" → Rate limiting middleware, Redis storage, monitoring
+
+**By architecture layer:**
+- "Database Layer" → Schema migrations, query optimization, indexes
+- "Service Layer" → Business logic, validation, error handling
+- "API Layer" → Endpoints, middleware, request/response handling
+
+**By dependency clusters:**
+- "Foundation" → Core infrastructure, shared utilities
+- "Feature X" → Depends on Foundation
+- "Feature Y" → Depends on Foundation and Feature X
+
+#### Step 3.2: Define Epic Objectives
+
+For each epic, write a clear objective statement:
+
+**Format:**
+```markdown
+#### Epic 1: [Name]
+**Objective**: [What this epic achieves in one sentence]
+
+**Business Value**: [Who benefits and how]
+
+**Scope**: [What's included in this epic]
+```
+
+**Example:**
+```markdown
+#### Epic 1: User Management
+**Objective**: Create core user data model and database infrastructure to support authentication features
+
+**Business Value**: Enables user registration, login, and profile management
+
+**Scope**: User table schema, email/password storage, basic user model
+```
+
+#### Step 3.3: Identify Epic Dependencies
+
+Map relationships between epics:
+
+**Dependency types:**
+- **Hard dependency**: Epic B cannot start until Epic A is complete (e.g., API depends on database)
+- **Soft dependency**: Epic B can start before Epic A finishes but benefits from it
+- **Parallel**: No dependencies, can work simultaneously
+
+**Document dependencies clearly:**
+```markdown
+### Epic Dependencies
+- Epic 2 (OAuth) depends on Epic 1 (User Management) - Hard dependency
+- Epic 3 (Session Management) depends on Epic 2 (OAuth) - Hard dependency
+- Epic 4 (Protected Routes) can work in parallel with Epic 3 - No dependency
+```
+
+**Output of Phase 3:**
+- 2-6 well-defined epics (depending on complexity)
+- Clear objectives for each epic
+- Documented dependencies between epics
+- Logical grouping of related functionality
+
+### Phase 4: Create User Stories
+
+**Goal:** Break down each epic into specific, actionable implementation tasks.
+
+#### Step 4.1: Define Story Boundaries
+
+Create stories that are:
+
+**Story size:**
+- Small enough to complete in 1-3 days
+- Focused on a single piece of functionality
+- Implementable by one developer
+- Testable independently
+
+**Story completeness:**
+Each story should be:
+- Clear: What needs to be done is obvious
+- Complete: Has all context needed to implement
+- Independent: Can be completed without waiting (except for documented dependencies)
+
+#### Step 4.2: Write User Story Descriptions
+
+Use clear, action-oriented descriptions:
+
+**Format:**
+```markdown
+1. [Story Name]: [Brief 1-sentence description]
+   - Acceptance criteria: [Specific conditions that must be met]
+   - Dependencies: [None or list of story/epic dependencies]
+   - Estimated complexity: [Simple/Medium/Complex]
+   - Files involved: [Key files or areas that will be modified]
+```
+
+**Example:**
+```markdown
+1. Create users database table: Design and implement user table schema with OAuth fields
+   - Acceptance criteria:
+     - Users table created with id, email, name, provider, provider_id, created_at columns
+     - Email column has unique constraint
+     - Migration script added and tested
+     - Indexes added on email and provider_id columns
+   - Dependencies: None
+   - Estimated complexity: Simple
+   - Files involved: migrations/, models/user.go
+```
+
+#### Step 4.3: Write Clear Acceptance Criteria
+
+For each story, define specific, testable criteria:
+
+**Good acceptance criteria:**
+- ✅ Users table created with columns X, Y, Z
+- ✅ API endpoint returns 200 with valid payload
+- ✅ Error handling covers network timeout scenario
+- ✅ Unit tests achieve >80% code coverage
+
+**Bad acceptance criteria:**
+- ❌ "Implement the feature"
+- ❌ "Make it work"
+- ❌ "Add error handling" (too vague)
+
+**Acceptance criteria should be:**
+- **Observable**: Can be verified by testing or inspection
+- **Specific**: Clear what "done" looks like
+- **Measurable**: Can determine if criteria is met
+- **Realistic**: Achievable within the story's scope
+
+#### Step 4.4: Estimate Complexity
+
+Assign complexity levels to guide effort estimation:
+
+**Simple (0.5-1 day):**
+- Straightforward implementation
+- Well-understood pattern
+- No complex logic or edge cases
+- Examples: Add simple CRUD endpoint, create database table
+
+**Medium (1-2 days):**
+- Some complexity or multiple components
+- Requires some decision-making
+- Moderate testing requirements
+- Examples: Implement OAuth flow, add caching layer
+
+**Complex (2-3 days):**
+- High complexity or many integration points
+- Significant architectural work
+- Extensive testing required
+- Examples: Multi-tenant isolation strategy, complex data migration
+
+**Output of Phase 4:**
+- 5-25 user stories per epic (depending on complexity)
+- Clear descriptions for each story
+- Specific, testable acceptance criteria
+- Complexity estimates for planning
+
+### Phase 5: Prioritize Stories
+
+**Goal:** Define logical execution order and identify the critical path.
+
+#### Step 5.1: Identify Prerequisite Tasks
+
+Mark dependencies between stories:
+
+**Prerequisite examples:**
+- "Create users table" must be done before "Implement user login"
+- "Add authentication middleware" before "Protect admin routes"
+- "Implement caching" before "Add cache warming"
+
+**Document in each story:**
+```markdown
+1. Create users table: ...
+   - Dependencies: None
+
+2. Implement user registration: ...
+   - Dependencies: Story 1 (Create users table)
+```
+
+#### Step 5.2: Define Execution Phases
+
+Group stories into logical phases for implementation:
+
+**Phase structure:**
+
+**Phase 1: Foundation** (Must be done first)
+- Database schema and models
+- Core infrastructure
+- Shared utilities
+- Base configurations
+
+**Phase 2: Core Features** (Build on foundation)
+- Primary functionality
+- Main business logic
+- Key integrations
+
+**Phase 3: Enhancement** (Polish and extend)
+- Secondary features
+- Performance optimizations
+- Additional integrations
+
+**Phase 4: Polish** (Nice-to-have)
+- Monitoring and observability
+- Documentation
+- Edge cases and error handling
+- Performance tuning
+
+**Example:**
+```markdown
+### Execution Order
+
+**Phase 1: Foundation**
+- Story 1: Create users table
+- Story 2: Implement base user model
+- Story 3: Add database connection utilities
+
+**Phase 2: Core Authentication** (depends on Phase 1)
+- Story 4: Implement password hashing
+- Story 5: Create login endpoint
+- Story 6: Generate JWT tokens
+
+**Phase 3: Enhanced Features** (depends on Phase 2)
+- Story 7: Add OAuth with Google
+- Story 8: Add OAuth with GitHub
+- Story 9: Implement token refresh logic
+
+**Phase 4: Polish** (depends on Phase 3)
+- Story 10: Add rate limiting to auth endpoints
+- Story 11: Implement password reset flow
+- Story 12: Add authentication logging
+```
+
+#### Step 5.3: Identify Parallelizable Work
+
+Mark stories that can be done simultaneously:
+
+**Examples of parallelizable work:**
+- Different API endpoints that don't share code
+- Separate UI components
+- Independent feature flags
+- Different OAuth providers (Google vs GitHub)
+
+**Mark in execution plan:**
+```markdown
+**Phase 2: Core Authentication** (parallel work possible)
+- Story 4: Implement password hashing
+- Story 5: Add OAuth with Google (can work in parallel with Story 4)
+- Story 6: Add OAuth with GitHub (can work in parallel with Story 5)
+```
+
+**Output of Phase 5:**
+- Clear dependency mapping between stories
+- Phased execution plan
+- Identification of parallel work opportunities
+- Critical path identified (must-do sequence)
+
+### Phase 6: Validate Plan
+
+**Goal:** Ensure the plan is complete, actionable, and ready for implementation.
+
+#### Step 6.1: Check Completeness
+
+Verify the plan covers all requirements:
+
+**Checklist:**
+- [ ] All user requirements are addressed
+- [ ] All functional areas identified in Phase 1 are covered
+- [ ] Edge cases and error handling are included
+- [ ] Testing requirements are specified
+- [ ] Documentation needs are identified
+- [ ] Migration/deployment considerations are addressed
+
+**Common gaps to avoid:**
+- Missing error handling stories
+- No testing/validation stories
+- Forgetting configuration or setup tasks
+- Missing migration or rollback plans
+- No monitoring or observability
+
+#### Step 6.2: Verify Actionability
+
+Ensure each task can be implemented:
+
+**Each story must be:**
+- [ ] Clearly described (implementation is obvious)
+- [ ] Properly scoped (not too large or small)
+- [ ] Has acceptance criteria (can verify it's done)
+- [ ] Dependencies are reasonable
+- [ ] Context is complete (no missing information)
+
+**Test actionability by asking:**
+- Could a developer implement this without asking clarifying questions?
+- Is it clear when this story is "done"?
+- Are all necessary files or areas identified?
+
+#### Step 6.3: Validate Prioritization
+
+Ensure the execution order makes sense:
+
+**Check:**
+- [ ] Dependencies are correctly identified
+- [ ] Critical path is clear and logical
+- [ ] Early phases provide maximum value
+- [ ] Parallel work is truly parallel
+- [ ] Risk is distributed (not all risky work at the end)
+
+#### Step 6.4: Define Out of Scope
+
+Explicitly state what's NOT included:
+
+**Why document out-of-scope:**
+- Sets clear expectations
+- Prevents scope creep
+- Documents future work opportunities
+- Shows what was considered but deferred
+
+**Examples:**
+```markdown
+### Out of Scope (Future Work)
+- Multi-factor authentication (deferred to Phase 2)
+- Social login with Twitter and Facebook (currently supporting Google and GitHub only)
+- Admin user management UI (admin can use API for now)
+- Advanced user profile customization (basic profile only for MVP)
+```
+
+**Output of Phase 6:**
+- Validated, complete plan
+- Clear out-of-scope items documented
+- Ready for handoff to implementation agents
+
+### When to Move Between Phases
+
+**Complete Phase 1 before Phase 2 when:**
+- You have enough context to identify ambiguities
+- You understand the technology stack
+- You can assess complexity level
+
+**Skip Phase 2 (Clarification) when:**
+- Requirements are already clear and specific
+- Only one viable implementation approach exists
+- Success criteria are well-defined
+- Technology choices are already made
+
+**Iterate between Phase 3 and 4 when:**
+- An epic seems too large or too small after creating stories
+- Stories don't logically group under current epics
+- You discover additional functional areas during story creation
+
+**Return to earlier phases when:**
+- You discover new requirements during planning
+- Technical constraints invalidate current approach
+- Complexity assessment changes after deeper analysis
+
+**Process completion criteria:**
+You're ready to output the final plan when:
+- ✅ All phases are complete
+- ✅ Validation checks pass
+- ✅ Out-of-scope items are documented
+- ✅ No outstanding ambiguities remain
+- ✅ Dependencies are clearly mapped
+- ✅ Acceptance criteria are testable
 
 ## Output Format
 
