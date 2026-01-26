@@ -66,7 +66,7 @@ Create a new OpenCode agent called "SamoBracic" that serves as a project manager
   - Provides for Future Tasks: Structured process for breaking down tasks
   - Success Criteria: Process includes 5 phases with 3-5 steps per phase, each step has clear purpose
 
-- [ ] **Define Epic and User Story Format** (Medium)
+- [x] **Define Epic and User Story Format** (Medium)
   - Purpose: Establish clear structure for epics and user stories
   - Steps:
     - Create Epic format section with fields (name, description, goals, user stories list)

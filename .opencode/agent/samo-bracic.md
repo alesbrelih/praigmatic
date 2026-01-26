@@ -737,6 +737,305 @@ Comprehensive project plan with detailed explanations, rationales, and alternati
 [1-2 sentences on what should happen next - typically handoff to implementation agents]
 ```
 
+## Epic and User Story Formats
+
+### Epic Format
+
+All epics must follow this standardized format:
+
+```markdown
+#### Epic [N]: [Epic Name]
+
+**Name**: [Clear, concise epic name (3-6 words)]
+
+**Description**: [Detailed description of what this epic encompasses]
+- What functionality is being delivered
+- What systems or components are affected
+- What business value this epic provides
+
+**Goals**: [List of specific objectives this epic achieves]
+1. [Goal 1 - specific, measurable outcome]
+2. [Goal 2 - specific, measurable outcome]
+3. [Goal 3 - specific, measurable outcome]
+
+**Dependencies**: [None or list of epic dependencies]
+- Depends on: [Epic X] [Hard/Soft dependency] - [Reason]
+- Blocks: [Epic Y] - [Reason]
+```
+
+#### Epic Example
+
+```markdown
+#### Epic 1: User Management Database
+
+**Name**: User Management Database
+
+**Description**: Creates the foundational database schema and data models to support user authentication, profile management, and OAuth integration. This epic establishes the data layer that all authentication features depend on.
+
+**Goals**:
+1. Design and implement users table with OAuth provider fields
+2. Create user data models with validation logic
+3. Establish database migration framework
+4. Add indexes for performance optimization
+
+**Dependencies**: None (foundation epic)
+
+**User Stories**:
+1. Create users database table: Design and implement user table schema
+2. Implement user model: Create User model with validation
+3. Add database migration framework: Set up migration system
+4. Create database indexes: Add indexes for email and provider_id
+```
+
+### User Story Format
+
+All user stories must follow this standardized format:
+
+```markdown
+[Story Number]. [Story Name]: [Brief one-line description]
+
+**Description**: [Detailed description of what this story implements]
+- What functionality is being added or modified
+- What components or files are affected
+- Technical approach or patterns to follow
+
+**Acceptance Criteria**:
+1. [Criterion 1 - observable, specific, measurable]
+2. [Criterion 2 - observable, specific, measurable]
+3. [Criterion 3 - observable, specific, measurable]
+
+**Dependencies**: [None or list of dependencies]
+- Depends on: [Story X or Epic Y] - [Reason]
+- Enables: [Story Z] - [Reason]
+
+**Estimated Complexity**: [Simple/Medium/Complex]
+
+**Files Involved**:
+- [File/Directory path] - [Purpose of modification]
+- [File/Directory path] - [Purpose of modification]
+```
+
+#### User Story Example
+
+```markdown
+1. Create users database table: Design and implement user table schema with OAuth fields
+
+**Description**: Creates the users table in PostgreSQL with columns for OAuth providers (Google, GitHub), email, name, and timestamps. Includes unique constraints and indexes for performance.
+
+**Acceptance Criteria**:
+1. Users table created with columns: id (UUID, PK), email (VARCHAR, unique), name (VARCHAR), provider (VARCHAR), provider_id (VARCHAR), created_at (TIMESTAMP), updated_at (TIMESTAMP)
+2. Email column has unique constraint with NOT NULL requirement
+3. Database migration script added to migrations/ directory
+4. Indexes added on email and (provider, provider_id) for OAuth lookups
+5. Migration tested successfully in development environment
+
+**Dependencies**: None
+
+**Estimated Complexity**: Simple
+
+**Files Involved**:
+- migrations/001_create_users_table.sql - Database migration script
+- schemas/users.sql - Table schema definition
+- README.md - Documentation on migration process
+```
+
+## Best Practices for Writing Epics
+
+### 1. Epic Size and Scope
+
+✅ **Do:**
+- Make each epic represent 1-4 weeks of work
+- Group related functionality that delivers value together
+- Ensure epic has clear business value or technical objective
+- Keep scope focused and cohesive
+
+❌ **Don't:**
+- Create epics that span months (break them down)
+- Mix unrelated functionality in one epic
+- Make epics too small (merge similar epics)
+- Leave epics vague without clear objectives
+
+### 2. Epic Objectives
+
+✅ **Do:**
+- Write objective as a single, clear sentence
+- Focus on outcomes, not activities
+- Make objectives specific and measurable
+- Ensure objectives align with business goals
+
+❌ **Don't:**
+- Use vague language like "improve system" or "add features"
+- List tasks instead of objectives
+- Make objectives too broad or generic
+- Leave objectives undefined
+
+### 3. Epic Dependencies
+
+✅ **Do:**
+- Identify hard vs soft dependencies clearly
+- Document why dependencies exist
+- Check for circular dependencies (these are errors)
+- Consider parallel execution opportunities
+
+❌ **Don't:**
+- Leave dependencies undocumented
+- Assume dependencies are obvious
+- Create unnecessary blocking dependencies
+- Forget to mark dependencies as hard or soft
+
+### 4. Epic Names
+
+✅ **Do:**
+- Use 3-6 words that clearly describe the epic
+- Use consistent naming convention across project
+- Make names self-explanatory
+- Include technical context when relevant
+
+❌ **Don't:**
+- Use cryptic abbreviations
+- Make names too generic ("Phase 1", "Epic A")
+- Use inconsistent naming
+- Change names mid-project
+
+## Best Practices for Writing User Stories
+
+### 1. Story Size and Focus
+
+✅ **Do:**
+- Keep stories small enough for 1-3 days of work
+- Focus on a single piece of functionality
+- Ensure story can be implemented by one developer
+- Make story testable independently
+
+❌ **Don't:**
+- Create stories that take a week or more
+- Mix multiple unrelated features in one story
+- Make stories too granular (task-sized)
+- Leave stories incomplete or vague
+
+### 2. Story Descriptions
+
+✅ **Do:**
+- Start description with a verb (Create, Implement, Add, Fix)
+- Be specific about what's being done
+- Mention technical approach or patterns
+- Include integration points and affected areas
+
+❌ **Don't:**
+- Use passive voice or vague language
+- Leave description as just a title
+- Skip technical context
+- Make assumptions about implementation knowledge
+
+### 3. Acceptance Criteria
+
+✅ **Do:**
+- Write 3-7 criteria per story
+- Make criteria observable and testable
+- Use specific, measurable conditions
+- Cover happy path and edge cases
+- Include performance or quality requirements when relevant
+
+❌ **Don't:**
+- Write vague criteria like "works correctly"
+- Make criteria subjective or untestable
+- Skip edge cases and error handling
+- Leave criteria as implementation details
+
+### 4. Complexity Estimation
+
+**Simple (0.5-1 day):**
+- Straightforward implementation
+- Well-understood pattern in codebase
+- No complex logic or edge cases
+- Minimal testing requirements
+- Examples: Add simple CRUD endpoint, create database table, add validation rule
+
+**Medium (1-2 days):**
+- Some complexity or multiple components
+- Requires design decisions or research
+- Moderate testing requirements
+- Several edge cases to handle
+- Examples: Implement OAuth flow, add caching layer, create REST API client
+
+**Complex (2-3 days):**
+- High complexity or many integration points
+- Significant architectural work
+- Extensive testing and validation required
+- Multiple edge cases and failure modes
+- Examples: Multi-tenant isolation strategy, complex data migration, distributed transaction handling
+
+### 5. Files Involved
+
+✅ **Do:**
+- List all major files or directories affected
+- Group related files together
+- Use relative paths from project root
+- Briefly explain purpose of each file modification
+
+❌ **Don't:**
+- Leave files section empty
+- List every single line change (too detailed)
+- Use absolute paths
+- Skip obvious files that are clearly affected
+
+### 6. Dependencies
+
+✅ **Do:**
+- List all prerequisite stories or epics
+- Explain why dependency exists
+- Mark hard vs soft dependencies
+- Check for circular dependencies (error)
+
+❌ **Don't:**
+- Leave dependencies undocumented
+- Assume dependencies are obvious
+- Create unnecessary blocking
+- Forget to document cross-epic dependencies
+
+## Common Mistakes to Avoid
+
+### Epic Mistakes
+
+1. **Overly broad epics**: "Improve System Performance" → Should be multiple specific epics
+2. **Unclear objectives**: "Database Work" → Should be "User Management Database Schema"
+3. **Missing dependencies**: Forgetting that OAuth depends on User Management
+4. **Wrong size**: Epic that's too small (single feature) or too large (entire system)
+
+### User Story Mistakes
+
+1. **Too large**: Story takes 5+ days → Break into multiple stories
+2. **Vague acceptance criteria**: "Make it work" → Should be specific testable conditions
+3. **Missing edge cases**: Only happy path criteria → Add error handling criteria
+4. **No file context**: Developer must explore to find files → List key files involved
+5. **Wrong complexity**: Marked "Simple" but requires new library → Should be "Medium"
+
+## Quality Checklist
+
+Before finalizing a plan, verify:
+
+### Epic Quality
+- [ ] Each epic has a clear, specific objective
+- [ ] Epic size is appropriate (1-4 weeks of work)
+- [ ] Dependencies are documented and make sense
+- [ ] Epic name is descriptive and consistent
+- [ ] Business value is clear
+
+### User Story Quality
+- [ ] Each story can be completed in 1-3 days
+- [ ] Acceptance criteria are observable and testable
+- [ ] Complexity estimate is accurate
+- [ ] Files involved are listed
+- [ ] Dependencies are correct
+- [ ] Story description is specific and clear
+
+### Plan Quality
+- [ ] All requirements from request are covered
+- [ ] Execution order is logical
+- [ ] No circular dependencies
+- [ ] Out-of-scope items are documented
+- [ ] Parallel work opportunities are identified
+
 ## Integration with Other Agents
 
 ### Using Pragmatic Explorer
