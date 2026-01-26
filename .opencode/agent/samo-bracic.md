@@ -2451,6 +2451,496 @@ SamoBracic:
 - ✅ Focus on structure, not every line of code
 - ✅ Stay at the planning level (epics and stories)
 
+## Unit Test Scenarios
+
+This section documents test scenarios for validating SamoBracic's core logic. These scenarios cover epic grouping, story formatting, INVEST criteria validation, and dependency identification.
+
+### Epic Grouping Logic Scenarios
+
+#### Test Scenario 1: Related Features Grouped into Single Epic
+
+**Description:** Verify that agent correctly groups related functionality into a single epic when features are cohesive and share business value.
+
+**Input:**
+```markdown
+User request: "Add user authentication with login, registration, and password reset"
+Context: Express.js application with PostgreSQL database
+```
+
+**Expected Output:**
+```markdown
+Epic 1: User Authentication System
+**Objective**: Enable users to register, login, and manage authentication
+
+**User Stories**:
+1. Create users database table
+2. Implement user registration endpoint
+3. Implement user login endpoint
+4. Add password reset flow
+```
+
+**Validation Criteria:**
+- [ ] Single epic created (not multiple epics for login/registration/password reset)
+- [ ] Epic objective covers all three related features
+- [ ] All user stories are logically grouped under one epic
+- [ ] Story order reflects logical implementation sequence (database → registration → login → password reset)
+- [ ] Epic size is appropriate (1-2 weeks of work)
+
+---
+
+#### Test Scenario 2: Cross-Cutting Features Split into Multiple Epics
+
+**Description:** Verify that agent correctly splits features spanning multiple architectural layers into separate epics.
+
+**Input:**
+```markdown
+User request: "Implement real-time notifications with WebSocket server, database storage, and UI components"
+Context: React frontend, Node.js backend, PostgreSQL database
+```
+
+**Expected Output:**
+```markdown
+Epic 1: WebSocket Infrastructure
+**Objective**: Establish WebSocket server and connection management
+
+Epic 2: Notification Storage and Retrieval
+**Objective**: Create database layer for persistent notifications
+
+Epic 3: UI Notification Components
+**Objective**: Build frontend components for displaying notifications
+
+### Epic Dependencies
+- Epic 2 depends on Epic 1 (database layer needs WebSocket events)
+- Epic 3 depends on Epic 1 (UI needs WebSocket connection)
+- Epic 2 and Epic 3 can work in parallel after Epic 1
+```
+
+**Validation Criteria:**
+- [ ] Three separate epics created (not one large epic)
+- [ ] Each epic focuses on one architectural layer (backend, database, frontend)
+- [ ] Dependencies are documented correctly between epics
+- [ ] Each epic has clear, focused objective
+- [ ] Epics can be worked on in parallel where appropriate
+
+---
+
+#### Test Scenario 3: Foundation and Enhancement Epic Separation
+
+**Description:** Verify that agent correctly separates foundational infrastructure work from enhancement features.
+
+**Input:**
+```markdown
+User request: "Add caching layer and implement cache warming for API responses"
+Context: Express.js application, no existing caching
+```
+
+**Expected Output:**
+```markdown
+Epic 1: Caching Infrastructure
+**Objective**: Implement Redis caching layer and integration with Express.js
+
+**User Stories**:
+1. Configure Redis connection
+2. Create caching middleware
+3. Implement cache invalidation strategy
+
+Epic 2: Cache Warming and Optimization
+**Objective**: Implement proactive cache population and performance optimization
+
+**User Stories**:
+1. Identify cacheable endpoints
+2. Implement cache warming on application startup
+3. Add cache performance metrics
+
+### Epic Dependencies
+- Epic 2 depends on Epic 1 (Hard dependency) - Cache warming requires caching infrastructure
+```
+
+**Validation Criteria:**
+- [ ] Foundation epic created first (infrastructure setup)
+- [ ] Enhancement epic created second (optimization features)
+- [ ] Hard dependency correctly identified (Epic 2 cannot start without Epic 1)
+- [ ] Foundation epic has clear technical objective
+- [ ] Enhancement epic has clear business value (performance improvement)
+
+---
+
+### Story Formatting Scenarios
+
+#### Test Scenario 4: Complete Story with All Required Fields
+
+**Description:** Verify that agent generates user stories with all required fields present and properly formatted.
+
+**Input:**
+```markdown
+Task: "Create user profile endpoint that returns user data by ID"
+Context: Existing User model in models/user.js, Express.js patterns in src/routes/
+```
+
+**Expected Output:**
+```markdown
+1. Create user profile endpoint: Implement GET /api/users/:id endpoint to retrieve user profile
+
+**Description**: Creates REST endpoint to fetch user profile by ID. Returns user object with id, email, name, and created_at. Handles non-existent user with 404 response. Follows existing GET endpoint patterns in src/routes/users/.
+
+**Acceptance Criteria**:
+1. GET /api/users/:id endpoint accepts user ID in URL parameter
+2. Queries users table by ID using User model
+3. Returns 200 OK with user JSON object if user exists
+4. Returns 404 Not Found if user ID doesn't exist
+5. Returns 500 Internal Server Error for database errors
+6. Response includes: id, email, name, created_at fields
+7. Unit tests cover: valid user, non-existent user, database error
+
+**Dependencies**: None
+
+**Estimated Complexity**: Simple
+
+**Files Involved**:
+- src/routes/users.js - Add profile endpoint handler
+- models/user.js - Use existing User model
+- tests/routes/users.test.js - Add endpoint tests
+```
+
+**Validation Criteria:**
+- [ ] Story number and name present
+- [ ] Brief one-line description included
+- [ ] Detailed **Description** section with context
+- [ ] **Acceptance Criteria** section with 3-7 specific criteria
+- [ ] **Dependencies** section (can be "None")
+- [ ] **Estimated Complexity** (Simple/Medium/Complex)
+- [ ] **Files Involved** section with file paths and purposes
+- [ ] All acceptance criteria are observable and testable
+- [ ] Technical context provided (patterns, libraries used)
+
+---
+
+#### Test Scenario 5: Story with Dependencies Correctly Documented
+
+**Description:** Verify that agent correctly documents hard and soft dependencies between stories.
+
+**Input:**
+```markdown
+Task: "Implement JWT token validation middleware and use it to protect admin routes"
+Context: JWT token generation utilities exist in src/utils/jwt.js
+```
+
+**Expected Output:**
+```markdown
+1. Generate JWT token utilities: Create functions to generate and validate JWT tokens
+**Dependencies**: None
+
+2. Add authentication middleware: Create middleware to validate JWT tokens
+**Dependencies**: Story 1 (Generate JWT token utilities) - Hard dependency, middleware requires validation functions
+
+3. Protect admin routes: Apply authentication middleware to admin API endpoints
+**Dependencies**: Story 2 (Add authentication middleware) - Hard dependency, routes need middleware to be created
+```
+
+**Validation Criteria:**
+- [ ] Story 1 has no dependencies (foundation story)
+- [ ] Story 2 correctly depends on Story 1
+- [ ] Story 3 correctly depends on Story 2
+- [ ] Dependencies are marked as hard (not soft)
+- [ ] Each dependency includes reason why it exists
+- [ ] No circular dependencies (Story A depends on B, B depends on C, not back to A)
+- [ ] Dependency chain is logical and linear
+
+---
+
+### INVEST Criteria Validation Scenarios
+
+#### Test Scenario 6: Independent Story Validation
+
+**Description:** Verify that agent creates stories that are independent and can be implemented without waiting on other stories (except documented dependencies).
+
+**Input:**
+```markdown
+Feature: "Add OAuth authentication with Google and GitHub providers"
+Context: Existing users table with OAuth fields
+```
+
+**Expected Output:**
+```markdown
+Story 1: Implement Google OAuth flow
+**Dependencies**: None (uses existing users table)
+
+Story 2: Implement GitHub OAuth flow
+**Dependencies**: None (can be implemented independently of Google OAuth)
+
+Story 3: Add error handling to both OAuth flows
+**Dependencies**: Story 1, Story 2 (Hard - needs both OAuth implementations)
+```
+
+**Validation Criteria:**
+- [ ] Google OAuth story can be implemented without GitHub OAuth
+- [ ] GitHub OAuth story can be implemented without Google OAuth
+- [ ] Both OAuth stories can be worked on in parallel
+- [ ] Only documented dependencies block implementation
+- [ ] Each story provides value independently
+- [ ] Story 3 correctly depends on both Story 1 and Story 2 (error handling needs both implementations)
+
+---
+
+#### Test Scenario 7: Estimable Story Validation
+
+**Description:** Verify that agent creates stories with complexity estimates that match the actual work required.
+
+**Input:**
+```markdown
+Task: "Add file upload functionality for user avatars"
+Context: Express.js, need to handle multipart/form-data, store files in S3
+```
+
+**Expected Output:**
+```markdown
+1. Install and configure file upload middleware: Add multer for handling multipart/form-data
+**Estimated Complexity**: Simple
+**Reasoning**: Well-documented library, standard Express middleware pattern
+
+2. Implement file upload endpoint: Create POST /api/users/avatar endpoint
+**Estimated Complexity**: Medium
+**Reasoning**: Requires S3 integration, file validation, error handling, multiple steps
+
+3. Add avatar display endpoint: Serve avatar images from S3
+**Estimated Complexity**: Simple
+**Reasoning**: Simple redirect to S3 URL, existing user model has avatar_url field
+```
+
+**Validation Criteria:**
+- [ ] Simple estimate for library installation (well-understood pattern)
+- [ ] Medium estimate for S3 integration (external API, multiple steps, error handling)
+- [ ] Simple estimate for display endpoint (straightforward redirect)
+- [ ] Complexity estimates align with documented acceptance criteria complexity
+- [ ] Story complexity increases with: external APIs, multiple components, error handling, testing requirements
+- [ ] No story marked as "Simple" when it requires new libraries or external APIs
+
+---
+
+#### Test Scenario 8: Small Story Validation
+
+**Description:** Verify that agent breaks down work into stories that can be completed in 1-3 days each.
+
+**Input:**
+```markdown
+Request: "Implement complete multi-tenant support for SaaS application"
+Complexity: Complex (2+ weeks)
+```
+
+**Expected Output:**
+```markdown
+Epic 1: Database Multi-Tenancy
+**Stories**:
+1. Add tenant_id column to users table (Simple - 0.5 day)
+2. Create tenants table for tenant management (Simple - 0.5 day)
+3. Update user queries to filter by tenant (Medium - 1 day)
+4. Add database-level row security policies (Medium - 1-2 days)
+
+Epic 2: Tenant Identification Middleware
+**Stories**:
+1. Create tenant identification from subdomain (Medium - 1 day)
+2. Add tenant context to request object (Simple - 0.5 day)
+
+Epic 3: Data Isolation Validation
+**Stories**:
+1. Add tenant isolation tests (Medium - 1 day)
+2. Verify no data leakage between tenants (Complex - 2 days)
+```
+
+**Validation Criteria:**
+- [ ] All stories are sized for 1-3 days of work
+- [ ] No single story spans multiple weeks
+- [ ] Complex work (2-3 days) is justified (multi-tenant testing is high-risk)
+- [ ] Medium work (1-2 days) has multiple components or integration points
+- [ ] Simple work (0.5-1 day) is straightforward with clear patterns
+- [ ] Total story count is appropriate for 2-3 week project (8-12 stories)
+- [ ] Each story is focused on a single piece of work
+
+---
+
+#### Test Scenario 9: Testable Story Validation
+
+**Description:** Verify that agent creates stories with acceptance criteria that are observable and testable.
+
+**Input:**
+```markdown
+Task: "Add rate limiting to API endpoints to prevent abuse"
+```
+
+**Expected Output:**
+```markdown
+1. Implement rate limiting middleware: Add rate limiter using express-rate-limit
+**Acceptance Criteria**:
+1. Middleware function exported from src/middleware/rate-limit.js
+2. Returns 429 Too Many Requests when limit exceeded (observable HTTP status code)
+3. Tracks requests per IP address in Redis (can verify Redis data)
+4. Resets counter after window expires (can test with time-based test)
+5. Logs rate limit violations to rate-limit.log (observable log output)
+6. Can be configured: 100 requests per 15 minutes by default (configurable settings)
+7. Unit tests cover: under limit, at limit, over limit, window reset (specific test scenarios)
+```
+
+**Validation Criteria:**
+- [ ] Acceptance criteria are observable (HTTP status codes, log output, database state)
+- [ ] Each criterion can be verified by testing or inspection
+- [ ] No subjective criteria like "make it robust" or "optimize performance"
+- [ ] Specific numeric values provided (100 requests, 15 minutes)
+- [ ] Test scenarios explicitly listed (under limit, at limit, over limit, window reset)
+- [ ] Edge cases covered (rate limit exceeded, window expiration)
+- [ ] Criteria are measurable (can determine pass/fail)
+
+---
+
+### Dependency Identification Scenarios
+
+#### Test Scenario 10: Hard Dependency Identification
+
+**Description:** Verify that agent correctly identifies hard dependencies where Story B cannot start until Story A is complete.
+
+**Input:**
+```markdown
+Feature: "Build blog system with posts, comments, and notifications"
+```
+
+**Expected Output:**
+```markdown
+1. Create posts table and model
+**Dependencies**: None
+
+2. Create comments table and model
+**Dependencies**: Story 1 (Create posts table) - Hard dependency, comments table has foreign key to posts table
+
+3. Implement post creation endpoint
+**Dependencies**: Story 1 (Create posts table) - Hard dependency, endpoint requires database table
+
+4. Implement comment creation endpoint
+**Dependencies**: Story 2 (Create comments table), Story 3 (Post creation endpoint) - Hard dependency, comments reference posts, need both tables and post endpoint
+```
+
+**Validation Criteria:**
+- [ ] Comments table correctly depends on posts table (foreign key relationship)
+- [ ] Comment endpoint correctly depends on both tables and post endpoint
+- [ ] Hard dependencies are marked correctly (not soft or parallel)
+- [ ] Database relationships drive dependency structure
+- [ ] No circular dependencies (comments don't depend on posts which depend on comments)
+- [ ] Dependency chain is logical: posts → comments → comment endpoint
+
+---
+
+#### Test Scenario 11: Soft Dependency Identification
+
+**Description:** Verify that agent correctly identifies soft dependencies where Story B can start before Story A but benefits from it.
+
+**Input:**
+```markdown
+Feature: "Add user profile with avatar upload and avatar display"
+```
+
+**Expected Output:**
+```markdown
+1. Implement avatar upload functionality
+**Dependencies**: None
+
+2. Implement avatar display on profile page
+**Dependencies**: Story 1 (Avatar upload) - Soft dependency, display can work with default avatars while upload is being implemented
+
+3. Add avatar optimization (image resizing, compression)
+**Dependencies**: Story 1 (Avatar upload) - Soft dependency, optimization can be added after upload is working, but upload can proceed without optimization
+```
+
+**Validation Criteria:**
+- [ ] Avatar display correctly marked as soft dependency on upload (can use default avatar)
+- [ ] Optimization correctly marked as soft dependency (enhancement, not blocker)
+- [ ] Display story can be implemented concurrently with upload story
+- [ ] Soft dependencies include reason why they're soft (workarounds exist)
+- [ ] Hard vs soft dependencies are distinguished correctly
+
+---
+
+#### Test Scenario 12: Parallel Work Identification
+
+**Description:** Verify that agent correctly identifies stories that can be worked on simultaneously with no dependencies.
+
+**Input:**
+```markdown
+Feature: "Integrate OAuth with Google, GitHub, and Twitter providers"
+```
+
+**Expected Output:**
+```markdown
+1. Configure OAuth application credentials for all providers
+**Dependencies**: None
+
+2. Implement Google OAuth callback handler
+**Dependencies**: Story 1 (OAuth credentials) - Hard dependency
+
+3. Implement GitHub OAuth callback handler
+**Dependencies**: Story 1 (OAuth credentials) - Hard dependency
+**Parallel**: Can work in parallel with Story 2 (Google OAuth)
+
+4. Implement Twitter OAuth callback handler
+**Dependencies**: Story 1 (OAuth credentials) - Hard dependency
+**Parallel**: Can work in parallel with Stories 2 and 3
+```
+
+**Validation Criteria:**
+- [ ] Google, GitHub, and Twitter OAuth stories can all work in parallel
+- [ ] All three correctly depend only on Story 1 (credentials)
+- [ ] No dependencies between Google, GitHub, and Twitter stories
+- [ ] Parallel work is explicitly noted
+- [ ] Each OAuth provider story is independent of the others
+- [ ] Foundation story (credentials) correctly identified as prerequisite
+
+---
+
+### Summary of Test Scenarios
+
+| Scenario | Logic Area | Input Type | Validation Focus |
+|----------|------------|------------|------------------|
+| 1 | Epic Grouping | Related features | Single epic created, cohesive grouping |
+| 2 | Epic Grouping | Cross-cutting features | Multiple epics by layer, dependencies documented |
+| 3 | Epic Grouping | Foundation + enhancement | Foundation/epic separation, hard dependencies |
+| 4 | Story Formatting | Complete story | All required fields present, proper format |
+| 5 | Story Formatting | Dependent stories | Hard/soft dependencies, no circular deps |
+| 6 | INVEST - Independent | OAuth providers | Independent stories, parallel work possible |
+| 7 | INVEST - Estimable | File upload | Realistic complexity estimates |
+| 8 | INVEST - Small | Multi-tenant support | Stories sized 1-3 days, appropriate breakdown |
+| 9 | INVEST - Testable | Rate limiting | Observable, measurable acceptance criteria |
+| 10 | Dependencies | Blog system | Hard dependencies, database relationships |
+| 11 | Dependencies | User profile | Soft dependencies, workarounds identified |
+| 12 | Dependencies | Multiple OAuth | Parallel work, independent stories |
+
+### Validation Criteria Summary
+
+**Epic Grouping Logic:**
+- Related features grouped into single epic
+- Cross-cutting features split into multiple epics
+- Foundation and enhancement work separated
+- Dependencies documented between epics
+- Epic size appropriate (1-4 weeks)
+
+**Story Formatting:**
+- All required fields present (name, description, acceptance criteria, dependencies, complexity, files)
+- Acceptance criteria are specific, observable, and measurable
+- 3-7 acceptance criteria per story
+- Files listed with purpose
+- Technical context provided
+
+**INVEST Criteria:**
+- **Independent**: Stories can be implemented without waiting (except documented dependencies)
+- **Negotiable**: Stories are focused, scope can be adjusted
+- **Valuable**: Each story provides value to users or system
+- **Estimable**: Complexity estimates match actual work (Simple/Medium/Complex)
+- **Small**: Stories can be completed in 1-3 days
+- **Testable**: Acceptance criteria are observable and verifiable
+
+**Dependency Identification:**
+- Hard dependencies: Story B cannot start until Story A complete
+- Soft dependencies: Story B can start before Story A but benefits from it
+- Parallel work: No dependencies, can work simultaneously
+- No circular dependencies
+- Dependencies include reason why they exist
+
 ## Constraints
 
 **You cannot:**

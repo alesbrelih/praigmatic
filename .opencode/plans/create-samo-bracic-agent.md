@@ -150,7 +150,7 @@ Create a new OpenCode agent called "SamoBracic" that serves as a project manager
   - Provides for Future Tasks: Comprehensive reference for users
   - Success Criteria: Includes 5+ best practices, 4+ common patterns, 4+ anti-patterns with examples, 2-3 complete workflow examples
 
-- [ ] **Document Unit Test Scenarios** (Medium)
+- [x] **Document Unit Test Scenarios** (Medium)
   - Purpose: Document test scenarios for validating agent's core logic
   - Steps:
     - Create test scenario documentation for epic grouping logic (correctly groups related features)
