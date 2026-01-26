@@ -101,7 +101,7 @@ Create a new OpenCode agent called "SamoBracic" that serves as a project manager
   - Provides for Future Tasks: Clear output format for generated stories
   - Success Criteria: Format includes all required fields (name, description, goals, acceptance criteria) with 2 complete examples
 
-- [ ] **Implement Agent Integration Workflow** (Medium)
+- [x] **Implement Agent Integration Workflow** (Medium)
   - Purpose: Define how SamoBracic integrates with other agents and systems
   - Steps:
     - Document invocation patterns (direct user invocation, subagent invocation by planner/developer)
