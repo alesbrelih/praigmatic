@@ -3406,6 +3406,1072 @@ Loop prevention:
 - Agent makes progress after each call
 - Question tool used instead of bouncing between agents
 
+## End-to-End Test Scenarios
+
+This section documents comprehensive end-to-end test scenarios for validating SamoBracic's complete planning workflow from initial user request to final project plan handoff. These scenarios cover simple, medium, and complex feature planning workflows, edge cases, multi-epic projects, and subagent invocation patterns.
+
+### Simple Feature Planning Workflow Scenarios
+
+#### Test Scenario 1: Single Epic with Simple Stories
+
+**Description:** Verify that agent correctly plans a simple feature requiring a single epic with 2-5 user stories, completes full planning cycle efficiently without needing subagent calls.
+
+**Input:**
+```markdown
+User request: "Add user profile page that displays user name, email, and avatar"
+Context: Existing users table, React frontend, Express.js backend
+```
+
+**Expected Output (Complete Planning Cycle):**
+```markdown
+Phase 1: Analyze Requirements
+- Reads existing codebase to understand current API structure
+- Checks users table schema
+- Assesses complexity: Simple (single feature, clear requirements)
+- No ambiguities identified
+
+Phase 2: Clarify Ambiguities
+- Skipped (requirements are clear and specific)
+
+Phase 3: Structure Epics
+- Epic 1: User Profile Page
+- Objective: Create user profile page to display user information
+- Single epic sufficient for this feature
+
+Phase 4: Create User Stories
+Story 1: Create user profile endpoint: Implement GET /api/users/:id endpoint
+Story 2: Create user profile component: Build React component to display profile data
+
+Phase 5: Prioritize Stories
+- Story 1 → Story 2 (backend first, then frontend)
+
+Phase 6: Validate Plan
+- All requirements covered
+- Stories are actionable
+- Dependencies correct
+
+Final Plan:
+## Project Plan: User Profile Page
+
+### Epics
+
+#### Epic 1: User Profile Page
+**Objective**: Create user profile page to display user information (name, email, avatar)
+
+**User Stories**:
+1. Create user profile endpoint: Implement GET /api/users/:id endpoint
+   - Acceptance criteria:
+     - Endpoint returns user object with id, email, name, avatar_url
+     - Returns 404 if user doesn't exist
+     - Returns 500 for database errors
+   - Dependencies: None
+   - Estimated complexity: Simple
+
+2. Create user profile component: Build React component to display profile
+   - Acceptance criteria:
+     - Component displays user name, email, and avatar
+     - Fetches data from /api/users/:id endpoint
+     - Shows loading state while fetching
+     - Shows error message if fetch fails
+   - Dependencies: Story 1 (endpoint must exist)
+   - Estimated complexity: Simple
+
+### Execution Order
+**Phase 1**: Story 1 (backend endpoint)
+**Phase 2**: Story 2 (frontend component, depends on Story 1)
+
+### Recommended Next Steps
+Hand off to pragmatic-developer to implement Story 1, then Story 2. Each story has clear acceptance criteria for verification.
+```
+
+**Validation Criteria:**
+- [ ] Single epic created (not over-engineered)
+- [ ] 2 user stories (appropriate scope for simple feature)
+- [ ] No subagent calls (requirements were clear)
+- [ ] Planning cycle completed in reasonable time (not over-analyzed)
+- [ ] Stories are Simple complexity (straightforward implementation)
+- [ ] Dependencies correctly identified (frontend depends on backend)
+- [ ] Acceptance criteria are observable and testable
+- [ ] Plan is actionable and ready for implementation
+- [ ] No clarifications needed (requirements understood correctly)
+
+---
+
+### Medium Complexity Feature Planning Workflow Scenarios
+
+#### Test Scenario 2: Multi-Epic with Subagent Integration
+
+**Description:** Verify that agent correctly plans a medium complexity feature requiring 2-3 epics with 8-15 user stories, including subagent calls for codebase understanding and technical decisions.
+
+**Input:**
+```markdown
+User request: "Add caching layer to improve API performance"
+Context: Express.js application, PostgreSQL database, no existing caching
+```
+
+**Expected Output (Complete Planning Cycle):**
+```markdown
+Phase 1: Analyze Requirements
+- Reads existing codebase structure
+- Checks for existing caching infrastructure
+- Assesses complexity: Medium (multiple components, architectural decision needed)
+- Identifies missing information: what to cache? which cache provider?
+
+Phase 2: Clarify Ambiguities
+- Calls pragmatic-explorer: "Analyze codebase for: API endpoints, database queries, performance bottlenecks"
+- Explorer returns: 20+ endpoints, N+1 query issues on posts API, read-heavy workload
+- Calls question tool: "Which caching approach?"
+  - User selects: "Redis with selective caching of read-heavy endpoints (5 min TTL)"
+- Decides on: Redis + selective caching approach
+
+Phase 3: Structure Epics
+- Epic 1: Caching Infrastructure
+- Epic 2: API Endpoint Caching
+- Epic 3: Cache Invalidation Strategy
+
+Phase 4: Create User Stories
+Epic 1: 4 stories (Redis setup, cache middleware, utilities, configuration)
+Epic 2: 5 stories (identify cacheable endpoints, apply caching, add metrics)
+Epic 3: 3 stories (invalidation on updates, cache warming, monitoring)
+
+Phase 5: Prioritize Stories
+- Epic 1 (foundation) → Epic 2 (apply caching) → Epic 3 (enhancement)
+
+Phase 6: Validate Plan
+- All requirements covered
+- Stories are actionable
+- Dependencies correct
+
+Final Plan:
+## Project Plan: API Caching Layer
+
+### Epics
+
+#### Epic 1: Caching Infrastructure
+**Objective**: Implement Redis caching layer with Express.js middleware integration
+
+**User Stories**:
+1. Configure Redis connection: Set up Redis client with connection pooling
+2. Create caching middleware: Implement middleware for automatic response caching
+3. Add cache utilities: Helper functions for get, set, delete operations
+4. Configure cache settings: Define TTL, key prefix, and cache options
+
+#### Epic 2: API Endpoint Caching
+**Objective**: Apply caching to read-heavy API endpoints to reduce database load
+
+**User Stories**:
+1. Profile API performance: Identify slow endpoints suitable for caching
+2. Apply caching to user endpoints: Cache GET /api/users/:id responses
+3. Apply caching to posts endpoints: Cache GET /api/posts responses
+4. Add cache hit/miss metrics: Track caching effectiveness
+5. Add cache bypass: Support cache-bypass for stale data requests
+
+#### Epic 3: Cache Invalidation Strategy
+**Objective**: Implement cache invalidation to ensure data consistency
+
+**User Stories**:
+1. Invalidate on updates: Remove cache when data is modified
+2. Implement cache warming: Pre-populate cache on application startup
+3. Add cache monitoring: Dashboard to view cache performance metrics
+
+### Execution Order
+**Phase 1**: Epic 1 (Redis infrastructure)
+**Phase 2**: Epic 2 (apply caching to endpoints, depends on Epic 1)
+**Phase 3**: Epic 3 (enhancement features, depends on Epic 1 and 2)
+
+### Dependencies
+- Epic 2 depends on Epic 1 (Hard dependency)
+- Epic 3 depends on Epic 1 (Hard dependency)
+- Epic 3 depends on Epic 2 (Soft dependency - invalidation needs to know cached endpoints)
+
+### Recommended Next Steps
+Hand off to pragmatic-planner for Redis configuration research, then to pragmatic-developer for Story 1 implementation.
+```
+
+**Validation Criteria:**
+- [ ] 3 epics created (appropriate for medium complexity)
+- [ ] 12 user stories (appropriate count for medium feature)
+- [ ] pragmatic-explorer called to understand codebase
+- [ ] question tool used for technical decision (caching approach)
+- [ ] Subagent calls are purposeful (not excessive)
+- [ ] Stories have realistic complexity estimates (Simple, Medium)
+- [ ] Dependencies between epics documented correctly
+- [ ] Foundation epic (Epic 1) created first
+- [ ] Plan reflects user's specific choice (Redis, 5 min TTL)
+- [ ] Execution order is logical (infrastructure → application → enhancement)
+- [ ] Each story has actionable acceptance criteria
+- [ ] Plan is ready for implementation handoff
+
+---
+
+### Complex Feature Planning Workflow Scenarios
+
+#### Test Scenario 3: Multi-Phase Complex Feature with Dependencies
+
+**Description:** Verify that agent correctly plans a complex feature requiring 3+ epics with 15+ user stories, including phased rollout, complex dependencies, and multiple subagent interactions.
+
+**Input:**
+```markdown
+User request: "Implement real-time notifications system with WebSocket support, database persistence, and user preferences"
+Context: React frontend, Node.js backend, PostgreSQL database, no WebSocket infrastructure
+```
+
+**Expected Output (Complete Planning Cycle):**
+```markdown
+Phase 1: Analyze Requirements
+- Reads existing codebase (Express.js, PostgreSQL, React)
+- Checks for WebSocket libraries (none installed)
+- Assesses complexity: Complex (new infrastructure, multiple layers, external dependencies)
+- Identifies missing information: which WebSocket library? notification types? delivery guarantees?
+
+Phase 2: Clarify Ambiguities
+- Calls pragmatic-explorer: "Analyze codebase for: current message handling, user model, existing notification patterns"
+- Explorer returns: users table has notification_preferences column, no notification system exists
+- Calls pragmatic-brainstormer: "Decide between Socket.IO vs native WebSocket"
+- Brainstormer recommends: Socket.IO for broader compatibility and built-in reconnection
+- Calls question tool: "What notification types?"
+  - User selects: "In-app notifications (real-time) + Email notifications (background)"
+- Calls question tool: "Delivery requirements?"
+  - User selects: "Best-effort delivery (no retries for in-app, retries for email)"
+
+Phase 3: Structure Epics
+- Epic 1: WebSocket Infrastructure
+- Epic 2: Notification Storage and Retrieval
+- Epic 3: Notification Generation System
+- Epic 4: User Preferences Management
+- Epic 5: Email Notification Integration
+
+Phase 4: Create User Stories
+Epic 1: 6 stories (Socket.IO setup, connection management, authentication, error handling, testing)
+Epic 2: 5 stories (notification table, storage API, retrieval API, pagination, indexing)
+Epic 3: 4 stories (notification triggers, event system, priority handling, batching)
+Epic 4: 3 stories (preferences UI, preferences API, default preferences)
+Epic 5: 4 stories (email service, email templates, retry logic, background jobs)
+
+Phase 5: Prioritize Stories
+- Epic 1 (foundation) → Epic 2 (data layer) → Epic 3 (core logic) → Epic 4 (UI) → Epic 5 (enhancement)
+
+Phase 6: Validate Plan
+- All requirements covered
+- Stories are actionable
+- Dependencies correct
+- Phased approach validated (Phase 1: Infrastructure, Phase 2: Core features, Phase 3: Enhancement)
+
+Final Plan:
+## Project Plan: Real-Time Notifications System
+
+### Epics
+
+#### Epic 1: WebSocket Infrastructure
+**Objective**: Establish WebSocket server infrastructure using Socket.IO for real-time communication
+
+**User Stories**:
+1. Install and configure Socket.IO: Set up Socket.IO server with Express.js integration
+2. Implement connection management: Handle WebSocket connections, disconnections, reconnection logic
+3. Add WebSocket authentication: Validate JWT tokens on WebSocket connection
+4. Implement room management: Create user-specific rooms for targeted notifications
+5. Add error handling and logging: Handle connection failures, log connection events
+6. Write WebSocket tests: Unit and integration tests for connection flow
+
+#### Epic 2: Notification Storage and Retrieval
+**Objective**: Create database layer for persistent notification storage and retrieval
+
+**User Stories**:
+1. Create notifications table: Design schema with user_id, type, message, created_at, read_at
+2. Add database indexes: Optimize queries on user_id and created_at
+3. Implement notification storage API: POST endpoint to save notifications
+4. Implement notification retrieval API: GET endpoint with pagination and filtering
+5. Add read status tracking: Update notifications when user marks as read
+
+#### Epic 3: Notification Generation System
+**Objective**: Build core logic for generating and delivering notifications
+
+**User Stories**:
+1. Implement notification triggers: Define event types that generate notifications
+2. Create notification event system: Publish-subscribe pattern for notification events
+3. Add priority handling: Support urgent, normal, low priority notifications
+4. Implement notification batching: Batch multiple notifications for efficient delivery
+
+#### Epic 4: User Preferences Management
+**Objective**: Allow users to customize notification preferences by type
+
+**User Stories**:
+1. Create preferences UI: Build React component for notification settings
+2. Implement preferences API: GET/POST endpoints for user preferences
+3. Set default preferences: Initialize preferences for new users
+
+#### Epic 5: Email Notification Integration
+**Objective**: Add background email notifications for users who prefer email alerts
+
+**User Stories**:
+1. Integrate email service: Configure SMTP or email API service
+2. Create email templates: Design HTML templates for email notifications
+3. Implement retry logic: Retry failed email deliveries with exponential backoff
+4. Add background job processing: Queue emails for background delivery
+
+### Execution Order
+**Phase 1: Foundation** (Epic 1: WebSocket Infrastructure)
+**Phase 2: Data Layer** (Epic 2: Notification Storage, depends on Epic 1)
+**Phase 3: Core Features** (Epic 3: Notification Generation, depends on Epic 2)
+**Phase 4: User Experience** (Epic 4: Preferences, depends on Epic 3)
+**Phase 5: Enhancement** (Epic 5: Email Integration, depends on Epic 3)
+
+### Dependencies
+- Epic 2 depends on Epic 1 (Hard - needs WebSocket user authentication)
+- Epic 3 depends on Epic 2 (Hard - needs notification storage)
+- Epic 4 depends on Epic 3 (Soft - needs notification types defined)
+- Epic 5 depends on Epic 3 (Hard - needs notification generation logic)
+
+### Out of Scope (Future Work)
+- Push notifications (mobile)
+- SMS notifications
+- Notification analytics dashboard
+- Multi-language support for notifications
+
+### Recommended Next Steps
+Hand off to pragmatic-planner for Socket.IO integration research, then to pragmatic-developer for Epic 1 Story 1 implementation. Follow execution order through all phases.
+```
+
+**Validation Criteria:**
+- [ ] 5 epics created (appropriate for complex feature)
+- [ ] 22 user stories (appropriate count for complex feature)
+- [ ] pragmatic-explorer called for codebase understanding
+- [ ] pragmatic-brainstormer called for technical decision (Socket.IO vs WebSocket)
+- [ ] question tool used twice (notification types, delivery requirements)
+- [ ] Phased execution order defined (5 phases)
+- [ ] Complex dependencies documented correctly (hard and soft)
+- [ ] Foundation work prioritized (WebSocket infrastructure first)
+- [ ] Out-of-scope items documented (push notifications, SMS, analytics)
+- [ ] Each epic has clear objective
+- [ ] Stories have realistic complexity (Medium, Complex for architectural work)
+- [ ] All user requirements covered (WebSocket, persistence, preferences, email)
+- [ ] Plan is comprehensive but not over-engineered
+- [ ] Handoff instructions are clear (research → implementation)
+
+---
+
+### Edge Case Handling Scenarios
+
+#### Test Scenario 4: Ambiguous Requirements with Multiple Clarifications
+
+**Description:** Verify that agent correctly handles highly ambiguous requirements by identifying ambiguities, using multiple subagent calls and question interactions, and refusing to proceed until requirements are clear.
+
+**Input:**
+```markdown
+User request: "Optimize the system performance"
+Context: Large application with multiple performance issues, no specific metrics provided
+```
+
+**Expected Output (Complete Planning Cycle):**
+```markdown
+Phase 1: Analyze Requirements
+- Reads codebase structure (monorepo with multiple services)
+- Checks existing monitoring (minimal logging, no APM)
+- Assesses complexity: Cannot assess without more information
+- Identifies critical ambiguities:
+  - Which parts of the system are slow?
+  - What performance metrics matter?
+  - What's the acceptable performance threshold?
+  - Any constraints on approach?
+
+Phase 2: Clarify Ambiguities (Extended)
+- Calls pragmatic-explorer: "Analyze codebase for: performance bottlenecks, slow queries, heavy endpoints"
+- Explorer returns: Slow database queries, high memory usage, N+1 queries on orders API
+
+- Calls pragmatic-brainstormer: "Clarify optimization priorities and approaches"
+- Brainstormer identifies key questions to ask user
+
+- Calls question tool (Question 1): "Which area to optimize?"
+  - Options: ["Database queries", "API response time", "Memory usage", "All of the above"]
+  - User selects: "All of the above"
+
+- Calls question tool (Question 2): "What's the performance target?"
+  - Options: ["< 100ms response time", "< 50% CPU usage", "Handle 10x current load", "Specific metrics"]
+  - User selects: "< 100ms response time"
+
+- Calls question tool (Question 3): "Can we add new infrastructure?"
+  - Options: ["Yes (Redis, caching, etc.)", "No - optimize existing code only"]
+  - User selects: "Yes (Redis, caching, etc.)"
+
+Phase 3: Structure Epics
+- Epic 1: Database Optimization
+- Epic 2: Caching Layer
+- Epic 3: API Response Optimization
+- Epic 4: Memory Optimization
+
+Phase 4: Create User Stories
+Epic 1: 5 stories (profile queries, add indexes, fix N+1, optimize joins, connection pooling)
+Epic 2: 4 stories (Redis setup, cache hot endpoints, cache invalidation, cache warming)
+Epic 3: 3 stories (reduce payload size, optimize serialization, add compression)
+Epic 4: 3 stories (memory profiling, optimize data structures, reduce object creation)
+
+Phase 5: Prioritize Stories
+- Epic 1 (database - biggest impact) → Epic 2 (caching - medium impact) → Epic 3 (API - small impact) → Epic 4 (memory - small impact)
+
+Phase 6: Validate Plan
+- All requirements covered
+- Stories are actionable
+- Dependencies correct
+
+Final Plan:
+## Project Plan: System Performance Optimization
+
+### Epics
+
+#### Epic 1: Database Optimization
+**Objective**: Optimize database queries to achieve < 100ms response time for all endpoints
+
+**User Stories**:
+1. Profile database queries: Identify slow queries and N+1 issues
+2. Add database indexes: Create indexes on frequently queried columns
+3. Fix N+1 queries: Optimize queries to avoid multiple roundtrips
+4. Optimize complex joins: Refactor queries for better performance
+5. Configure connection pooling: Optimize database connection management
+
+#### Epic 2: Caching Layer
+**Objective**: Implement Redis caching to reduce database load and improve response times
+
+**User Stories**:
+1. Set up Redis infrastructure: Configure Redis server and client
+2. Cache hot endpoints: Apply caching to frequently accessed data
+3. Implement cache invalidation: Remove stale cache on data updates
+4. Add cache warming: Pre-populate cache on application startup
+
+#### Epic 3: API Response Optimization
+**Objective**: Optimize API responses to reduce payload size and serialization time
+
+**User Stories**:
+1. Minimize JSON payloads: Remove unnecessary fields from responses
+2. Optimize serialization: Use efficient JSON serialization
+3. Add response compression: Enable gzip compression for API responses
+
+#### Epic 4: Memory Optimization
+**Objective**: Reduce memory usage and optimize memory allocation patterns
+
+**User Stories**:
+1. Profile memory usage: Identify memory leaks and high-usage areas
+2. Optimize data structures: Use more memory-efficient structures
+3. Reduce object creation: Reuse objects where possible
+
+### Execution Order
+**Phase 1**: Epic 1 (Database - highest impact)
+**Phase 2**: Epic 2 (Caching - depends on Epic 1 results)
+**Phase 3**: Epic 3 (API optimization - independent, can work with Phase 1)
+**Phase 4**: Epic 4 (Memory - enhancement, lowest priority)
+
+### Dependencies
+- Epic 2 depends on Epic 1 (Soft - need to know what's cached after DB optimization)
+- Epic 3 is parallel to Epic 1 and 2 (can optimize responses alongside database work)
+- Epic 4 is parallel to all (independent memory optimization)
+
+### Out of Scope
+- Rewriting application architecture
+- Changing database technology
+- Adding new hardware/infrastructure (except Redis for caching)
+
+### Recommended Next Steps
+Hand off to pragmatic-developer for Epic 1 Story 1 (database profiling). Start with database optimizations as they provide highest impact for < 100ms target.
+```
+
+**Validation Criteria:**
+- [ ] Agent refused to proceed without clarification
+- [ ] 3 question tool calls (not 1, not 10 - appropriate for ambiguity level)
+- [ ] pragmatic-explorer called to understand performance bottlenecks
+- [ ] pragmatic-brainstormer called to identify key questions
+- [ ] User's specific answers incorporated (all areas, < 100ms, yes to Redis)
+- [ ] 4 epics created (appropriate after clarification)
+- [ ] 15 user stories (appropriate scope)
+- [ ] Plan prioritizes highest-impact work first (database optimization)
+- [ ] Dependencies correctly identified (soft dependencies where appropriate)
+- [ ] Out-of-scope items documented (architecture rewrite, new hardware)
+- [ ] No assumptions made (all ambiguities resolved)
+- [ ] Plan is actionable despite initial vagueness
+- [ ] Validation criteria include performance metrics (< 100ms response time)
+
+---
+
+### Multi-Epic Project Planning Scenarios
+
+#### Test Scenario 5: Large Feature with Phased Rollout
+
+**Description:** Verify that agent correctly plans a large multi-epic project requiring phased rollout, multiple teams, and careful dependency management across 20+ stories.
+
+**Input:**
+```markdown
+User request: "Migrate monolith to microservices architecture for e-commerce platform"
+Context: Current monolithic Express.js application, PostgreSQL database, planning gradual migration
+```
+
+**Expected Output (Complete Planning Cycle):**
+```markdown
+Phase 1: Analyze Requirements
+- Reads monolith structure (services/, models/, routes/)
+- Identifies bounded contexts (Users, Products, Orders, Payments, Inventory)
+- Checks database structure (monolithic schema)
+- Assesses complexity: Very complex (architectural migration, phased approach, high risk)
+- Identifies critical questions: migration strategy, data synchronization, rollback plan
+
+Phase 2: Clarify Ambiguities
+- Calls pragmatic-explorer: "Analyze codebase for: service boundaries, database relationships, shared code"
+- Explorer returns: Clear service boundaries possible, foreign key relationships everywhere, shared utilities
+
+- Calls pragmatic-brainstormer: "Decide migration strategy"
+- Brainstormer analyzes: Strangler Fig pattern vs Big Bang vs Parallel Run
+- Recommends: Strangler Fig pattern (gradual migration, low risk)
+
+- Calls question tool (Question 1): "Migration pace?"
+  - Options: ["Aggressive (3 months)", "Moderate (6 months)", "Conservative (12 months)"]
+  - User selects: "Moderate (6 months)"
+
+- Calls question tool (Question 2): "First service to extract?"
+  - Options: ["Users service", "Products service", "Orders service", "Inventory service"]
+  - User selects: "Products service" (least dependencies, good starting point)
+
+Phase 3: Structure Epics
+- Epic 1: Migration Infrastructure and Foundation
+- Epic 2: Products Service (Phase 1)
+- Epic 3: Orders Service (Phase 2)
+- Epic 4: Users Service (Phase 3)
+- Epic 5: Payments and Inventory Services (Phase 4)
+- Epic 6: Data Migration and Sync
+- Epic 7: Legacy Decommissioning
+
+Phase 4: Create User Stories
+Epic 1: 8 stories (microservice template, service mesh, API gateway, authentication, monitoring, logging, deployment, CI/CD)
+Epic 2: 7 stories (extract products models, create products API, implement auth, integrate with monolith DB, add caching, write tests, deploy)
+Epic 3: 8 stories (extract orders models, create orders API, implement auth, integrate with products service, integrate with inventory, event bus, tests, deploy)
+Epic 4: 6 stories (extract users models, create users API, implement auth, migrate authentication, tests, deploy)
+Epic 5: 7 stories (payments integration, inventory API, service-to-service communication, distributed transactions, tests, deploy)
+Epic 6: 5 stories (data sync pipeline, change data capture, data validation, rollback plan, sync monitoring)
+Epic 7: 4 stories (traffic routing, feature flags, legacy cleanup, final migration)
+
+Phase 5: Prioritize Stories
+- Epic 1 (foundation) → Epic 2 (Products - Phase 1) → Epic 3 (Orders - Phase 2) → Epic 4 (Users - Phase 3) → Epic 5 (Payments/Inventory - Phase 4) → Epic 6 (Data migration, ongoing) → Epic 7 (Decommissioning, end)
+
+Phase 6: Validate Plan
+- All requirements covered
+- Stories are actionable
+- Dependencies correct
+- Phased approach validated
+- Rollback plan included
+
+Final Plan:
+## Project Plan: Monolith to Microservices Migration
+
+### Epics
+
+#### Epic 1: Migration Infrastructure and Foundation
+**Objective**: Establish microservices infrastructure including service mesh, API gateway, authentication, and monitoring
+
+**User Stories**:
+1. Create microservice template: Standardized template with Express.js, Docker, health checks
+2. Implement service mesh: Set up service discovery and communication infrastructure
+3. Deploy API gateway: Create gateway for routing and authentication
+4. Implement centralized authentication: JWT validation and user context propagation
+5. Add distributed monitoring: Set up logging, metrics, and tracing across services
+6. Configure centralized logging: Aggregate logs from all services
+7. Set up deployment pipeline: CI/CD for microservices deployment
+8. Create service documentation: Standardized API documentation (OpenAPI/Swagger)
+
+#### Epic 2: Products Service (Phase 1)
+**Objective**: Extract products functionality into standalone microservice
+
+**User Stories**:
+1. Extract products data models: Create separate schema and models for products
+2. Implement products CRUD API: REST API for product management
+3. Add authentication and authorization: Protect products endpoints
+4. Integrate with monolith database: Share database initially (strangler fig pattern)
+5. Add caching layer: Cache product queries for performance
+6. Write integration tests: Test products service in isolation
+7. Deploy and route traffic: Route products traffic to new service
+
+#### Epic 3: Orders Service (Phase 2)
+**Objective**: Extract orders functionality into standalone microservice with service-to-service communication
+
+**User Stories**:
+1. Extract orders data models: Create separate schema and models for orders
+2. Implement orders CRUD API: REST API for order management
+3. Add authentication and authorization: Protect orders endpoints
+4. Integrate with products service: Call products API for product details
+5. Integrate with inventory service: Check and update inventory on orders
+6. Implement event bus: Publish order events for other services
+7. Write integration tests: Test orders service with product/inventory dependencies
+8. Deploy and route traffic: Route orders traffic to new service
+
+#### Epic 4: Users Service (Phase 3)
+**Objective**: Extract users and authentication functionality into standalone microservice
+
+**User Stories**:
+1. Extract users data models: Create separate schema and models for users
+2. Implement users CRUD API: REST API for user management
+3. Migrate authentication logic: Move auth from monolith to users service
+4. Implement OAuth integration: Keep OAuth providers in users service
+5. Write integration tests: Test users service in isolation
+6. Deploy and route traffic: Route users/auth traffic to new service
+
+#### Epic 5: Payments and Inventory Services (Phase 4)
+**Objective**: Extract payments and inventory functionality into standalone microservices
+
+**User Stories**:
+1. Extract payments data models: Create schema for payments and transactions
+2. Implement payments API: REST API for payment processing
+3. Integrate payment gateway: Connect to Stripe/PayPal
+4. Extract inventory data models: Create schema for inventory
+5. Implement inventory API: REST API for inventory management
+6. Implement service-to-service communication: Orders → Products → Inventory
+7. Write integration tests: Test services working together
+8. Deploy and route traffic: Route payments/inventory traffic to new services
+
+#### Epic 6: Data Migration and Synchronization
+**Objective**: Implement data migration pipeline and synchronization for clean database separation
+
+**User Stories**:
+1. Design data migration strategy: Plan schema separation and data copy
+2. Implement change data capture: Track database changes during migration
+3. Create data sync pipeline: Sync data between monolith and microservices
+4. Implement data validation: Verify data consistency after migration
+5. Create rollback plan: Plan to revert to monolith if migration fails
+
+#### Epic 7: Legacy Decommissioning
+**Objective**: Clean up monolith and complete migration
+
+**User Stories**:
+1. Implement feature flags: Control traffic routing between monolith and microservices
+2. Gradually increase traffic: Shift 10% → 50% → 100% traffic to microservices
+3. Remove extracted code from monolith: Delete products, orders, users code from monolith
+4. Final migration: Switch to independent databases, decommission monolith
+
+### Execution Order
+**Phase 1: Foundation** (Epic 1 - 2 months)
+**Phase 2: Products Service** (Epic 2 - 1 month, depends on Epic 1)
+**Phase 3: Orders Service** (Epic 3 - 1.5 months, depends on Epic 2)
+**Phase 4: Users Service** (Epic 4 - 1 month, depends on Epic 1)
+**Phase 5: Payments/Inventory Services** (Epic 5 - 1.5 months, depends on Epic 3)
+**Phase 6: Data Migration** (Epic 6 - ongoing, starts in Phase 2)
+**Phase 7: Decommissioning** (Epic 7 - 1 month, after all services deployed)
+
+### Dependencies
+- Epic 2 (Products) depends on Epic 1 (Hard)
+- Epic 3 (Orders) depends on Epic 2 (Hard - needs Products service)
+- Epic 4 (Users) depends on Epic 1 (Hard)
+- Epic 5 (Payments/Inventory) depends on Epic 3 (Hard - needs Orders service)
+- Epic 6 (Data Migration) depends on Epic 2 (starts after first service extracted)
+- Epic 7 (Decommissioning) depends on Epic 2, 3, 4, 5 (Hard - all services deployed)
+- Epic 2 and Epic 4 can work in parallel (after Epic 1)
+- Epic 3 and Epic 4 have no direct dependencies (can work in parallel after Epic 2 and Epic 4 start)
+
+### Out of Scope
+- Changing database technology (staying with PostgreSQL)
+- Adding Kubernetes (using Docker Compose initially)
+- Complete rewrite of business logic (extracting existing logic)
+- Real-time features (future enhancement)
+
+### Recommended Next Steps
+Hand off to pragmatic-planner for microservice infrastructure research (service mesh options, API gateway selection). Start with Epic 1 (Infrastructure) to establish foundation for service extraction. Estimated timeline: 6 months total.
+```
+
+**Validation Criteria:**
+- [ ] 7 epics created (appropriate for large migration project)
+- [ ] 45 user stories (appropriate for 6-month migration)
+- [ ] pragmatic-explorer called to understand service boundaries
+- [ ] pragmatic-brainstormer called for migration strategy decision
+- [ ] 2 question tool calls (migration pace, first service)
+- [ ] Strangler Fig pattern selected (recommended by brainstormer)
+- [ ] Phased execution order defined (7 phases over 6 months)
+- [ ] Complex dependency network correctly mapped
+- [ ] Parallel work identified (Epic 2 and Epic 4 can work together)
+- [ ] Data migration epic includes rollback plan (risk mitigation)
+- [ ] Foundation work prioritized (Epic 1 first)
+- [ ] Out-of-scope items documented (database tech change, Kubernetes)
+- [ ] Timeline is realistic (6 months for monolith migration)
+- [ ] Each phase has clear exit criteria (deploy and route traffic)
+- [ ] Handoff includes timeline estimate
+
+---
+
+### Subagent Invocation Workflow Scenarios
+
+#### Test Scenario 6: Multiple Subagent Interactions for Complex Planning
+
+**Description:** Verify that agent correctly orchestrates multiple subagent calls (pragmatic-explorer and pragmatic-brainstormer), uses results effectively, and avoids excessive or redundant subagent invocations.
+
+**Input:**
+```markdown
+User request: "Add advanced search functionality with filters, sorting, and full-text search to product catalog"
+Context: E-commerce application with products table, existing basic search (SQL LIKE queries)
+```
+
+**Expected Output (Complete Planning Cycle):**
+```markdown
+Phase 1: Analyze Requirements
+- Reads existing products model (id, name, description, price, category, tags, created_at)
+- Checks current search implementation (basic SQL LIKE on name column)
+- Assesses complexity: Medium (multiple search features, technology decision needed)
+- Identifies missing information: full-text search engine? search scope? performance requirements?
+
+Phase 2: Clarify Ambiguities (Subagent Orchestration)
+- Call 1: pragmatic-explorer
+  prompt: "[SUBAGENT] Analyze codebase for: current search implementation, products table structure, indexing, search patterns"
+  Explorer returns:
+    - Products table has 10,000+ rows
+    - Current search: SELECT * FROM products WHERE name LIKE '%query%'
+    - No indexes on searchable columns
+    - Slow query performance on search (2+ seconds)
+    - PostgreSQL database
+
+- Call 2: pragmatic-brainstormer
+  prompt: "[SUBAGENT] Decide search technology: PostgreSQL full-text vs Elasticsearch vs Algolia"
+  Brainstormer analyzes:
+    - PostgreSQL tsvector: Built-in, no infrastructure, good for 10K rows
+    - Elasticsearch: Powerful, requires cluster, overkill for 10K rows
+    - Algolia: Managed service, cost, overkill for current scale
+  Brainstormer recommends: PostgreSQL full-text search (pg_trgm extension) for current scale
+
+- Call 3: question tool
+  question: "What search filters are needed?"
+  options: ["Price range", "Category", "Tags", "Date range", "All of the above"]
+  User selects: "All of the above"
+
+- Call 4: question tool
+  question: "Sorting options?"
+  options: ["Price (low to high)", "Price (high to low)", "Newest", "Popularity", "All options"]
+  User selects: "All options"
+
+Phase 3: Structure Epics (Using Subagent Insights)
+- Epic 1: Search Infrastructure (based on brainstormer's PostgreSQL recommendation)
+- Epic 2: Advanced Search API
+- Epic 3: Search UI Components
+
+Phase 4: Create User Stories (Incorporating Explorer Findings)
+Epic 1: 4 stories (add tsvector column, create indexes, configure pg_trgm, write migration)
+Epic 2: 6 stories (full-text search endpoint, filter queries, sorting logic, pagination, autocomplete, performance testing)
+Epic 3: 3 stories (search form, filter UI, results display)
+
+Phase 5: Prioritize Stories
+- Epic 1 (infrastructure) → Epic 2 (backend API) → Epic 3 (frontend UI)
+
+Phase 6: Validate Plan
+- All requirements covered
+- Stories are actionable
+- Dependencies correct
+
+Final Plan:
+## Project Plan: Advanced Product Search
+
+### Epics
+
+#### Epic 1: Search Infrastructure
+**Objective**: Implement PostgreSQL full-text search infrastructure using pg_trgm extension
+
+**User Stories**:
+1. Add tsvector column to products table: Create column for full-text search indexing
+2. Create full-text search indexes: Add GIN indexes on name, description, tags columns
+3. Configure pg_trgm extension: Enable PostgreSQL extension for trigram matching
+4. Write database migration: Migrate existing data to add indexes and tsvector
+
+#### Epic 2: Advanced Search API
+**Objective**: Implement advanced search endpoint with filters, sorting, and pagination
+
+**User Stories**:
+1. Implement full-text search query: Use PostgreSQL tsquery for efficient text search
+2. Add price range filters: Filter products by min_price and max_price
+3. Add category filters: Filter by single or multiple categories
+4. Add tag filters: Filter by tags (AND/OR logic)
+5. Add sorting options: Sort by price (asc/desc), newest, popularity
+6. Implement pagination: Add limit/offset for efficient result retrieval
+7. Add autocomplete endpoint: Provide search suggestions as user types
+8. Write performance tests: Ensure search returns in < 100ms
+
+#### Epic 3: Search UI Components
+**Objective**: Build search interface with filters and sorting options
+
+**User Stories**:
+1. Create search form component: Input field with autocomplete
+2. Build filter UI components: Price range slider, category checkboxes, tag selector
+3. Implement sorting controls: Dropdown for sort options
+4. Display search results: Show products with pagination controls
+
+### Execution Order
+**Phase 1**: Epic 1 (Search Infrastructure - foundation)
+**Phase 2**: Epic 2 (Search API - depends on Epic 1)
+**Phase 3**: Epic 3 (Search UI - depends on Epic 2)
+
+### Dependencies
+- Epic 2 depends on Epic 1 (Hard - needs full-text search indexes)
+- Epic 3 depends on Epic 2 (Hard - needs search API endpoints)
+- Epic 1 has no dependencies (foundation)
+
+### Implementation Notes (Based on Subagent Results)
+- Using PostgreSQL full-text search (pg_trgm) instead of Elasticsearch
+- Scale: Suitable for current 10K+ products, can migrate to Elasticsearch later if needed
+- Performance: Add caching layer if queries exceed 100ms target
+- Migration: Will use pg_trgm for better matching than basic LIKE queries
+
+### Recommended Next Steps
+Hand off to pragmatic-developer for Epic 1 Story 1 (add tsvector column). Database migration should be done during low-traffic period as it will require table rebuild. After Epic 1, hand off Epic 2 for API implementation, then Epic 3 for UI components.
+```
+
+**Validation Criteria:**
+- [ ] 2 subagent calls total (1 explorer, 1 brainstormer - appropriate for complexity)
+- [ ] pragmatic-explorer called once with comprehensive prompt (not multiple fragmented calls)
+- [ ] pragmatic-brainstormer called once for technology decision
+- [ ] Explorer findings incorporated (10K rows, PostgreSQL, current slow queries)
+- [ ] Brainstormer recommendation followed (PostgreSQL full-text search)
+- [ ] question tool used twice (filters, sorting - appropriate clarifications)
+- [ ] No redundant subagent calls (didn't call explorer again after brainstormer)
+- [ ] No circular subagent calls (linear flow: explorer → brainstormer → plan)
+- [ ] Implementation notes include subagent insights (technology choice, scale considerations)
+- [ ] 3 epics created (appropriate for medium complexity)
+- [ ] 15 user stories (appropriate scope)
+- [ ] Plan reflects user's specific answers (all filters, all sorting options)
+- [ ] Performance requirements documented (< 100ms)
+- [ ] Migration considerations included (low-traffic period)
+- [ ] Handoff instructions reference subagent findings (PostgreSQL technology choice)
+
+---
+
+### Additional End-to-End Scenarios
+
+#### Test Scenario 7: Subagent Coordination for Cross-Cutting Feature
+
+**Description:** Verify that agent correctly coordinates multiple subagent calls when a feature spans multiple architectural layers and requires both codebase understanding and design decisions.
+
+**Input:**
+```markdown
+User request: "Add analytics dashboard with real-time metrics, historical data visualization, and export functionality"
+Context: Application with users, orders, products; no analytics infrastructure; React frontend
+```
+
+**Expected Output (Complete Planning Cycle):**
+```markdown
+Phase 1: Analyze Requirements
+- Reads existing models (users, orders, products)
+- Checks for analytics infrastructure (none)
+- Assesses complexity: Complex (new infrastructure, real-time, multiple components)
+- Identifies questions: what metrics? real-time implementation? data retention?
+
+Phase 2: Clarify Ambiguities (Coordinated Subagent Calls)
+- Call 1: pragmatic-explorer
+  prompt: "[SUBAGENT] Analyze codebase for: event tracking patterns, existing metrics, data warehouse"
+  Explorer returns:
+    - No event tracking system
+    - Orders and products have created_at timestamps
+    - PostgreSQL database with analytics-friendly schema
+    - No data aggregation queries
+    - Frontend: React with Chart.js available
+
+- Call 2: pragmatic-brainstormer
+  prompt: "[SUBAGENT] Decide analytics architecture: real-time implementation approach"
+  Brainstormer analyzes:
+    - Option A: WebSockets for real-time (complex, high maintenance)
+    - Option B: Polling API every 30s (simple, slight delay)
+    - Option C: Server-sent events (middle ground)
+  Brainstormer recommends: Polling API every 30s for MVP, upgrade to WebSockets later
+
+- Call 3: question tool
+  question: "What metrics to track?"
+  options: ["Sales metrics", "User engagement", "Product performance", "All of the above"]
+  User selects: "All of the above"
+
+- Call 4: question tool
+  question: "Data retention policy?"
+  options: ["30 days", "90 days", "1 year", "Indefinite"]
+  User selects: "90 days"
+
+Phase 3: Structure Epics
+- Epic 1: Analytics Infrastructure
+- Epic 2: Data Collection and Aggregation
+- Epic 3: Analytics API
+- Epic 4: Dashboard UI Components
+- Epic 5: Export Functionality
+
+Phase 4: Create User Stories
+Epic 1: 5 stories (analytics table, aggregation jobs, data pipeline, event tracking setup, monitoring)
+Epic 2: 4 stories (sales aggregation, user engagement metrics, product analytics, scheduled jobs)
+Epic 3: 6 stories (metrics API, filtering, time range queries, aggregation endpoints, caching, tests)
+Epic 4: 5 stories (dashboard layout, chart components, real-time updates, filters, responsive design)
+Epic 5: 3 stories (CSV export, PDF reports, export scheduling)
+
+Phase 5: Prioritize Stories
+- Epic 1 (infrastructure) → Epic 2 (data collection) → Epic 3 (API) → Epic 4 (UI) → Epic 5 (export)
+
+Phase 6: Validate Plan
+- All requirements covered
+- Stories are actionable
+- Dependencies correct
+
+Final Plan:
+## Project Plan: Analytics Dashboard
+
+### Epics
+
+#### Epic 1: Analytics Infrastructure
+**Objective**: Create foundation for analytics data collection and storage
+
+**User Stories**:
+1. Create analytics tables: Design schema for metrics storage (time-series friendly)
+2. Set up data pipeline: ETL process to aggregate data from main tables
+3. Configure scheduled aggregation jobs: Cron jobs to run aggregations
+4. Add event tracking infrastructure: Setup for custom event tracking
+5. Implement data retention: Automated cleanup of data older than 90 days
+
+#### Epic 2: Data Collection and Aggregation
+**Objective**: Implement data aggregation for key metrics
+
+**User Stories**:
+1. Aggregate sales metrics: Daily/weekly/monthly sales totals and trends
+2. Aggregate user engagement: Active users, retention, signup rates
+3. Aggregate product analytics: Top products, conversion rates, inventory turns
+4. Create materialized views: Optimize query performance for aggregations
+
+#### Epic 3: Analytics API
+**Objective**: Provide API endpoints for dashboard data retrieval
+
+**User Stories**:
+1. Implement metrics query API: Generic endpoint for fetching metrics with filters
+2. Add time range filtering: Support last 7 days, 30 days, custom range
+3. Implement aggregation endpoints: Pre-calculated metrics for fast queries
+4. Add caching layer: Cache common queries to reduce database load
+5. Write API tests: Test endpoints with various filters and ranges
+6. Document API usage: Provide examples for dashboard integration
+
+#### Epic 4: Dashboard UI Components
+**Objective**: Build React dashboard with charts and visualizations
+
+**User Stories**:
+1. Create dashboard layout: Grid layout for multiple charts
+2. Implement sales chart: Line chart showing sales trends over time
+3. Implement user engagement chart: Bar chart for active users
+4. Implement product performance chart: Pie chart for top products
+5. Add real-time updates: Poll API every 30 seconds for live data
+6. Implement filters: Date range picker, metric selection
+7. Make responsive design: Mobile-friendly dashboard layout
+
+#### Epic 5: Export Functionality
+**Objective**: Add ability to export analytics data
+
+**User Stories**:
+1. Implement CSV export: Download metrics as CSV file
+2. Implement PDF reports: Generate PDF summary reports
+3. Add export scheduling: Allow scheduled email reports
+
+### Execution Order
+**Phase 1**: Epic 1 (Analytics Infrastructure - 2 weeks)
+**Phase 2**: Epic 2 (Data Collection - 1.5 weeks, depends on Epic 1)
+**Phase 3**: Epic 3 (Analytics API - 2 weeks, depends on Epic 2)
+**Phase 4**: Epic 4 (Dashboard UI - 2.5 weeks, depends on Epic 3)
+**Phase 5**: Epic 5 (Export - 1 week, depends on Epic 3)
+
+### Dependencies
+- Epic 2 depends on Epic 1 (Hard - needs analytics tables and jobs)
+- Epic 3 depends on Epic 2 (Hard - needs aggregated data)
+- Epic 4 depends on Epic 3 (Hard - needs API endpoints)
+- Epic 5 depends on Epic 3 (Hard - needs metrics API)
+- Epic 4 and Epic 5 can work in parallel (both depend on Epic 3)
+
+### Implementation Notes (Based on Subagent Results)
+- Using polling API approach for real-time (30s intervals) - simpler than WebSockets
+- Upgrade to WebSockets in Phase 2 if polling proves insufficient
+- Data retention: 90 days as requested, automated cleanup
+- Metrics: Sales, user engagement, and product analytics (all three requested)
+- Visualization: Using Chart.js (already available in frontend)
+
+### Out of Scope
+- Real-time WebSocket implementation (deferred to Phase 2)
+- Machine learning predictions
+- Custom event tracking for user actions (infrastructure exists, but specific events not defined)
+- Mobile app analytics (web dashboard only)
+
+### Recommended Next Steps
+Hand off to pragmatic-planner for PostgreSQL materialized views research and aggregation strategy. Start with Epic 1 (Analytics Infrastructure) to establish foundation. Estimated timeline: 9 weeks total.
+```
+
+**Validation Criteria:**
+- [ ] 2 subagent calls (1 explorer, 1 brainstormer - appropriate)
+- [ ] pragmatic-explorer focused on infrastructure and existing patterns
+- [ ] pragmatic-brainstormer focused on real-time implementation decision
+- [ ] Subagent calls are coordinated (not random or redundant)
+- [ ] Explorer findings used in plan (PostgreSQL, Chart.js available)
+- [ ] Brainstormer recommendation followed (polling API for MVP)
+- [ ] 2 question tool calls (metrics scope, data retention)
+- [ ] 5 epics created (appropriate for multi-layer feature)
+- [ ] 23 user stories (appropriate for 9-week project)
+- [ ] Real-time approach documented (polling, upgrade path to WebSockets)
+- [ ] Data retention policy included (90 days)
+- [ ] Implementation notes reference subagent decisions
+- [ ] Dependencies correct (linear chain with parallelization at end)
+- [ ] Out-of-scope items documented (WebSockets Phase 2, ML predictions)
+- [ ] Timeline estimate provided (9 weeks)
+
+---
+
+### Summary of End-to-End Test Scenarios
+
+| Scenario | Complexity Type | Subagent Calls | Question Tool Calls | Key Validation | Epics | Stories |
+|----------|----------------|----------------|---------------------|----------------|--------|---------|
+| 1 | Simple (single epic) | 0 | 0 | No subagents needed, efficient planning | 1 | 2 |
+| 2 | Medium (multi-epic) | 1 explorer, 1 question | 1 | Appropriate subagent use, clear plan | 3 | 12 |
+| 3 | Complex (multi-phase) | 1 explorer, 1 brainstormer, 2 questions | 2 | Phased rollout, complex dependencies | 5 | 22 |
+| 4 | Edge case (ambiguous) | 1 explorer, 1 brainstormer, 3 questions | 3 | Multiple clarifications, refuses to proceed without clarity | 4 | 15 |
+| 5 | Multi-epic (large project) | 1 explorer, 1 brainstormer, 2 questions | 2 | Phased migration, rollback plan, timeline estimate | 7 | 45 |
+| 6 | Subagent coordination | 1 explorer, 1 brainstormer, 2 questions | 2 | Subagent results incorporated, no redundant calls | 3 | 15 |
+| 7 | Cross-cutting feature | 1 explorer, 1 brainstormer, 2 questions | 2 | Coordinated subagent calls, implementation notes | 5 | 23 |
+
+### End-to-End Validation Criteria Summary
+
+**Planning Workflow:**
+- Complete 6-phase planning process for all scenarios
+- Phase 1: Analyze Requirements (understand context, assess complexity)
+- Phase 2: Clarify Ambiguities (subagent calls, question tool)
+- Phase 3: Structure Epics (logical grouping, appropriate count)
+- Phase 4: Create User Stories (INVEST criteria, actionable)
+- Phase 5: Prioritize Stories (dependencies, execution order)
+- Phase 6: Validate Plan (completeness, actionability)
+
+**Subagent Invocation:**
+- pragmatic-explorer called when codebase understanding is needed
+- pragmatic-brainstormer called for technical decisions or requirements clarification
+- Subagent calls are purposeful, not excessive (0-2 calls typical)
+- No circular or redundant subagent calls
+- Subagent results incorporated into plan (not ignored)
+- Linear flow: explorer → brainstormer → plan (not bouncing back and forth)
+
+**Question Tool Integration:**
+- Question tool used when specific user input is needed
+- Questions are clear and unambiguous
+- Options provide actionable choices
+- One option marked as "(Recommended)" when appropriate
+- User answers incorporated into plan (not ignored)
+
+**Plan Quality:**
+- Epics are appropriately sized and scoped
+- User stories are actionable with clear acceptance criteria
+- Dependencies are correctly identified (hard/soft/parallel)
+- Execution order is logical and respects dependencies
+- Out-of-scope items are documented
+- Implementation notes reference subagent decisions
+- Handoff instructions are clear and specific
+
+**Edge Case Handling:**
+- Agent refuses to proceed with ambiguous requirements
+- Multiple clarifications used as needed (not 1, not 10)
+- Plan reflects user's specific choices (not generic)
+- No assumptions made without user input
+- Fallback plans or rollback strategies for high-risk work
+
+**Complex Feature Planning:**
+- Phased approach for large projects (2-7 phases)
+- Foundation work prioritized (infrastructure first)
+- Parallel work opportunities identified
+- Timeline estimates provided for multi-epic projects
+- Risk mitigation strategies documented (rollback, gradual rollout)
+
+**Output Format:**
+- Standardized format followed for all scenarios
+- Clear structure: Overview → Epics → Stories → Execution Order → Dependencies → Out of Scope → Recommended Next Steps
+- Acceptance criteria are observable and testable
+- Complexity estimates are realistic (Simple/Medium/Complex)
+
 ## Constraints
 
 **You cannot:**
