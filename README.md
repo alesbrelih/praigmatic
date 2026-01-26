@@ -6,10 +6,11 @@
 
 1. `@pragmatic-explorer` - Fast codebase analysis and pattern discovery
 2. `@pragmatic-brainstormer` - Interactive requirements clarification
-3. `@pragmatic-planner` - Creates detailed implementation plans
-4. `@pragmatic-researcher` - Multi-source technical research
-5. `@pragmatic-developer` - Clean, maintainable code implementation
-6. `@pragmatic-code-reviewer` - Quality, security, performance checks
+3. `@pragmatic-direction-planner` - Creates high-level direction (before tasks)
+4. `@pragmatic-planner` - Creates detailed implementation plans (two-stage workflow)
+5. `@pragmatic-researcher` - Multi-source technical research
+6. `@pragmatic-developer` - Clean, maintainable code implementation
+7. `@pragmatic-code-reviewer` - Quality, security, performance checks
 
 ### Commands
 
@@ -24,16 +25,17 @@
 ## File Structure
 
 ```
-.opencode/
-├── opencode.json          # Plugins: DCP + opencode-skillful
-├── dcp.jsonc              # Dynamic context pruning config
-├── agent/
-│   ├── pragmatic-explorer.md
-│   ├── pragmatic-brainstormer.md
-│   ├── pragmatic-planner.md
-│   ├── pragmatic-researcher.md
-│   ├── pragmatic-developer.md
-│   └── pragmatic-code-reviewer.md
+ .opencode/
+ ├── opencode.json          # Plugins: DCP + opencode-skillful
+ ├── dcp.jsonc              # Dynamic context pruning config
+ ├── agent/
+ │   ├── pragmatic-explorer.md
+ │   ├── pragmatic-brainstormer.md
+ │   ├── pragmatic-direction-planner.md
+ │   ├── pragmatic-planner.md
+ │   ├── pragmatic-researcher.md
+ │   ├── pragmatic-developer.md
+ │   └── pragmatic-code-reviewer.md
 ├── reference/             # Shared standards (referenced by agents)
 │   ├── ttd-criteria.md    # TTD decision framework
 │   ├── security-checklist.md
@@ -54,15 +56,16 @@
 
 ## Agents
 
-| Agent | Mode | Purpose |
-|-------|------|---------|
-| Explorer | agent/subagent | Fast codebase analysis, pattern discovery |
-| Brainstormer | agent/subagent | Interactive Q&A for requirements clarification |
-| Planner | agent/subagent | TTD plans, spawns explorer + brainstormer + researchers |
-| Researcher | agent/subagent | Context7, Grep.app, WebSearch |
-| Developer | agent/subagent | Pure implementation with structured prompts, plan-agnostic |
-| Committer | agent/subagent | Git commit analysis and conventional commits |
-| Reviewer | agent/subagent | Security, quality, fixes |
+ | Agent | Mode | Purpose |
+ |-------|------|---------|
+ | Explorer | agent/subagent | Fast codebase analysis, pattern discovery |
+ | Brainstormer | agent/subagent | Interactive Q&A for requirements clarification |
+ | Direction Planner | agent/subagent | High-level direction (before tasks) |
+ | Planner | agent/subagent | TTD plans, two-stage workflow (direction → tasks) |
+ | Researcher | agent/subagent | Context7, Grep.app, WebSearch |
+ | Developer | agent/subagent | Pure implementation with structured prompts, plan-agnostic |
+ | Committer | agent/subagent | Git commit analysis and conventional commits |
+ | Reviewer | agent/subagent | Security, quality, fixes |
 
 ## Agent Workflow
 
@@ -75,14 +78,27 @@ Phase 1: Explorer (understand existing system)
   ↓
 Phase 2: Brainstormer (clarify requirements)
   ↓
-Phase 3: Researcher (parallel research tasks)
+Phase 3: Task Analysis (identify unknowns, assess complexity)
   ↓
-Phase 4: Synthesis (aggregate findings)
+STAGE 1: DIRECTION PLANNING (new - prevents overengineering)
+  ├─ Direction Planner: Creates high-level direction
+  │  ├─ Direction summary (2-5 sentences)
+  │  ├─ Key decisions & trade-offs
+  │  └─ Task count estimate
+  ├─ USER CHECKPOINT: Review direction
+  │  ├─ Approve → Continue to task planning
+  │  ├─ Adjust direction → Re-present
+  │  └─ Skip checkpoint → Fallback to single-stage
   ↓
-Phase 5: Task breakdown (create implementation tasks)
+Phase 4: Researcher (parallel research tasks, if needed)
   ↓
-Phase 6: Create plan file ONLY
+Phase 5: Synthesis (aggregate findings, if research ran)
+  ↓
+Phase 6: Task breakdown (create implementation tasks based on direction)
+  ↓
+Phase 7: Create plan file ONLY
   │  ├─ Write plan file (.opencode/plans/[task-name].md)
+  │  │  ├─ Phase Decisions section (document all phase evaluations)
   │  │  ├─ Tasks section with markdown checkboxes
   │  │  ├─ Architecture overview
   │  │  ├─ Technical decisions
@@ -129,6 +145,35 @@ All tasks completed:
 ```
 
 ## Plan File Workflow
+
+### Two-Stage Planning (New)
+
+**Problem:** Previous workflow created all tasks before user feedback, leading to overengineered plans that couldn't be easily corrected.
+
+**Solution:** Two-stage planning separates "direction" from "tasks":
+
+**Stage 1: Direction Planning**
+- Planner runs phases 1-3 (exploration, clarification, task analysis)
+- Calls pragmatic-direction-planner
+- Direction planner creates high-level direction (no tasks):
+  - Direction summary (2-5 sentences)
+  - Key decisions with rationale
+  - Trade-offs showing alternatives
+  - Task count estimate
+- **User checkpoint:** Approve, adjust, or skip
+- Early course-correction prevents overengineering
+
+**Stage 2: Task Planning**
+- Planner runs phases 4-7 based on approved direction
+- Creates detailed implementation tasks
+- Executes self-review loop
+- Presents final plan to user
+
+**Benefits:**
+- User approves direction before task explosion
+- Wrong approach caught early (50% less rework)
+- Self-review loop still catches task-level issues
+- "Skip checkpoint" option for fallback to single-stage
 
 ### Overview
 

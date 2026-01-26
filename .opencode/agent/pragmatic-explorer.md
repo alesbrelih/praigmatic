@@ -1,7 +1,7 @@
 ---
 description: Fast codebase explorer. Analyzes project structure, tech stack, and existing patterns before planning/brainstorming.
 mode: all
-model: zai-coding-plan/glm-4.7
+temperature: 1
 permission:
   edit: deny
   write: deny

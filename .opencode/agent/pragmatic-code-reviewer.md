@@ -1,7 +1,7 @@
 ---
 description: Pragmatic code reviewer focused on maintainability, security, and performance. Advisory only; informs the developer of issues but does not modify files.
 mode: all
-model: zai-coding-plan/glm-4.7
+temperature: 1
 permission:
   edit: deny
   write: deny

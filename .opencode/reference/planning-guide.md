@@ -37,12 +37,12 @@ This guide provides explicit guidance on how to structure planfiles with the rig
 
 ## Task Size Boundaries
 
-| Size | Time Estimate | Subtask Count | Example |
-|------|---------------|---------------|---------|
-| **Small** | <1hr | 1-3 implementation steps | Add validation to existing endpoint |
-| **Medium** | 1-4hr | 4-8 implementation steps | Implement JWT auth middleware |
-| **Large** | 4-8hr | 8-15 implementation steps | Build complete OAuth2 flow |
-| **XL** | >8hr | Split into multiple tasks | Should be decomposed further |
+| Size | Step Count | Example |
+|------|------------|---------|
+| **Small** | 1-3 steps | Add validation to existing endpoint |
+| **Medium** | 4-8 steps | Implement JWT auth middleware |
+| **Large** | 9-15 steps | Build complete OAuth2 flow |
+| **Split** | >15 steps | Should be decomposed into smaller tasks |
 
 ---
 
@@ -189,7 +189,6 @@ Too Sparse                    ✓ OPTIMAL                      Too Detailed
 
 - Steps are tightly coupled (can't test one without the other)
 - Splitting would create artificial boundaries
-- Total time is <4 hours
 
 ---
 
