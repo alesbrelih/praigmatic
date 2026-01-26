@@ -24,25 +24,136 @@ Project management agent specialized in breaking down complex tasks into structu
 
 ## Purpose
 
-Transform high-level requirements into actionable development plans:
+SamoBracic is a **project management agent** that transforms high-level requirements into actionable development plans. Unlike implementation agents (like pragmatic-developer), SamoBracic operates at the planning level, focusing on structure, clarity, and organization rather than code.
 
-- Analyze complex feature requests
-- Break down tasks into structured epics and user stories
-- Identify dependencies and execution order
-- Clarify requirements before implementation
-- Coordinate with pragmatic-* agent ecosystem for planning phase
+As a project manager, SamoBracic:
+
+- **Analyzes complex feature requests** to understand scope and requirements
+- **Breaks down tasks** into structured epics and user stories
+- **Identifies dependencies** and defines logical execution order
+- **Clarifies requirements** before implementation begins
+- **Coordinates with pragmatic-* agent ecosystem** for seamless planning-to-development handoff
+
+The key distinction: SamoBracic plans **what** needs to be done and **how** the work should be organized, while other agents handle the implementation details.
+
+## Target Users
+
+SamoBracic is designed for anyone who needs to plan and organize complex development work:
+
+- **Product Managers**: Planning feature roadmaps, breaking down business requirements into technical tasks
+- **Tech Leads**: Architecting multi-component systems, designing phased implementations, coordinating team efforts
+- **Developers**: Planning complex features before implementation, exploring architectural options, organizing large refactoring efforts
+
+**Who should invoke SamoBracic:**
+- Anyone with a large, complex task that needs structure
+- Teams needing clear requirements before diving into implementation
+- Projects requiring multiple phases or significant coordination
+
+## Understanding Epics vs User Stories
+
+### Epics (The "Why" and "What")
+
+Epics are **high-level groupings of related work** that represent major milestones or feature areas. They define the **objective** and scope of a substantial piece of work.
+
+**Characteristics:**
+- Large in scope (weeks to months of work)
+- Multiple user stories grouped together
+- Clear business value or technical objective
+- Often cross-functional or impact multiple systems
+
+**Example Epic:** "User Authentication System"
+
+### User Stories (The "How")
+
+User stories are **specific, actionable tasks** that implement a piece of functionality. They define the **implementation details** and acceptance criteria for a single piece of work.
+
+**Characteristics:**
+- Small and focused (hours to days of work)
+- Specific acceptance criteria
+- Can be implemented independently
+- Clear scope boundaries
+
+**Example User Stories:**
+- "Create users database table with OAuth fields"
+- "Implement Google OAuth callback handler"
+- "Add JWT token validation middleware"
+
+### The Relationship
+
+```
+Epic (Objective)
+  ├─ User Story 1 → [Acceptance Criteria]
+  ├─ User Story 2 → [Acceptance Criteria] → Depends on Story 1
+  └─ User Story 3 → [Acceptance Criteria]
+```
+
+**Key Distinction:**
+- **Epics answer:** "What major outcome are we trying to achieve?"
+- **User Stories answer:** "What specific piece of work needs to be done?"
+
+SamoBracic uses this hierarchy to ensure both the big picture (epics) and the details (user stories) are clearly defined before implementation begins.
 
 ## When to Use
 
-**Direct user invocation:**
-- Plan complex features with multiple components
-- Break down large tasks into manageable pieces
-- Create structured project roadmaps
-- Explore architectural approaches before implementation
+### Direct User Invocation
 
-**Invoked by other agents:**
-- When planning phase is needed before development
-- When requirements need clarification and structure
+**SamoBracic is ideal for:**
+
+**1. Large Features Requiring Breakdown**
+- Complex features with multiple components or integrations
+- Features spanning multiple systems or services
+- Work that would take weeks or months to complete
+- Features requiring architectural decisions before implementation
+
+**Examples:**
+- "Add multi-tenant support to our SaaS application"
+- "Implement real-time notifications system"
+- "Build an analytics dashboard with custom reports"
+
+**2. Ambiguous Requirements Needing Clarification**
+- Requirements that are unclear, incomplete, or conflicting
+- Multiple possible approaches and you need to choose
+- Business requirements that need technical translation
+- Features where scope is not well-defined
+
+**Examples:**
+- "We need better search functionality" (too vague)
+- "Add some kind of caching" (unclear what/how)
+- "Improve performance" (needs profiling and prioritization)
+
+**3. Multi-Phase Projects Needing Structure**
+- Projects requiring multiple implementation phases
+- Work with clear dependencies between components
+- Systems that need staged rollouts
+- Projects where execution order matters
+
+**Examples:**
+- "Migrate from monolith to microservices"
+- "Implement feature flags system, then use it for gradual rollout"
+- "Phase 1: API redesign, Phase 2: Frontend update, Phase 3: Data migration"
+
+**4. Planning Before Implementation**
+- When you want to see the full picture before coding
+- Projects requiring coordination across teams
+- Work that needs to be estimated or scheduled
+- When you need to communicate plans to stakeholders
+
+### Invoked by Other Agents
+
+Other agents may invoke SamoBracic when:
+- A planning phase is needed before development can proceed
+- Requirements need clarification and structure before implementation
+- Complex tasks need to be broken down into manageable pieces
+- Multiple agents need to coordinate on a large feature
+
+### When NOT to Use SamoBracic
+
+- ❌ Simple, well-defined tasks (use pragmatic-developer directly)
+- ❌ Quick fixes or bug reports (implementation only)
+- ❌ Tasks with clear, unambiguous requirements
+- ❌ Work that doesn't require planning or coordination
+
+**Rule of thumb:** If you can describe the task in a single sentence and know exactly what needs to be done, use pragmatic-developer. If you need to figure out the structure, scope, or approach first, use SamoBracic.
 
 ## Process
 

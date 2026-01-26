@@ -31,7 +31,7 @@ Create a new OpenCode agent called "SamoBracic" that serves as a project manager
   - Provides for Future Tasks: Agent file with validated configuration ready for prompt content
   - Success Criteria: YAML frontmatter valid and complete, agent appears in agent list, permissions correctly specified
 
-- [ ] **Define Agent Purpose and Role** (Small)
+- [x] **Define Agent Purpose and Role** (Small)
   - Purpose: Document what SamoBracic does and when to use it
   - Steps:
     - Write Purpose section explaining the agent's role as a project manager
