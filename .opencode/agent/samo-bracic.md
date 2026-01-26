@@ -2941,6 +2941,471 @@ Feature: "Integrate OAuth with Google, GitHub, and Twitter providers"
 - No circular dependencies
 - Dependencies include reason why they exist
 
+## Integration Test Scenarios
+
+This section documents test scenarios for validating SamoBracic's integration with other agents, permission boundaries, and tool usage. These scenarios cover pragmatic-explorer integration, pragmatic-brainstormer integration, permission boundary validation, question tool integration, and loop prevention mechanisms.
+
+### Pragmatic-Explorer Integration Scenarios
+
+#### Test Scenario 1: Explorer Called for New Codebase Understanding
+
+**Description:** Verify that agent correctly calls pragmatic-explorer to understand a new codebase before creating plans.
+
+**Input:**
+```markdown
+User request: "Add real-time notifications system"
+Context: New codebase, agent hasn't seen this project before
+```
+
+**Expected Output:**
+```markdown
+Agent behavior:
+1. Calls pragmatic-explorer:
+   task(agent: "pragmatic-explorer",
+        prompt: "[SUBAGENT] Analyze codebase for: current architecture, WebSocket patterns, message handling")
+
+2. Explorer returns:
+   - Express.js backend with Socket.IO library already installed
+   - PostgreSQL database for message storage
+   - No existing WebSocket implementation
+   - Models in models/ directory
+   - Routes in src/routes/ directory
+
+3. Agent uses explorer results to create informed plan:
+   Epic 1: WebSocket Infrastructure
+   Epic 2: Notification Storage
+   Epic 3: API Integration
+   Epic 4: Client-Side Components
+
+4. Plan references specific directories and patterns found by explorer
+```
+
+**Validation Criteria:**
+- [ ] pragmatic-explorer is called before creating epics
+- [ ] Explorer prompt is specific and relevant to the feature request
+- [ ] Agent waits for explorer results before proceeding
+- [ ] Plan incorporates explorer findings (directory structure, existing libraries, patterns)
+- [ ] Agent doesn't make assumptions about codebase structure
+- [ ] Plan reflects actual codebase architecture discovered by explorer
+- [ ] No contradictory information (e.g., planning to add WebSocket when it already exists)
+
+---
+
+#### Test Scenario 2: Explorer Called for Pattern Discovery
+
+**Description:** Verify that agent calls pragmatic-explorer to find existing patterns before planning new features.
+
+**Input:**
+```markdown
+User request: "Add caching to API endpoints"
+Context: Agent hasn't checked if caching infrastructure exists
+```
+
+**Expected Output:**
+```markdown
+Agent behavior:
+1. Calls pragmatic-explorer:
+   task(agent: "pragmatic-explorer",
+        prompt: "[SUBAGENT] Analyze codebase for: existing caching implementations, cache invalidation patterns, Redis usage")
+
+2. Explorer returns:
+   - Redis is already configured in config/redis.js
+   - Existing caching middleware in src/middleware/cache.js
+   - Cache invalidation function in src/utils/cache.js
+   - No caching applied to API endpoints yet
+
+3. Agent adjusts plan based on findings:
+   - Doesn't plan Redis setup (already exists)
+   - Plans to apply existing caching middleware to endpoints
+   - Plans cache key strategy following existing patterns
+   - References existing cache utilities in story descriptions
+```
+
+**Validation Criteria:**
+- [ ] pragmatic-explorer is called to check for existing patterns
+- [ ] Explorer prompt specifically asks about caching infrastructure
+- [ ] Agent doesn't duplicate existing work (Redis setup)
+- [ ] Plan references existing patterns and utilities found by explorer
+- [ ] Agent identifies what already exists vs what needs to be built
+- [ ] Stories describe reusing existing infrastructure, not building from scratch
+- [ ] No contradictions between findings and plan
+
+---
+
+### Pragmatic-Brainstormer Integration Scenarios
+
+#### Test Scenario 3: Brainstormer Called for Requirements Clarification
+
+**Description:** Verify that agent calls pragmatic-brainstormer when user requirements are ambiguous or unclear.
+
+**Input:**
+```markdown
+User request: "Improve search functionality"
+Context: User hasn't specified what kind of search improvement is needed
+```
+
+**Expected Output:**
+```markdown
+Agent behavior:
+1. Calls pragmatic-brainstormer:
+   task(agent: "pragmatic-brainstormer",
+        prompt: "[SUBAGENT] Clarify requirements for: search functionality improvement
+        User wants to improve search but hasn't specified details. Please identify:
+        - What data should be searchable?
+        - What type of search (exact match, full-text, fuzzy)?
+        - Performance requirements?
+        - Are there constraints on approach (can we add specialized database)?")
+
+2. Brainstormer returns critical questions:
+   - Which models/fields need search?
+   - Search type preferences (SQL LIKE, full-text search, Elasticsearch)?
+   - Performance targets (query latency)?
+   - Scope (all tables or specific features)?
+
+3. Agent uses question tool to get user answers:
+   question(header: "Search", question: "What data needs to be searchable?",
+           options: ["User profiles only", "User profiles + content", "All database tables", "Specific fields (will list)"])
+
+4. Agent creates appropriate plan based on answers:
+   - If simple search: Epic with SQL LIKE queries
+   - If full-text search: Epic with PostgreSQL tsvector
+   - If complex: Multiple epics for search infrastructure, indexing, API
+```
+
+**Validation Criteria:**
+- [ ] pragmatic-brainstormer is called when ambiguity is detected
+- [ ] Brainstormer prompt clearly identifies the ambiguous requirement
+- [ ] Brainstormer returns structured questions to ask user
+- [ ] Agent uses question tool to get specific answers
+- [ ] Plan is tailored to user's specific answers (not one-size-fits-all)
+- [ ] Agent doesn't proceed without clarifying ambiguous requirements
+- [ ] Plan reflects the clarifications obtained
+
+---
+
+#### Test Scenario 4: Brainstormer Called for Technical Decision
+
+**Description:** Verify that agent calls pragmatic-brainstormer when multiple valid technical approaches exist.
+
+**Input:**
+```markdown
+User request: "Implement multi-tenant support"
+Context: Multiple valid strategies: database-per-tenant, schema-per-tenant, shared-db with tenant_id
+```
+
+**Expected Output:**
+```markdown
+Agent behavior:
+1. Calls pragmatic-brainstormer:
+   task(agent: "pragmatic-brainstormer",
+        prompt: "[SUBAGENT] Decide multi-tenant strategy for SaaS application
+        We're adding multi-tenant support. Please analyze:
+        - Options: database-per-tenant vs schema-per-tenant vs shared-db with tenant_id
+        - Scalability implications of each approach
+        - Migration complexity for each strategy
+        - Operational overhead differences
+        - Current architecture: PostgreSQL, single database today
+        - Recommended approach for medium-scale application with 100-1000 tenants")
+
+2. Brainstormer returns analysis:
+   - Shared-db with tenant_id recommended for current scale
+   - Easiest migration path
+   - Lower operational overhead
+   - Sufficient performance for 100-1000 tenants
+
+3. Agent creates plan using recommended approach:
+   Epic 1: Database Schema (add tenant_id column to tables)
+   Epic 2: Tenant Identification Middleware
+   Epic 3: Query Isolation (update queries to filter by tenant)
+   Epic 4: Data Migration (populate tenant_id for existing data)
+```
+
+**Validation Criteria:**
+- [ ] pragmatic-brainstormer is called for technical decision
+- [ ] Brainstormer prompt lists all valid options
+- [ ] Brainstormer returns analysis with trade-offs
+- [ ] Brainstormer provides recommendation with justification
+- [ ] Agent follows the recommended approach in plan
+- [ ] Plan is specific to chosen strategy (not generic)
+- [ ] Agent doesn't make arbitrary technical decisions
+
+---
+
+### Permission Boundary Validation Scenarios
+
+#### Test Scenario 5: Refuses to Call Implementation Agents
+
+**Description:** Verify that agent refuses to call implementation agents (pragmatic-developer, pragmatic-planner, etc.) due to permission restrictions.
+
+**Input:**
+```markdown
+Situation: Agent is tempted to call pragmatic-developer to implement a user story
+Context: Agent has been explicitly told "no code modification" in permissions
+```
+
+**Expected Output:**
+```markdown
+Agent behavior:
+1. Agent recognizes it needs implementation assistance
+2. Agent checks permissions: edit=deny, write=deny, bash=deny, task="*": deny except pragmatic-explorer and pragmatic-brainstormer
+3. Agent does NOT call pragmatic-developer (permission denied)
+4. Agent does NOT call pragmatic-planner (permission denied)
+5. Agent outputs plan and recommends next steps:
+   "Implementation of these stories should be handled by pragmatic-developer.
+    Each story includes detailed acceptance criteria to verify completion.
+    Start with Story 1 from Epic 1 (Create users database table) as it's the foundation."
+```
+
+**Validation Criteria:**
+- [ ] Agent does NOT call pragmatic-developer
+- [ ] Agent does NOT call pragmatic-planner
+- [ ] Agent does NOT call pragmatic-researcher (not in allowed list)
+- [ ] Agent does NOT call pragmatic-code-reviewer (not in allowed list)
+- [ ] Agent only calls pragmatic-explorer and pragmatic-brainstormer
+- [ ] Agent respects permission configuration in agent definition
+- [ ] Agent outputs plan but doesn't attempt implementation
+- [ ] Agent provides clear handoff instructions for implementation phase
+
+---
+
+#### Test Scenario 6: Refuses to Use Forbidden Tools
+
+**Description:** Verify that agent refuses to use edit, write, and bash tools due to permission restrictions.
+
+**Input:**
+```markdown
+Situation: Agent needs to examine a configuration file that's being modified
+Context: Agent is tempted to check git status or view file modifications
+```
+
+**Expected Output:**
+```markdown
+Agent behavior:
+1. Agent needs to check if a file was modified
+2. Agent considers: bash("git status")
+3. Agent checks permissions: bash=deny
+4. Agent uses allowed tool instead: glob("**/config.json") or read("path/to/config.json")
+5. Agent does NOT attempt to use edit tool to modify files
+6. Agent does NOT attempt to use write tool to create files
+7. Agent continues using only: read, grep, glob, question, task (with allowed agents)
+```
+
+**Validation Criteria:**
+- [ ] Agent does NOT use bash tool
+- [ ] Agent does NOT use edit tool
+- [ ] Agent does NOT use write tool
+- [ ] Agent uses only allowed tools (read, grep, glob, question, task)
+- [ ] Agent finds workarounds using allowed tools when needed
+- [ ] Agent respects permission restrictions
+- [ ] No error messages from trying to use forbidden tools
+- [ ] Agent continues to function effectively with allowed tools
+
+---
+
+### Question Tool Integration Scenarios
+
+#### Test Scenario 7: Question Tool Used for Structured Clarification
+
+**Description:** Verify that agent uses question tool effectively to get user input with clear options.
+
+**Input:**
+```markdown
+User request: "Add caching layer"
+Context: Agent needs to know what to cache and for how long
+```
+
+**Expected Output:**
+```markdown
+Agent behavior:
+1. Agent identifies missing information (cache duration, cache targets)
+2. Agent calls question tool:
+
+   question(questions: [{
+     header: "Cache",
+     question: "Which API endpoints need caching and what should the cache duration be?",
+     options: [
+       { label: "All GET endpoints (5 min)", description: "Simple approach, caches everything" },
+       { label: "Read-heavy only (1 hour)", description: "Target common queries with longer TTL" },
+       { label: "None (Recommended)", description: "Profile first, then add selective caching" }
+     ]
+   }])
+
+3. User selects: "Read-heavy only (1 hour)"
+
+4. Agent incorporates answer into plan:
+   Epic 1: Caching Infrastructure
+   Stories include:
+   - Configure Redis cache with 1 hour TTL
+   - Apply caching to read-heavy endpoints (GET /users, GET /posts)
+   - Implement cache invalidation on write operations
+```
+
+**Validation Criteria:**
+- [ ] question tool is called when information is missing
+- [ ] Question has clear header (12 characters or less)
+- [ ] Question is specific and unambiguous
+- [ ] Options provide clear choices with descriptions
+- [ ] One option is marked as "(Recommended)"
+- [ ] Agent waits for user answer before proceeding
+- [ ] Agent incorporates user's answer into the plan
+- [ ] Plan reflects the specific choice made by user
+
+---
+
+### Loop Prevention Scenarios
+
+#### Test Scenario 8: Prevents Excessive Agent Calls
+
+**Description:** Verify that agent prevents calling pragmatic-explorer or pragmatic-brainstormer multiple times for the same question.
+
+**Input:**
+```markdown
+User request: "Plan a feature for an e-commerce application"
+Context: Agent is in process of creating plan and needs to understand codebase
+```
+
+**Expected Output:**
+```markdown
+Agent behavior:
+1. Agent calls pragmatic-explorer: "Analyze codebase for: product catalog patterns, shopping cart implementation, checkout flow"
+2. Explorer returns comprehensive information
+3. Agent needs more details about one specific area
+4. Agent considers calling explorer again: "Analyze codebase for: payment processing"
+5. Agent checks: Did I already ask about this? Is this covered in previous response?
+6. If YES: Agent reuses previous explorer results
+7. If NO: Agent calls explorer again with specific, focused question
+
+Good behavior:
+- Single comprehensive explorer call preferred over multiple small calls
+- Agent tracks what it has already learned from explorer
+- Agent doesn't ask explorer the same question twice
+- Agent limits explorer calls to maximum of 2-3 per planning session
+```
+
+**Validation Criteria:**
+- [ ] Agent doesn't call pragmatic-explorer with the same question twice
+- [ ] Agent reuses information from previous explorer calls
+- [ ] Agent prefers comprehensive single call over multiple fragmented calls
+- [ ] Agent limits explorer calls to 2-3 maximum per planning session
+- [ ] Agent doesn't call pragmatic-brainstormer multiple times for same decision
+- [ ] Agent tracks what has been clarified vs what remains ambiguous
+- [ ] No infinite loops of calling agents back and forth
+- [ ] Agent makes progress after each agent call
+
+---
+
+#### Test Scenario 9: Prevents Circular Agent Calls
+
+**Description:** Verify that agent prevents circular calls between pragmatic-explorer and pragmatic-brainstormer.
+
+**Input:**
+```markdown
+User request: "Add complex feature requiring both codebase understanding and technical decisions"
+Context: Agent needs both explorer (for codebase context) and brainstormer (for technical decisions)
+```
+
+**Expected Output:**
+```markdown
+Agent behavior:
+Good pattern (linear):
+1. Agent calls pragmatic-explorer: "Analyze codebase for: current authentication implementation"
+2. Explorer returns: "OAuth not implemented, JWT tokens exist, users table exists"
+3. Agent calls pragmatic-brainstormer: "Decide between password auth vs OAuth"
+4. Brainstormer returns: "OAuth recommended, use passport.js"
+5. Agent creates plan using both sets of information
+6. Planning complete
+
+Bad pattern (circular - should NOT happen):
+1. Agent calls pragmatic-explorer
+2. Explorer says "need to clarify requirements"
+3. Agent calls pragmatic-brainstormer
+4. Brainstormer says "need to understand codebase"
+5. Agent calls pragmatic-explorer again (CIRCULAR - STOP)
+
+Loop prevention:
+- Agent recognizes circular pattern and stops
+- Agent makes best decision with available information
+- Agent asks user directly if clarification needed
+- Agent doesn't bounce agents back and forth indefinitely
+```
+
+**Validation Criteria:**
+- [ ] Agent doesn't create circular calls between explorer and brainstormer
+- [ ] Agent calls each agent once at most for the same question
+- [ ] Agent makes progress after each agent call
+- [ ] Agent doesn't call explorer again after brainstormer says "explore codebase"
+- [ ] Agent doesn't call brainstormer again after explorer says "clarify requirements"
+- [ ] Maximum of 2-3 total agent calls per planning session
+- [ ] Agent uses question tool instead of circular agent calls
+- [ ] Agent terminates loops when detected
+
+---
+
+### Summary of Integration Test Scenarios
+
+| Scenario | Integration Type | Focus Area | Key Validation |
+|----------|----------------|------------|----------------|
+| 1 | Pragmatic-Explorer | New codebase understanding | Explorer called before planning, results incorporated |
+| 2 | Pragmatic-Explorer | Pattern discovery | Existing patterns found and reused, no duplication |
+| 3 | Pragmatic-Brainstormer | Requirements clarification | Ambiguity resolved, questions asked via question tool |
+| 4 | Pragmatic-Brainstormer | Technical decisions | Options analyzed, recommendation followed |
+| 5 | Permission Boundaries | Agent call restrictions | Only allowed agents called, implementation agents blocked |
+| 6 | Permission Boundaries | Tool usage restrictions | Only allowed tools used, forbidden tools avoided |
+| 7 | Question Tool | Structured clarification | Clear questions with options, answers incorporated |
+| 8 | Loop Prevention | Excessive agent calls | Limits calls, reuses results, no duplicate queries |
+| 9 | Loop Prevention | Circular agent calls | No circular patterns, linear flow, loops terminated |
+
+### Integration Validation Criteria Summary
+
+**Pragmatic-Explorer Integration:**
+- Explorer called when codebase understanding is needed
+- Explorer called before creating plans (not after)
+- Explorer prompts are specific and relevant
+- Explorer results incorporated into plans
+- Existing patterns identified and reused
+- No duplicate explorer calls for same question
+- Maximum of 2-3 explorer calls per planning session
+
+**Pragmatic-Brainstormer Integration:**
+- Brainstormer called when requirements are ambiguous
+- Brainstormer called when technical decisions needed
+- Brainstormer returns structured questions or options
+- Brainstormer provides analysis and recommendations
+- Agent follows brainstormer recommendations
+- Question tool used to get user input based on brainstormer questions
+- No duplicate brainstormer calls for same decision
+- Maximum of 2-3 brainstormer calls per planning session
+
+**Permission Boundaries:**
+- Only allowed agents called: pragmatic-explorer, pragmatic-brainstormer
+- Implementation agents blocked: pragmatic-developer, pragmatic-planner, etc.
+- Only allowed tools used: read, grep, glob, question, task
+- Forbidden tools avoided: edit, write, bash
+- Agent respects permission configuration
+- No errors from permission violations
+- Agent functions effectively within constraints
+
+**Question Tool Integration:**
+- Question tool called when information is missing
+- Questions have clear headers (≤12 characters)
+- Questions are specific and unambiguous
+- Options provide clear choices with descriptions
+- One option marked as "(Recommended)"
+- Agent waits for user answers
+- User answers incorporated into plans
+- Plans reflect specific user choices
+
+**Loop Prevention:**
+- No duplicate agent calls for same question
+- Information from previous calls reused
+- Comprehensive single calls preferred over fragmented calls
+- Maximum 2-3 agent calls per planning session
+- No circular patterns between agents
+- Linear flow maintained (explorer → brainstormer → plan)
+- Loops terminated when detected
+- Agent makes progress after each call
+- Question tool used instead of bouncing between agents
+
 ## Constraints
 
 **You cannot:**
