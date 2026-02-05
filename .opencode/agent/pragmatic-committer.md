@@ -45,7 +45,19 @@ git diff --staged --stat
 git diff --staged
 ```
 
-### 2. Safety Checks
+### 2. Parse Context
+
+Extract structured context from the invocation prompt. The prompt may contain enriched sections:
+
+- **Task Context:** `## Task Context` — task name, purpose
+- **Holistic Fix Context:** `## Holistic Fix Context` — plan name, fix type, iterations
+- **Archive Context:** `## Archive Context` — plan name, action
+- **Plan Context:** `## Plan Context` — plan name
+- **Commit Metadata:** `## Commit Metadata` — files, references, commit notes
+
+**Fallback:** If no structured sections are found (e.g., plain string context from older invocations), extract what you can from the flat text. Behave as before — derive the commit message from `git diff` alone.
+
+### 3. Safety Checks
 
 **Block execution if:**
 - `git status` shows 0 staged changes (abort)
@@ -59,13 +71,15 @@ git diff --staged
 - If [SUBAGENT]: Abort and report error.
 - If User: Ask for confirmation.
 
-### 3. Generate Commit Message
+### 4. Generate Commit Message
 
 Format: **Conventional Commits**
 ```
 <type>(<scope>): <description>
 
-[Optional body explaining "why", not just "what"]
+[Body: explain "why" using task purpose and commit notes]
+
+[Refs: JIRA-123, GitHub #456]
 ```
 
 **Types:**
@@ -80,9 +94,19 @@ Format: **Conventional Commits**
 **Scopes (Project specific):**
 - `auth`, `api`, `db`, `ui`, `core`, etc.
 
-### 4. Commit
+**Using enriched context:**
+- **Subject line:** Derive from diff + task name (as before)
+- **Body:** Use **Purpose** from Task Context to explain "why", not just "what". Include **Commit Notes** if provided.
+- **Trailers:** Append `Refs: <references>` as a git trailer if **References** are present in Commit Metadata. Combine plan-level and task-level references, deduplicated.
+
+### 5. Commit
 
 **Command:**
+```bash
+git commit -m "type(scope): subject" -m "Body paragraph..." -m "Refs: JIRA-123, GitHub #456"
+```
+
+If no references are present, omit the trailer `-m`:
 ```bash
 git commit -m "type(scope): subject" -m "Body paragraph..."
 ```
@@ -110,16 +134,68 @@ Detailed summary of changes and the resulting commit.
 
 ## Examples
 
-**Input:** "Commit staged changes for task: Add OAuth"
+### Example 1: Task commit with enriched context
 
-**Analysis:**
-- `go.mod` (updated dep)
-- `auth/handler.go` (added logic)
-- `auth/handler_test.go` (added tests)
+**Input:**
+```
+[SUBAGENT] Commit staged changes.
+
+## Task Context
+**Task Name:** Add OAuth2 handler
+**Purpose:** Enable third-party authentication via OAuth2 flow
+
+## Plan Context
+**Plan Name:** Add OAuth Authentication
+
+## Commit Metadata
+**Files:** auth/handler.go, auth/handler_test.go, go.mod
+**References:** JIRA-1234, GitHub #56
+**Commit Notes:** Implements callback handling and state validation
+```
 
 **Action:**
 ```bash
-git commit -m "feat(auth): add OAuth2 handler implementation" -m "Adds main OAuth2 flow including callback handling and state validation. Includes comprehensive tests."
+git commit -m "feat(auth): add OAuth2 handler implementation" -m "Enable third-party authentication via OAuth2 flow. Implements callback handling and state validation." -m "Refs: JIRA-1234, GitHub #56"
+```
+
+**Output:**
+```
+✅ Committed: feat(auth): add OAuth2 handler implementation
+```
+
+### Example 2: Holistic fix commit
+
+**Input:**
+```
+[SUBAGENT] Commit staged changes.
+
+## Holistic Fix Context
+**Plan Name:** Add OAuth Authentication
+**Fix Type:** Holistic review issues
+**Iterations:** 1 of 3
+
+## Commit Metadata
+**Files:** auth/handler.go, auth/middleware.go
+**References:** JIRA-1234
+```
+
+**Action:**
+```bash
+git commit -m "fix(auth): address holistic review issues" -m "Fix cross-cutting issues found during holistic review of Add OAuth Authentication plan." -m "Refs: JIRA-1234"
+```
+
+**Output:**
+```
+✅ Committed: fix(auth): address holistic review issues
+```
+
+### Example 3: Plain context (backward compatible)
+
+**Input:** `"[SUBAGENT] Commit staged changes. Context: Completed task 'Add OAuth'. Files: auth/handler.go"`
+
+**Action:**
+```bash
+git commit -m "feat(auth): add OAuth2 handler implementation" -m "Adds main OAuth2 flow including callback handling and state validation."
 ```
 
 **Output:**

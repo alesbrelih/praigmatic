@@ -172,7 +172,22 @@ Display "🔄 Code review attempt [retry_count]/[max_retries]..."
 
 #### 4.5 Commit (Success Path)
 
-Mark task completed. Completed`. Commit with: `task(agent: "pragmatic-committer", prompt: "[SUBAGENT] Commit staged changes. Context: Completed task '[Task Name]'. Files: [file list]")`
+Mark task completed. Commit with:
+```markdown
+task(agent: "pragmatic-committer", prompt: "[SUBAGENT] Commit staged changes.
+
+## Task Context
+**Task Name:** [Task Name]
+**Purpose:** [from plan task]
+
+## Plan Context
+**Plan Name:** [from plan]
+
+## Commit Metadata
+**Files:** [file list]
+**References:** [Plan-level References + Task-level Refs, if any]
+**Commit Notes:** [Task-level Commit Notes, if any]")
+```
 
 #### 4.6 Handle Max Retries Exceeded (Failure Path)
 
@@ -320,7 +335,19 @@ Display "🔄 Holistic improvement attempt [holistic_retry_count]/[max_holistic_
 **Commit Holistic Fixes (Success Path):**
 Check if any files are staged with `git status`.
 - **If no files staged**: Skip commit, display "ℹ️ Holistic review resolved without code changes. Proceeding to archive."
-- **If files staged**: Commit with: `task(agent: "pragmatic-committer", prompt: "[SUBAGENT] Commit staged changes. Context: Fixed holistic review issues for plan '[Plan Name]'. After [holistic_retry_count] of [max_holistic_retries] retry iterations. Files: [file list]. This commit includes all changes from [holistic_retry_count] retry iterations.")`
+- **If files staged**: Commit with:
+  ```markdown
+  task(agent: "pragmatic-committer", prompt: "[SUBAGENT] Commit staged changes.
+
+  ## Holistic Fix Context
+  **Plan Name:** [Plan Name]
+  **Fix Type:** Holistic review issues
+  **Iterations:** [holistic_retry_count] of [max_holistic_retries]
+
+  ## Commit Metadata
+  **Files:** [file list]
+  **References:** [Plan-level References, if any]")
+  ```
 
 **Note:** All staged changes from retry iterations are included in a single commit. For complex holistic fixes spanning multiple issues, consider manual commit breakdown for better auditability.
 
@@ -360,7 +387,18 @@ After displaying this information, the plan will be archived with the failure no
 Proceed to archive plan after user notification (changes remain staged, plan contains failure notes). Archive summary will include warnings about unresolved issues.
 
 **Archive Plan:**
-Use `archive-plan` tool with planPath. Stage and commit archive move: `git add "[plan]" "[archive]" && task(agent: "pragmatic-committer", prompt: "[SUBAGENT] Commit staged changes. Context: Plan '[Name]' completed and archived")`
+Use `archive-plan` tool with planPath. Stage and commit archive move:
+```markdown
+git add "[plan]" "[archive]" && task(agent: "pragmatic-committer", prompt: "[SUBAGENT] Commit staged changes.
+
+## Archive Context
+**Plan Name:** [Name]
+**Action:** Plan completed and archived
+
+## Commit Metadata
+**Files:** [plan path, archive path]
+**References:** [Plan-level References, if any]")
+```
 
 **Final Summary:**
 

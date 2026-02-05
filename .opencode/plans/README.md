@@ -63,14 +63,30 @@ Plans follow a standard template:
 ```markdown
 # Feature Name Implementation Plan
 
+## Purpose
+[1-2 sentences: What problem does this solve?]
+
+## Metadata (Optional)
+**References:** [Tracking references, e.g., JIRA-123, GitHub #456]
+
 ## Tasks
 
 - [ ] **Task 1 Name** (Small)
-  - Implementation detail 1
-  - Implementation detail 2
+  - Purpose: What this achieves
+  - Steps:
+    - Implementation step 1
+    - Implementation step 2
+  - Files: file1.go, file2.go
+  - Dependencies: None
+  - Refs: [Optional: task-specific tracking references]
+  - Commit Notes: [Optional: extra context for commit message]
 
 - [ ] **Task 2 Name** (Medium)
-  - Implementation detail 1
+  - Purpose: What this achieves
+  - Steps:
+    - Implementation step 1
+  - Files: file3.go
+  - Dependencies: Task 1
 
 ## Architecture Overview
 [How feature fits into system]
@@ -95,6 +111,19 @@ Plans follow a standard template:
 ## Dependencies
 - Task dependencies and parallel work opportunities
 ```
+
+### Optional Metadata
+
+Plans support an optional `## Metadata` section for tracking references and other metadata that flows into commit messages.
+
+**Plan-level metadata** (in the `## Metadata` section):
+- `**References:**` — External tracking references (e.g., `JIRA-123, GitHub #456`). These are included as `Refs:` trailers in every commit for the plan.
+
+**Task-level metadata** (in each task entry):
+- `Refs:` — Task-specific tracking references, appended to plan-level references in commit trailers.
+- `Commit Notes:` — Extra context included in the commit message body (e.g., "Implements the callback flow discussed in design review").
+
+Both are optional — existing plans without metadata continue to work unchanged.
 
 ## Best Practices
 

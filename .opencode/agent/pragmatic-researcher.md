@@ -18,6 +18,7 @@ tools:
   glob: true
   webfetch: true
   websearch: true
+  codesearch: true
   skill: true
 ---
 

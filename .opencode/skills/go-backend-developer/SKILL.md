@@ -1,7 +1,7 @@
 ---
 name: go-backend-developer
 description: Complete Go backend development patterns including table-driven tests, mocking, observability (tracing, logging, metrics), and HTTP handler patterns.
-keywords: go, golang, backend, testing, mocking, gomock, sqlmock, table-driven, observability, tracing, logging, metrics
+keywords: go, golang, backend, testing, mocking, mockery, sqlmock, table-driven, observability, tracing, logging, metrics
 license: MIT
 ---
 
@@ -16,6 +16,7 @@ license: MIT
 - Implementing HTTP middleware (auth, logging, recovery)
 - Writing concurrent code with goroutines and channels
 - Testing database operations with sqlmock
+- Mocking dependencies with mockery v3
 
 ## Layer Architecture
 
@@ -23,11 +24,12 @@ license: MIT
 Handler → Service → Repository → Database
    ↓         ↓            ↓
  Middleware  Mocks    sqlmock
+          (mockery v3)
 ```
 
 **Decision guidance:**
 - Handlers: Use `handler_template.go` for HTTP request/response patterns
-- Services: Use `service_template.go` for business logic with testify/mock
+- Services: Use `service_template.go` for business logic with mockery v3 generated mocks
 - Repositories: Use `repository_template.go` for database operations with sqlmock
 - Middleware: Use `middleware_template.go` for cross-cutting concerns
 
@@ -76,9 +78,26 @@ Handler → Service → Repository → Database
 **Pattern:** Table-driven tests with `t.Run()` for test cases, `t.Parallel()` for independent tests
 **References:**
 - `template.go` - Table-driven test structure
-- `service_template.go` - testify/mock for service layer
+- `service_template.go` - mockery v3 generated mocks for service layer
 - `repository_template.go` - sqlmock for database tests
 - `handler_template.go` - httptest for HTTP handlers
+
+**Mocking with mockery v3:**
+- Configure `.mockery.yaml` at the project root to declare which interfaces to mock:
+  ```yaml
+  packages:
+    github.com/yourproject/internal/service:
+      interfaces:
+        Repository:
+  ```
+- Run `mockery` to generate mocks (no `//go:generate` directives needed)
+- Use the generated `NewMockRepository(t)` constructor — it takes `*testing.T` for automatic assertion cleanup
+- Set expectations with the `EXPECT()` API:
+  ```go
+  mockRepo := NewMockRepository(t)
+  mockRepo.EXPECT().Get(mock.Anything, "123").Return(&Item{ID: "123"}, nil).Once()
+  ```
+- No need for `mockRepo.AssertExpectations(t)` — handled automatically via `t`
 
 **Best practices:**
 - Use `require` for setup that must pass, `assert` for verification
@@ -87,7 +106,7 @@ Handler → Service → Repository → Database
 - Keep test files adjacent to implementation
 
 **Common pitfalls:**
-- Using gomock instead of testify/mock (templates use testify/mock)
+- Manually writing mocks instead of using mockery v3 to generate them
 - Not running tests with race detector
 - Forgetting to close rows in database tests
 
@@ -171,6 +190,38 @@ Handler → Service → Repository → Database
 - Using unstructured logging
 - Not instrumenting at request boundaries
 
+### External Dependencies
+
+**When to use:** Consuming external libraries or third-party services
+**Pattern:** Define a consumer-side interface that includes only the methods you need, then mock it with mockery v3
+
+**How it works:**
+- Define a small interface in the package that consumes the dependency, listing only the methods you actually call
+- Go's implicit interface satisfaction means the concrete library type already implements your interface — no wrapper needed
+- Use mockery v3 to generate mocks for your interface
+- In production, pass the real library type; in tests, pass the generated mock
+
+**Example:**
+```go
+// In your consumer package — only the methods you need
+type EmailSender interface {
+    Send(ctx context.Context, to string, body string) error
+}
+
+// Production: pass the real client (which already satisfies EmailSender)
+svc := NewNotificationService(mailgun.NewClient(apiKey))
+
+// Tests: pass the mockery-generated mock
+mock := NewMockEmailSender(t)
+mock.EXPECT().Send(mock.Anything, "user@example.com", "hello").Return(nil).Once()
+svc := NewNotificationService(mock)
+```
+
+**Common pitfalls:**
+- Wrapping libraries in custom adapter structs when Go interfaces make this unnecessary
+- Defining interfaces at the provider side instead of the consumer side
+- Including methods you don't use in the interface (keep it minimal)
+
 ## Best Practices
 
 - **Context first:** Pass context as first parameter in all functions, never store in structs
@@ -187,6 +238,9 @@ Handler → Service → Repository → Database
 ## Commands
 
 ```bash
+# Generate mocks from .mockery.yaml config
+mockery
+
 # Run tests with coverage, race detection, and parallel execution
 go test -coverprofile=c.out -race -parallel=4 ./...
 go tool cover -html=c.out    # View coverage report

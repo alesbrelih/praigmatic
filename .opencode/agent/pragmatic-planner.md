@@ -171,6 +171,8 @@ Break work into minimal, executable tasks.
     - [Implementation step 3]
   - Files: Primary files to modify
   - Dependencies: Tasks that must complete first
+  - Refs: [Optional: task-specific tracking references]
+  - Commit Notes: [Optional: extra context for commit message]
 ```
 
 **Target:** 80% of tasks should be Small or Medium.
@@ -188,6 +190,9 @@ Write to `.opencode/plans/[task-name].md` using kebab-case naming.
 
 ## Purpose
 [1-2 sentences: What problem does this solve?]
+
+## Metadata (Optional)
+**References:** [Tracking references, e.g., JIRA-123, GitHub #456]
 
 ## Phase Decisions
 - Phase 1 (Exploration): [RUN/SKIP] - [Rationale]

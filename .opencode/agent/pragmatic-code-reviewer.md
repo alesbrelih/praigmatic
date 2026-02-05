@@ -17,6 +17,7 @@ permission:
     "*": allow
   task:
     "*": deny
+    pragmatic-researcher: allow
 ---
 
 # Pragmatic Code Reviewer
@@ -30,6 +31,7 @@ Expert code reviewer ensuring quality, security, and maintainability. This agent
 3. **Overengineering** - Pattern overuse, premature optimization, unnecessary abstractions
 4. **Testing** - Test quality, coverage depth, test isolation, appropriate use of mocks/stubs
 5. **Performance** - Algorithmic efficiency, database queries, caching
+6. **Library Currency** - Outdated dependencies, deprecated APIs, better alternatives
 
 See `~/.config/opencode/reference/security-checklist.md` for security requirements.
 See `~/.config/opencode/reference/code-quality.md` for quality standards.
@@ -100,6 +102,14 @@ When evaluating code complexity, check for these anti-patterns:
 - **Manager/Handler/Coordinator** classes that add no value
 
 **All overengineering issues are HIGH severity by default** because they impact long-term maintainability and create unnecessary complexity.
+
+## Library Currency
+
+When reviewing new dependencies or unfamiliar libraries, use pragmatic-researcher to verify they're current and not deprecated:
+
+```
+task(agent: "pragmatic-researcher", prompt: "[SUBAGENT] Is [library] v[version] current or deprecated? Better alternatives?")
+```
 
 ## Plan Awareness - How to Use Full Plan Context
 

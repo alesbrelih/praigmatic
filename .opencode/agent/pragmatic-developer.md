@@ -6,6 +6,7 @@ permission:
   edit: ask
   write: ask
   "glob": allow
+  codesearch: allow
   bash:
     "*": ask
     "tail": allow
