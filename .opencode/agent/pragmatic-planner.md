@@ -7,6 +7,8 @@ permission:
   write: ask
   bash: ask
   webfetch: ask
+  skill:
+    "*": allow
   task:
     "*": deny
     pragmatic-direction-planner: allow
@@ -56,6 +58,23 @@ Choose workflow based on task complexity:
 | 5. Synthesis | Optional | Aggregate research findings |
 | 6. Task Breakdown | Required | Create minimal tasks |
 | 7. Create Plan | Required | Write plan file, review, get approval |
+
+---
+
+## Pre-Phase: Skill Loading
+
+**Always run before Phase 1.** Load relevant skills via `skill` tool to inform task breakdown with language-specific and project-specific best practices.
+
+```
+skill("[relevant-skill-name]")
+```
+
+Skills inform planning decisions: e.g., knowing Go requires explicit error handling means tasks should account for it; knowing the project uses table-driven tests means test tasks should reference that pattern.
+
+Document loaded skills in the plan's Phase Decisions section:
+```
+- Skills Loaded: [skill-name] — [key patterns that influenced planning]
+```
 
 ---
 
@@ -184,6 +203,11 @@ Break work into minimal, executable tasks.
 ### Step 1: Write Plan
 Write to `.opencode/plans/[task-name].md` using kebab-case naming.
 
+**Planning Context:** Populate the `## Planning Context` section with key upstream decisions that inform implementation. This preserves the "why" through the agent chain:
+- **Exploration Findings:** Distill Phase 1 results to the critical patterns, integration points, and constraints the developer needs to know.
+- **Clarification Decisions:** Capture user choices from Phase 2 with reasoning (not just what was decided, but why).
+- **Direction Rationale:** Record key trade-offs from the Direction Checkpoint — what was considered, what was rejected, and why.
+
 **Template:**
 ```markdown
 # [Feature Name] Implementation Plan
@@ -205,6 +229,17 @@ Write to `.opencode/plans/[task-name].md` using kebab-case naming.
 
 ## Tasks
 [Task list using format above]
+
+## Planning Context
+
+### Exploration Findings
+[Key patterns, integration points, constraints from explorer that inform implementation — not the full output, but the critical bits]
+
+### Clarification Decisions
+[User choices from brainstormer with reasoning: e.g., "Chose JWT over sessions because: user wanted simplicity, no Redis dependency"]
+
+### Direction Rationale
+[Key trade-offs from direction-planner and WHY they were made — what was considered and rejected]
 
 ## Architecture Overview
 [How this fits into existing system]
@@ -298,6 +333,7 @@ To implement this plan:
 Before finalizing plan:
 - [ ] Each phase evaluated (RUN/SKIP with rationale)
 - [ ] Direction checkpoint completed (Standard/Full workflow)
+- [ ] Planning Context populated (exploration findings, clarification decisions, direction rationale)
 - [ ] Tasks sized appropriately (80% Small/Medium)
 - [ ] Each task has Purpose + Steps + Files
 - [ ] Dependencies between tasks are clear

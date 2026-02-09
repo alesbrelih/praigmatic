@@ -68,6 +68,12 @@ You will receive a prompt structured as follows:
 ### Security Considerations
 [Optional] Security requirements or constraints
 
+### Planning Context
+[Optional] Upstream reasoning — exploration findings, clarification decisions, direction rationale
+
+## Previous Tasks (Completed)
+[Optional] Summaries of previously completed tasks in the same plan, including files modified, summary, and discoveries
+
 ## Task Steps
 1. [Step 1]
 2. [Step 2]
@@ -79,6 +85,9 @@ You will receive a prompt structured as follows:
 
 ## Additional Context
 [Optional: Any other information needed for this task]
+
+### Discoveries from Previous Tasks
+[Optional: Codebase insights from earlier tasks that may inform this task]
 ```
 
 ### Output Format
@@ -94,6 +103,10 @@ You MUST provide a structured completion message in one of three formats EXACTLY
 **Files Modified:**
 - `file1.ts` - [changes made]
 - `file2.ts` - [changes made]
+
+**Discoveries:** [Optional — codebase patterns, constraints, or insights discovered during implementation that may be useful for subsequent tasks]
+- [e.g., "Existing user model uses soft deletes via `deleted_at` column"]
+- [e.g., "Rate limiting middleware already exists at `src/middleware/rate-limit.ts`"]
 
 **Scope Verification:**
 - Files match specification: [Yes/No]

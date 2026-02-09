@@ -93,9 +93,15 @@ Goal: Establish high-level approach before detailed planning.
 
 ## Exploration Context
 [Full exploration_context output OR "Skipped - [reason]"]
+
+## Clarification Areas
+- User intent and use cases
+- Technical approach and constraints
+- Success criteria
+- **Backwards Compatibility**: Is this early development (breaking changes OK) or production (must preserve compatibility)?
 ```
 
-**Expected output:** User intent, technical decisions, constraints, success criteria (max 200 lines)
+**Expected output:** User intent, technical decisions, constraints, success criteria, backwards compatibility decision (max 200 lines)
 
 **Pass forward as:** `clarification_context`
 
@@ -234,6 +240,11 @@ Write plan file to `.opencode/plans/[task-name].md` using kebab-case.
 
 ## Technical Decisions
 - **Decision**: [Choice] - Rationale: [Why] - Trade-offs: [What we give up]
+
+## Backwards Compatibility
+**Required:** [Yes/No]
+**Rationale:** [Why this decision was made - e.g., "Early development, no external users yet" or "Production code with existing integrations"]
+**Impact:** [If No: Breaking changes are acceptable. If Yes: Must preserve existing APIs/interfaces]
 
 ## Integration Points
 [Where code will be added/modified]

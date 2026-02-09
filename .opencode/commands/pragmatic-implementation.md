@@ -17,6 +17,8 @@ Read plan file and parse tasks (format: `- [ ] **Task Name** (SIZE)`). Status: `
 
 ### 4. Implementation Loop
 
+**Context Accumulation:** As tasks complete, keep track of each task's name, files modified, summary, and discoveries (from the developer's completion response). Pass this accumulated context forward to subsequent developer invocations, code reviews, and the holistic review.
+
 **Task Selection:** Prioritize in-progress tasks `[~]` over pending `[ ]`. Execute tasks sequentially.
 
 For each task:
@@ -40,8 +42,23 @@ Construct task prompt following format in `.opencode/design/new-command-develope
 ### Decisions
 [relevant parts from plan]
 
+### Backwards Compatibility
+[Include the "## Backwards Compatibility" section from plan - Required: Yes/No, Rationale, Impact]
+
 ### Security Considerations
 [if applicable]
+
+### Planning Context
+[from plan's "## Planning Context" section — exploration findings, clarification decisions, direction rationale. Include if present in plan.]
+
+## Previous Tasks (Completed)
+[Include ONLY if completed_task_summaries is non-empty]
+- **Task 1: [Name]** — ✅
+  Files Modified: [actual files from developer response]
+  Summary: [from developer's completion message]
+  Discoveries: [if any, from developer's completion message]
+- **Task 2: [Name]** — ✅
+  ...
 
 ## Task Steps
 [from plan as numbered list]
@@ -51,6 +68,11 @@ Construct task prompt following format in `.opencode/design/new-command-develope
 
 ## Additional Context
 [any other relevant info]
+
+### Discoveries from Previous Tasks
+[Include ONLY if any previous tasks reported discoveries]
+- [discovery 1 from Task N]
+- [discovery 2 from Task M]
 ```
 
 Invoke with: `task(agent: "pragmatic-developer", prompt: "[prompt above]")`
@@ -83,20 +105,23 @@ Display "🔄 Code review attempt [retry_count]/[max_retries]..."
  1. **Review Staged Changes**: Verify files staged with `git status`. Request code review with:
     ```markdown
     task(agent: "pragmatic-code-reviewer", prompt: "[SUBAGENT] Review STAGED changes for: [Task Name].
-    
+
     # Current Task
     **Task Name:** [Task Name]
     **Purpose:** [from plan]
     **Steps:** [from plan as numbered list]
     **Files Modified:** [staged files list]
-    
+
     # Task Context
     ### Architecture
     [relevant parts from plan]
-    
+
     ### Decisions
     [relevant parts from plan]
-    
+
+    ### Backwards Compatibility
+    [Include the "## Backwards Compatibility" section from plan - Required: Yes/No, Rationale, Impact]
+
     ### Security Considerations
     [if applicable]
     
@@ -127,9 +152,10 @@ Display "🔄 Code review attempt [retry_count]/[max_retries]..."
     - Will this implementation support upcoming tasks?
     - Are there any conflicts with future work?
     - Should this task include more/less to prepare for future tasks?
-    
+    - **Backwards Compatibility**: Review breaking changes ONLY if "Required: Yes" in context. If "Required: No", breaking changes are acceptable and should NOT be flagged as issues.
+
     Do NOT suggest features/improvements that are planned for upcoming tasks.
-    
+
     Iteration: Attempt [retry_count] of [max_retries].")
     ```
 
@@ -153,7 +179,7 @@ Display "🔄 Code review attempt [retry_count]/[max_retries]..."
     [Paste ENTIRE code-reviewer output here]
 
     ## Previous Implementation Context
-    [Include original task steps, files, context, architecture, decisions, security]
+    [Include original task steps, files, context, architecture, decisions, backwards compatibility, security]
 
     ## Instructions
     1. Review code review feedback
@@ -170,7 +196,7 @@ Display "🔄 Code review attempt [retry_count]/[max_retries]..."
 
    (Note: Similar to holistic loop, developer failure/blocked ends the task execution. The "max retries" limit only applies to successful iteration cycles where developer completes work but code-reviewer still finds critical/high issues.)
 
-#### 4.5 Commit (Success Path)
+#### 4.5 Commit and Accumulate Context (Success Path)
 
 Mark task completed. Commit with:
 ```markdown
@@ -188,6 +214,19 @@ task(agent: "pragmatic-committer", prompt: "[SUBAGENT] Commit staged changes.
 **References:** [Plan-level References + Task-level Refs, if any]
 **Commit Notes:** [Task-level Commit Notes, if any]")
 ```
+
+**Accumulate task context** for subsequent tasks: Save this task's name, files modified, summary, and discoveries (if any) from the developer's completion response. This accumulated context will be included in the next task's prompt and the holistic review.
+
+**Annotate plan file** with actual outcomes. After marking the task checkbox as `[x]`, append lightweight annotations below the task's existing fields:
+```markdown
+- [x] **Task Name** (Size)
+  - Purpose: ...
+  - Steps: ...
+  - Files: ...
+  - **Actual Files:** [actual file list from developer response]
+  - **Notes:** [developer's summary, plus any deviations from plan]
+```
+This makes the plan a living document that captures what actually happened vs what was planned.
 
 #### 4.6 Handle Max Retries Exceeded (Failure Path)
 
@@ -209,31 +248,49 @@ Read plan to find next unchecked task. Prioritize `[~]` over `[ ]`. Repeat from 
 2. Request holistic review:
    ```markdown
    task(agent: "pragmatic-code-reviewer", prompt: "[SUBAGENT] Perform holistic review of entire functionality.
-   
+
    # Plan Overview
    **Plan Name:** [from plan]
    **Plan Purpose:** [from plan]
    **Total Tasks:** [number]
    **All Tasks Completed:** [Yes/No]
-   
-   # Completed Tasks
-   1. **Task 1:** [Name] - [Purpose] - Status: ✅
-   2. **Task 2:** [Name] - [Purpose] - Status: ✅
+
+   # Completed Tasks (with Implementation Details)
+   [For each entry in completed_task_summaries:]
+   1. **Task 1:** [Name] - Status: ✅
+      - Files Modified: [actual files]
+      - Summary: [developer's summary]
+      - Discoveries: [if any]
+   2. **Task 2:** [Name] - Status: ✅
+      - Files Modified: [actual files]
+      - Summary: [developer's summary]
+      - Discoveries: [if any]
    ...
-   
+
    # Architecture & Decisions
    [Architecture Overview section from plan]
    [Technical Decisions section from plan]
-   
+
+   # Backwards Compatibility
+   [Include the "## Backwards Compatibility" section from plan - Required: Yes/No, Rationale, Impact]
+
+   # Planning Context
+   [From plan's "## Planning Context" section, if present — provides the "why" behind decisions]
+
+   # Accumulated Discoveries
+   [All discoveries from completed_task_summaries, consolidated]
+
    # Implementation Context
    [Commits from git log]
-   
+
    # Review Focus
    - Consistency across all completed tasks
    - Architecture coherence with plan
    - Integration issues between tasks
    - Overall quality, security, maintainability
-   
+   - Whether implementation-time discoveries were properly handled
+   - **Backwards Compatibility**: Review breaking changes ONLY if "Required: Yes" in context. If "Required: No", breaking changes are acceptable and should NOT be flagged as issues.
+
    **Note:** Only review completed work. Do not suggest features planned for future tasks.")
    ```
 
@@ -275,6 +332,7 @@ Display "🔄 Holistic improvement attempt [holistic_retry_count]/[max_holistic_
     ## Implementation Context
     [Relevant commits from git log]
     [Task list from plan]
+    [Include the "## Backwards Compatibility" section from plan - Required: Yes/No, Rationale, Impact]
 
     **Note:** Changes to address cross-cutting issues may span multiple tasks and files. Review all affected areas.
 
@@ -301,27 +359,31 @@ Display "🔄 Holistic improvement attempt [holistic_retry_count]/[max_holistic_
 
     ```markdown
     task(agent: "pragmatic-code-reviewer", prompt: "[SUBAGENT] Perform holistic review again.
-    
+
     # Plan Overview
     **Plan Name:** [from plan]
     **Plan Purpose:** [from plan]
     **Total Tasks:** [number]
     **All Tasks Completed:** [Yes/No]
-    
+
     # Completed Tasks
     [Same task list as initial review]
-    
+
     # Architecture & Decisions
     [Architecture Overview section from plan]
     [Technical Decisions section from plan]
-    
+
+    # Backwards Compatibility
+    [Include the "## Backwards Compatibility" section from plan - Required: Yes/No, Rationale, Impact]
+
     # Implementation Context
     [Commits from updated git log]
-    
+
     # Review Focus
     Focus on whether previous critical/high issues were resolved.
     Review for consistency, architecture coherence, integration issues, overall quality, security.
-    
+    **Backwards Compatibility**: Review breaking changes ONLY if "Required: Yes" in context. If "Required: No", breaking changes are acceptable and should NOT be flagged as issues.
+
     **Note:** Only review completed work. Do not suggest features planned for future tasks.")
     ```
 
@@ -402,7 +464,28 @@ git add "[plan]" "[archive]" && task(agent: "pragmatic-committer", prompt: "[SUB
 
 **Final Summary:**
 
-Display summary what was done.
+Display a structured summary of the implementation:
+
+```markdown
+## Implementation Complete: [Plan Name]
+
+### Tasks: [X/Y completed]
+| Task | Status | Files | Notes |
+|------|--------|-------|-------|
+| [Task 1 Name] | ✅ | [actual files] | [summary or "—"] |
+| [Task 2 Name] | ✅ | [actual files] | [summary or "—"] |
+| ... | | | |
+
+### Code Reviews: [X total retry iterations across all tasks]
+
+### Holistic Review: [Passed / X retry iterations]
+
+### Commits
+[List of commit hashes with messages from implementation]
+
+### Discoveries
+[All accumulated discoveries from completed_task_summaries, consolidated. Or "None" if no discoveries were reported.]
+```
 
 ## Edge Cases
 

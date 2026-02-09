@@ -33,6 +33,18 @@ The command invokes the developer agent with a structured prompt containing all 
 - [Optional] Security requirements or constraints
 - [Optional] Known security issues to avoid
 
+### Planning Context
+- [Optional] Exploration findings — key patterns and constraints from codebase analysis
+- [Optional] Clarification decisions — user choices with reasoning
+- [Optional] Direction rationale — key trade-offs and why they were made
+
+## Previous Tasks (Completed)
+[Optional — included when prior tasks have been completed in the same plan]
+- **Task 1: [Name]** — ✅
+  Files Modified: [actual files]
+  Summary: [completion summary]
+  Discoveries: [if any]
+
 ## Task Steps
 1. [Step 1]
 2. [Step 2]
@@ -45,6 +57,9 @@ The command invokes the developer agent with a structured prompt containing all 
 
 ## Additional Context
 [Optional: Any other information needed for this task]
+
+### Discoveries from Previous Tasks
+[Optional — insights from earlier tasks that may inform this task]
 ```
 
 ## 2. Required Fields
@@ -63,6 +78,9 @@ The command invokes the developer agent with a structured prompt containing all 
 | `Architecture` | string | When task involves architectural decisions | "Follow existing service pattern in src/services/" |
 | `Decisions` | string | When task is constrained by prior decisions | "Use bcrypt for password hashing (per security review)" |
 | `Security Considerations` | string | When task involves security-sensitive operations | "Never log tokens, always validate input" |
+| `Planning Context` | string | When plan has upstream reasoning to preserve | "Chose JWT over sessions because user wanted simplicity" |
+| `Previous Tasks` | list | When prior tasks completed in same plan | Task summaries with actual files and discoveries |
+| `Discoveries from Previous Tasks` | list | When prior tasks reported discoveries | "Rate limiting middleware already exists at src/middleware/" |
 
 ## 3. Expected Output Format
 
@@ -75,6 +93,9 @@ The developer agent MUST provide a structured completion message in one of three
 **Files Modified:**
 - `file1.ts` - [changes made]
 - `file2.ts` - [changes made]
+
+**Discoveries:** [Optional — codebase patterns, constraints, or insights useful for subsequent tasks]
+- [e.g., "Existing user model uses soft deletes"]
 
 **Summary:** [Brief description of what was done]
 ```
@@ -222,11 +243,39 @@ This task handles user authentication:
 - `src/index.ts` - Added auth routes to app
 - `package.json` - Added jsonwebtoken and bcrypt dependencies
 
+**Discoveries:**
+- Redis session store already configured at `src/config/redis.ts` with connection pooling
+- Existing middleware chain in `src/index.ts` uses express-style `app.use()` ordering — auth middleware must be registered after CORS
+
 **Summary:**
 Implemented JWT-based authentication with bcrypt password hashing. Added login endpoint that issues tokens (24h expiration) and logout endpoint that invalidates Redis sessions. Auth middleware validates tokens and attaches user to request. All inputs validated and rate limiting applied.
 ```
 
-## 6. Developer Agent Contract
+## 6. Cross-Task Context Flow
+
+The command accumulates context from completed tasks and passes it forward:
+
+```
+Task 1 completes → { files, summary, discoveries } stored
+Task 2 receives → Previous Tasks section with Task 1 data
+Task 2 completes → { files, summary, discoveries } stored
+Task 3 receives → Previous Tasks section with Task 1 + Task 2 data
+...
+Holistic Review receives → All accumulated summaries + discoveries
+Final Summary displays → Complete task table + all discoveries
+```
+
+### What Gets Accumulated
+- **Files Modified:** Actual files from developer's success response
+- **Summary:** Developer's completion summary
+- **Discoveries:** Optional codebase insights discovered during implementation
+
+### Planning Context Passthrough
+The plan's `## Planning Context` section (exploration findings, clarification decisions, direction rationale) is passed to each developer invocation under `## Context > ### Planning Context`. This preserves the "why" behind planning decisions through the full agent chain.
+
+---
+
+## 7. Developer Agent Contract
 
 ### Developer Agent Responsibilities
 
@@ -269,7 +318,7 @@ Implemented JWT-based authentication with bcrypt password hashing. Added login e
    - Explicit failure/blocked status enables proper error recovery
    - Command can retry, skip, or report based on status
 
-## 7. Implementation Checklist
+## 8. Implementation Checklist
 
 To implement this new interface:
 
