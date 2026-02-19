@@ -2,6 +2,22 @@
 description: Load plan file and orchestrate plan-driven implementation
 ---
 
+# CRITICAL: YOUR ROLE AS ORCHESTRATOR
+
+**YOU ARE AN ORCHESTRATOR - NOT A DEVELOPER**
+
+You MUST follow these strict rules:
+1. ❌ **NEVER edit, write, or modify code files yourself**
+2. ❌ **NEVER fix code review issues directly**
+3. ✅ **ALWAYS delegate code changes to `pragmatic-developer` agent**
+4. ✅ **ALWAYS delegate code review to `pragmatic-code-reviewer` agent**
+5. ✅ **Your job:** Coordinate workflow, parse responses, manage git state
+
+**If code needs changes:** Invoke developer agent with clear instructions.
+**If you try to edit code yourself:** You are breaking the workflow and bypassing quality controls.
+
+---
+
 YOU MUST EXECUTE THE FOLLOWING WORKFLOW IMMEDIATELY. This is not documentation - you must now perform these steps in sequence.
 
 ## Workflow Steps
@@ -17,490 +33,188 @@ Read plan file and parse tasks (format: `- [ ] **Task Name** (SIZE)`). Status: `
 
 ### 4. Implementation Loop
 
-**Context Accumulation:** As tasks complete, keep track of each task's name, files modified, summary, and discoveries (from the developer's completion response). Pass this accumulated context forward to subsequent developer invocations, code reviews, and the holistic review.
+**Context Accumulation:** Track each completed task's name, files modified, summary, and discoveries. Pass accumulated context to subsequent developer invocations, code reviews, and holistic review.
 
-**Task Selection:** Prioritize in-progress tasks `[~]` over pending `[ ]`. Execute tasks sequentially.
+**Context Budget** (prevents context overflow on large plans):
+- **Last 3 completed tasks:** full detail (files, summary, discoveries)
+- **Older tasks:** single-line: `- **Task N: [Name]** — ✅ ([file count] files, [1-sentence summary])`
+- **All discoveries** from any task always included regardless of age
+
+The holistic review receives full context for all tasks (no budget cap).
+
+**Task Selection:** Prioritize `[~]` (in-progress) over `[ ]` (pending). Execute sequentially.
 
 For each task:
 
 #### 4.1 Mark In-Progress
-Update plan before invoking developer.
+Update plan checkbox to `[~]` before invoking developer.
 
 #### 4.2 Invoke Developer
-Construct task prompt following format in `.opencode/design/new-command-developer-interface.md`:
-```markdown
-# Task Execution Request
 
-## Task Information
-**Task Name:** [from plan]
-**Purpose:** [from plan]
+**REMINDER:** ❌ You are the orchestrator. Do NOT implement the task yourself.
 
-## Context
-### Architecture
-[relevant parts from plan]
+Build prompt using **Template 1 (Developer Task Prompt)** from `~/.config/opencode/reference/implementation-templates.md`. Populate all placeholders from plan context and accumulated task data.
 
-### Decisions
-[relevant parts from plan]
-
-### Backwards Compatibility
-[Include the "## Backwards Compatibility" section from plan - Required: Yes/No, Rationale, Impact]
-
-### Security Considerations
-[if applicable]
-
-### Planning Context
-[from plan's "## Planning Context" section — exploration findings, clarification decisions, direction rationale. Include if present in plan.]
-
-## Previous Tasks (Completed)
-[Include ONLY if completed_task_summaries is non-empty]
-- **Task 1: [Name]** — ✅
-  Files Modified: [actual files from developer response]
-  Summary: [from developer's completion message]
-  Discoveries: [if any, from developer's completion message]
-- **Task 2: [Name]** — ✅
-  ...
-
-## Task Steps
-[from plan as numbered list]
-
-## Files to Modify
-[from plan as markdown list]
-
-## Additional Context
-[any other relevant info]
-
-### Discoveries from Previous Tasks
-[Include ONLY if any previous tasks reported discoveries]
-- [discovery 1 from Task N]
-- [discovery 2 from Task M]
-```
-
-Invoke with: `task(agent: "pragmatic-developer", prompt: "[prompt above]")`
+Invoke: `task(agent: "pragmatic-developer", prompt: "[populated template]")`
 
 #### 4.3 Handle Developer Response
 
-Parse response for completion status patterns:
-- **Success**: `✅ **Task Completed:**`
-- **Failed**: `❌ **Task Failed:**`
-- **Blocked**: `⚠️ **Task Blocked:**`
+**Validate output** — must contain one status marker:
+- `✅ **Task Completed:**` — Success
+- `🔀 **Task Deviated:**` — Treat as success, log deviation
+- `❌ **Task Failed:**` — Annotate plan with `⚠️ FAILED: [error]`, stop loop
+- `⚠️ **Task Blocked:**` — Annotate plan with `⚠️ BLOCKED: [blocker] — Required: [action]`, stop loop
 
-**Success:** Collect file list from response, stage changes with `git add`, proceed to code review loop.
+**No marker found:** Display warning, annotate plan `⚠️ FAILED: Developer output missing structured status marker`, stop loop.
 
-**Failed:** Add failure note to plan using `plan-tasks` → `addNote` with "FAILED: [error]". Do not commit. Stop loop and inform user.
+**Marker found but missing sections** (e.g., no `**Files Modified:**`): Warn `⚠️ Developer output incomplete — missing [section]. Proceeding with available data.`
 
-**Blocked:** Add blocker and required action notes to plan. Do not commit. Stop loop and inform user.
+**On success/deviated:** Collect file list from `**Files Modified:**`, stage with `git add`, proceed to code review. For deviations, log in plan annotation:
+```
+- **Actual Files:** [actual file list]
+- **Notes:** DEVIATED — Original: [summary]. Actual: [summary].
+```
 
 #### 4.4 Code Review Loop (MANDATORY)
 
-Initialize: `retry_count = 0`, `max_retries = 3`
-// Note: 3 retries allows for initial attempt + 2 fixes. Beyond this,
-// issues typically require manual review to avoid infinite loops.
+**THIS IS A FORCED LOOP:** You MUST keep looping between developer fixes and code review until either:
+- ✅ Reviewer approves (no critical/high issues)
+- ❌ Max retries reached
+- ❌ Developer fails/blocks
+
+❌ **DO NOT** skip re-review after developer makes fixes
+❌ **DO NOT** proceed to commit without reviewer approval
+
+`retry_count = 0`, `max_retries = 3`
 
 While `retry_count < max_retries`:
 
-Increment: `retry_count = retry_count + 1`
+1. Increment `retry_count`. Display `🔄 Code review attempt [retry_count]/[max_retries]...`
 
-Display "🔄 Code review attempt [retry_count]/[max_retries]..."
+2. **Review:** Verify staged files with `git status`. Build prompt using **Template 2 (Code Review Prompt)** from templates file.
 
- 1. **Review Staged Changes**: Verify files staged with `git status`. Request code review with:
-    ```markdown
-    task(agent: "pragmatic-code-reviewer", prompt: "[SUBAGENT] Review STAGED changes for: [Task Name].
+   Invoke: `task(agent: "pragmatic-code-reviewer", prompt: "...")`
 
-    # Current Task
-    **Task Name:** [Task Name]
-    **Purpose:** [from plan]
-    **Steps:** [from plan as numbered list]
-    **Files Modified:** [staged files list]
+3. **Decision:** Parse for critical OR high issues.
+   - **No critical OR high:** Exit loop → commit (4.5)
+   - **Issues found + retries exhausted:** Exit loop → failure (4.6)
 
-    # Task Context
-    ### Architecture
-    [relevant parts from plan]
+4. **Fix Issues (FORCED LOOP):** Build prompt using **Template 3 (Developer Retry Prompt)** from templates file.
 
-    ### Decisions
-    [relevant parts from plan]
+   **CRITICAL:** ❌ DO NOT FIX CODE YOURSELF! Invoke `pragmatic-developer` agent to make fixes.
 
-    ### Backwards Compatibility
-    [Include the "## Backwards Compatibility" section from plan - Required: Yes/No, Rationale, Impact]
+   Invoke: `task(agent: "pragmatic-developer", prompt: "[Template 3 populated with review issues]")`
 
-    ### Security Considerations
-    [if applicable]
-    
-    # Full Plan Context
-    **Total Tasks:** [number]
-    **Completed Tasks:** [number]
-    **Current Task:** [task name]
-    
-    ### Upcoming Tasks
-    - **Task 2:** [Name] - [Purpose]
-    - **Task 3:** [Name] - [Purpose]
-    - **Task 4:** [Name] - [Purpose]
-    - ...
-    
-    ### Task Dependencies
-    - This task depends on: [list]
-    - Tasks that depend on this: [list]
-    
-    ### Overall Architecture
-    [Architecture Overview section from plan]
-    
-    ### Technical Decisions
-    [Technical Decisions section from plan]
-    
-    # Review Instructions
-    Review the current task implementation with full plan context. Consider:
-    - Does this task align with planned architecture?
-    - Will this implementation support upcoming tasks?
-    - Are there any conflicts with future work?
-    - Should this task include more/less to prepare for future tasks?
-    - **Backwards Compatibility**: Review breaking changes ONLY if "Required: Yes" in context. If "Required: No", breaking changes are acceptable and should NOT be flagged as issues.
+   - **Success:** Stage changes with `git add`. **YOU MUST NOW GO BACK TO STEP 2 (REVIEW).** ❌ DO NOT SKIP RE-REVIEW. ❌ DO NOT PROCEED TO COMMIT WITHOUT RE-REVIEWING.
+   - **Failed/Blocked:** Exit loop immediately → failure (4.6)
 
-    Do NOT suggest features/improvements that are planned for upcoming tasks.
+**ENFORCEMENT:** After developer fixes issues (step 4 success), you MUST return to step 2 to re-review. The only ways to exit this loop are:
+- ✅ Reviewer finds no critical/high issues (step 3)
+- ❌ Max retries reached (step 3)
+- ❌ Developer failed/blocked (step 4)
 
-    Iteration: Attempt [retry_count] of [max_retries].")
-    ```
+#### 4.5 Commit and Accumulate Context
 
-2. **Decision Point**: Check if code-reviewer indicates critical/high issues.
-
-   - **No critical/high issues**: Exit loop → proceed to commit
-   - **Critical/high issues found**: If `retry_count >= max_retries`, exit loop → handle max retries. Otherwise, continue.
-
- 3. **Re-invoke Developer** (if issues found and retries remain):
-    Build retry prompt:
-    ```markdown
-    # Task Execution Request (CODE REVIEW RETRY - Attempt [retry_count] of [max_retries])
-
-    ## Task Information
-    **Task Name:** [original task name]
-    **Purpose:** [original purpose]
-
-    ## Code Review Feedback
-    **Status:** Previous implementation had critical/high issues that must be fixed.
-
-    [Paste ENTIRE code-reviewer output here]
-
-    ## Previous Implementation Context
-    [Include original task steps, files, context, architecture, decisions, backwards compatibility, security]
-
-    ## Instructions
-    1. Review code review feedback
-    2. Fix all critical/high priority issues
-    3. Make incremental fixes on staged changes (DO NOT start from scratch)
-    4. Ensure fixes don't break existing functionality
-    5. Stage additional changes
-    6. Return completion status with ✅, ❌, or ⚠️
-    ```
-
-   Invoke developer.
-   - **If success**: Loop back to step 1
-   - **If failed/blocked**: Exit loop immediately → do NOT continue to next task → proceed to handle max retries path (even if max_retries not reached)
-
-   (Note: Similar to holistic loop, developer failure/blocked ends the task execution. The "max retries" limit only applies to successful iteration cycles where developer completes work but code-reviewer still finds critical/high issues.)
-
-#### 4.5 Commit and Accumulate Context (Success Path)
-
-Mark task completed. Commit with:
-```markdown
-task(agent: "pragmatic-committer", prompt: "[SUBAGENT] Commit staged changes.
-
-## Task Context
-**Task Name:** [Task Name]
-**Purpose:** [from plan task]
-
-## Plan Context
-**Plan Name:** [from plan]
-
-## Commit Metadata
-**Files:** [file list]
-**References:** [Plan-level References + Task-level Refs, if any]
-**Commit Notes:** [Task-level Commit Notes, if any]")
-```
-
-**Accumulate task context** for subsequent tasks: Save this task's name, files modified, summary, and discoveries (if any) from the developer's completion response. This accumulated context will be included in the next task's prompt and the holistic review.
-
-**Annotate plan file** with actual outcomes. After marking the task checkbox as `[x]`, append lightweight annotations below the task's existing fields:
-```markdown
-- [x] **Task Name** (Size)
-  - Purpose: ...
-  - Steps: ...
-  - Files: ...
-  - **Actual Files:** [actual file list from developer response]
-  - **Notes:** [developer's summary, plus any deviations from plan]
-```
-This makes the plan a living document that captures what actually happened vs what was planned.
-
-#### 4.6 Handle Max Retries Exceeded (Failure Path)
-
-Add notes to plan using `plan-tasks` → `addNote`:
-- "CODE_REVIEW_FAILED_AFTER_RETRIES: [summary of issues]"
-- "Attempts: [retry_count] iterations completed"
-- "Required: Manual review and fixes needed"
-
-Do not commit. Keep files staged for user review. Inform user of remaining issues and next steps.
-
-#### 4.7 Continue to Next Task
-
-Read plan to find next unchecked task. Prioritize `[~]` over `[ ]`. Repeat from step 4.1.
-
-#### 4.8 All Tasks Complete
-
-**Holistic Review:**
-1. Identify relevant commits with `git log --oneline --all --grep="[Plan Name]"`
-2. Request holistic review:
-   ```markdown
-   task(agent: "pragmatic-code-reviewer", prompt: "[SUBAGENT] Perform holistic review of entire functionality.
-
-   # Plan Overview
-   **Plan Name:** [from plan]
-   **Plan Purpose:** [from plan]
-   **Total Tasks:** [number]
-   **All Tasks Completed:** [Yes/No]
-
-   # Completed Tasks (with Implementation Details)
-   [For each entry in completed_task_summaries:]
-   1. **Task 1:** [Name] - Status: ✅
-      - Files Modified: [actual files]
-      - Summary: [developer's summary]
-      - Discoveries: [if any]
-   2. **Task 2:** [Name] - Status: ✅
-      - Files Modified: [actual files]
-      - Summary: [developer's summary]
-      - Discoveries: [if any]
-   ...
-
-   # Architecture & Decisions
-   [Architecture Overview section from plan]
-   [Technical Decisions section from plan]
-
-   # Backwards Compatibility
-   [Include the "## Backwards Compatibility" section from plan - Required: Yes/No, Rationale, Impact]
-
-   # Planning Context
-   [From plan's "## Planning Context" section, if present — provides the "why" behind decisions]
-
-   # Accumulated Discoveries
-   [All discoveries from completed_task_summaries, consolidated]
-
-   # Implementation Context
-   [Commits from git log]
-
-   # Review Focus
-   - Consistency across all completed tasks
-   - Architecture coherence with plan
-   - Integration issues between tasks
-   - Overall quality, security, maintainability
-   - Whether implementation-time discoveries were properly handled
-   - **Backwards Compatibility**: Review breaking changes ONLY if "Required: Yes" in context. If "Required: No", breaking changes are acceptable and should NOT be flagged as issues.
-
-   **Note:** Only review completed work. Do not suggest features planned for future tasks.")
+1. Mark task `[x]` in plan.
+2. Commit using **Template 6a (Task Commit)** from templates file: `task(agent: "pragmatic-committer", prompt: "...")`
+   - **Committer failure** (`❌ Commit Failed`): Do NOT mark completed. Keep staged, inform user, stop loop.
+3. **Accumulate** task name, files, summary, discoveries for subsequent tasks.
+4. **Annotate plan** below the task:
+   ```
+   - **Actual Files:** [actual file list]
+   - **Notes:** [developer's summary, deviations if any]
    ```
 
-**Holistic Improvement Loop (Conditional):**
-Initialize: `holistic_retry_count = 0`, `max_holistic_retries = 3`
-// Note: 3 retries allows for initial attempt + 2 fixes. Beyond this,
-// issues typically require manual review to avoid infinite loops.
+#### 4.6 Handle Max Retries / Failure
 
-Store holistic review output for potential retry use.
-
-**Severity Check:** Parse code-reviewer output for `### Critical Issues` and `### High Issues` sections. Check if either section contains any issues (not empty).
-
-**Decision Point:**
-
-- **No critical/high issues**: Skip improvement loop → proceed to archive
-- **Critical/high issues found**: Display "🔍 Holistic review found critical/high issues. Initiating improvement loop..." → enter retry loop
-
-While `holistic_retry_count < max_holistic_retries` and critical/high issues present:
-
-Increment: `holistic_retry_count = holistic_retry_count + 1`
-
-Display "🔄 Holistic improvement attempt [holistic_retry_count]/[max_holistic_retries]..."
-
- 1. **Re-invoke Developer with Holistic Feedback:**
-    Build retry prompt:
-    ```markdown
-     # Holistic Review Improvement Request (Attempt [holistic_retry_count] of [max_holistic_retries])
-
-    ## Plan Information
-    **Plan Name:** [from plan]
-    **Plan Purpose:** [from plan]
-    **Tasks Completed:** [count]
-
-    ## Holistic Review Feedback
-    **Status:** Previous implementation has critical/high issues that must be fixed.
-
-    [Paste ENTIRE code-reviewer output here]
-
-    ## Implementation Context
-    [Relevant commits from git log]
-    [Task list from plan]
-    [Include the "## Backwards Compatibility" section from plan - Required: Yes/No, Rationale, Impact]
-
-    **Note:** Changes to address cross-cutting issues may span multiple tasks and files. Review all affected areas.
-
-    ## Instructions
-    1. Review holistic review feedback for critical/high issues
-    2. Fix cross-cutting architectural, integration, or security issues
-    3. Make incremental changes on staged changes (DO NOT start from scratch)
-    4. Ensure fixes don't break functionality from completed tasks
-    5. Stage additional changes
-    6. Return completion status with ✅, ❌, or ⚠️
-    ```
-
-   Invoke developer: `task(agent: "pragmatic-developer", prompt: "[prompt above]")`
-
-   2. **Handle Developer Response:**
-
-      Parse response for completion status:
-      - **Success**: Stage changes with `git add`. Request new holistic review.
-      - **Failed/Blocked**: Exit loop immediately → do NOT continue retrying → proceed to failure path below
-
-      (Note: Developer failure/blocked status immediately ends the improvement loop, regardless of retry count remaining. The "max retries" limit only applies to successful iteration cycles where the developer completes work but the code-reviewer still finds critical/high issues.)
-
- 3. **Request Updated Holistic Review:**
-
-    ```markdown
-    task(agent: "pragmatic-code-reviewer", prompt: "[SUBAGENT] Perform holistic review again.
-
-    # Plan Overview
-    **Plan Name:** [from plan]
-    **Plan Purpose:** [from plan]
-    **Total Tasks:** [number]
-    **All Tasks Completed:** [Yes/No]
-
-    # Completed Tasks
-    [Same task list as initial review]
-
-    # Architecture & Decisions
-    [Architecture Overview section from plan]
-    [Technical Decisions section from plan]
-
-    # Backwards Compatibility
-    [Include the "## Backwards Compatibility" section from plan - Required: Yes/No, Rationale, Impact]
-
-    # Implementation Context
-    [Commits from updated git log]
-
-    # Review Focus
-    Focus on whether previous critical/high issues were resolved.
-    Review for consistency, architecture coherence, integration issues, overall quality, security.
-    **Backwards Compatibility**: Review breaking changes ONLY if "Required: Yes" in context. If "Required: No", breaking changes are acceptable and should NOT be flagged as issues.
-
-    **Note:** Only review completed work. Do not suggest features planned for future tasks.")
-    ```
-
- 4. **Severity Check (Loop Continuation):**
-
-    Parse updated review output for `### Critical Issues` and `### High Issues` sections.
-
-    - **No critical/high issues**: Exit loop → proceed to commit fixes
-    - **Critical/high issues found**: If `holistic_retry_count >= max_holistic_retries`, exit loop → handle max retries. Otherwise, continue loop.
-
-**Commit Holistic Fixes (Success Path):**
-Check if any files are staged with `git status`.
-- **If no files staged**: Skip commit, display "ℹ️ Holistic review resolved without code changes. Proceeding to archive."
-- **If files staged**: Commit with:
-  ```markdown
-  task(agent: "pragmatic-committer", prompt: "[SUBAGENT] Commit staged changes.
-
-  ## Holistic Fix Context
-  **Plan Name:** [Plan Name]
-  **Fix Type:** Holistic review issues
-  **Iterations:** [holistic_retry_count] of [max_holistic_retries]
-
-  ## Commit Metadata
-  **Files:** [file list]
-  **References:** [Plan-level References, if any]")
-  ```
-
-**Note:** All staged changes from retry iterations are included in a single commit. For complex holistic fixes spanning multiple issues, consider manual commit breakdown for better auditability.
-
-**Handle Max Retries Exceeded / Developer Failed-Blocked (Failure Path):**
-
-This section is triggered when:
-- Max retries exceeded (`holistic_retry_count >= max_holistic_retries`) AND critical/high issues remain
-- Developer returned "Failed" status during holistic retry
-- Developer returned "Blocked" status during holistic retry
-
-**Document Issues in Plan:**
-
-Add notes to plan using `plan-tasks` → `addNote`:
-- "HOLISTIC_REVIEW_FAILED: [summary of remaining issues from code-reviewer or developer]"
-- "Attempts: [holistic_retry_count] iterations completed"
-- "Required: Manual review and fixes needed"
-
-**Staged Changes Handling:**
-
-Do not commit any changes. Keep all staged changes for user manual review.
-
-**User Notification:**
-
-Display: "⚠️ Holistic review max retries reached. Some issues remain. Reviewing staged changes..."
-
-Inform user of:
-1. Summary of remaining issues (from code-reviewer output or developer response)
-2. Number of retry attempts completed
-3. Staged changes available for review
-4. Next steps: User should review staged changes and decide whether to:
-   - Manually fix remaining issues and re-run implementation
-   - Proceed to archive with current state
-
-After displaying this information, the plan will be archived with the failure notes for future reference.
-
-**Archive Decision:**
-Proceed to archive plan after user notification (changes remain staged, plan contains failure notes). Archive summary will include warnings about unresolved issues.
-
-**Archive Plan:**
-Use `archive-plan` tool with planPath. Stage and commit archive move:
-```markdown
-git add "[plan]" "[archive]" && task(agent: "pragmatic-committer", prompt: "[SUBAGENT] Commit staged changes.
-
-## Archive Context
-**Plan Name:** [Name]
-**Action:** Plan completed and archived
-
-## Commit Metadata
-**Files:** [plan path, archive path]
-**References:** [Plan-level References, if any]")
+Annotate plan:
 ```
+⚠️ CODE_REVIEW_FAILED_AFTER_RETRIES: [summary]
+Attempts: [retry_count] iterations completed
+Required: Manual review and fixes needed
+```
+Do not commit. Keep files staged. Inform user of remaining issues and next steps.
+
+#### 4.7 Continue to Next Task
+Read plan, find next unchecked task. Prioritize `[~]` over `[ ]`. Repeat from 4.1.
+
+#### 4.8 All Tasks Complete — Holistic Review
+
+1. Get commits: `git log --oneline --all --grep="[Plan Name]"`
+2. Build prompt using **Template 4 (Holistic Review Prompt)** from templates file. Invoke `task(agent: "pragmatic-code-reviewer", prompt: "...")`.
+
+**Holistic Improvement Loop (conditional):**
+
+`holistic_retry_count = 0`, `max_holistic_retries = 3`
+
+Parse review for `### Critical Issues` and `### High Issues`. If neither has issues → skip to archive.
+
+While critical OR high issues present and `holistic_retry_count < max_holistic_retries`:
+
+1. Increment `holistic_retry_count`. Display `🔄 Holistic improvement attempt [holistic_retry_count]/[max_holistic_retries]...`
+
+2. **Fix Issues:** Build prompt using **Template 5 (Holistic Developer Retry Prompt)** from templates file.
+
+   **CRITICAL:** ❌ DO NOT FIX CODE YOURSELF! Invoke `pragmatic-developer` agent to make fixes.
+
+   Invoke: `task(agent: "pragmatic-developer", prompt: "[Template 5 populated with holistic issues]")`
+
+   - **Success:** Stage changes with `git add`. **PROCEED TO STEP 3 (MANDATORY RE-REVIEW).**
+   - **Failed/Blocked:** Exit loop immediately → failure path below.
+
+3. **Re-Review (MANDATORY):** ❌ DO NOT SKIP THIS STEP. Build prompt using Template 4 with:
+   - Update `# Implementation Context` with fresh `git log`
+   - Prepend "Focus on whether previous critical AND high issues were resolved." to `# Review Focus`
+
+   Invoke: `task(agent: "pragmatic-code-reviewer", prompt: "[Template 4 updated]")`
+
+4. **Severity Check:** Parse updated review.
+   - **No critical OR high:** Exit loop → proceed to commit
+   - **Issues remain + retries exhausted:** Exit loop → failure path
+   - **Issues remain + retries available:** Loop back to step 1
+
+**ENFORCEMENT:** After developer fixes issues (step 2 success), you MUST proceed to step 3 to re-review. The only ways to exit this loop are:
+- ✅ Re-review finds no critical/high issues (step 4)
+- ❌ Max retries reached with issues still present (step 4)
+- ❌ Developer failed/blocked (step 2)
+
+**Commit Holistic Fixes (success):**
+Check `git status`. If no files staged: `ℹ️ Holistic review resolved without code changes. Proceeding to archive.`
+If files staged: commit using **Template 6b (Holistic Fix Commit)** from templates file.
+- **Committer failure:** Keep staged, inform user, stop. Do not archive.
+
+**Failure path** (max retries / developer failed-blocked):
+
+Annotate plan:
+```
+⚠️ HOLISTIC_REVIEW_FAILED: [summary]
+Attempts: [holistic_retry_count] iterations completed
+Required: Manual review and fixes needed
+```
+Keep changes staged. Inform user of: remaining issues, retry attempts, staged changes, next steps (manual fix or proceed to archive). Proceed to archive with failure notes.
+
+**Archive:**
+Use `archive-plan` tool with planPath. Stage and commit:
+```
+git add "[plan]" "[archive]" && task(agent: "pragmatic-committer", prompt: "[Template 6c - Archive Commit]")
+```
+If committer fails on archive: inform user, archive move already happened — user can commit manually.
 
 **Final Summary:**
-
-Display a structured summary of the implementation:
-
 ```markdown
 ## Implementation Complete: [Plan Name]
 
 ### Tasks: [X/Y completed]
 | Task | Status | Files | Notes |
 |------|--------|-------|-------|
-| [Task 1 Name] | ✅ | [actual files] | [summary or "—"] |
-| [Task 2 Name] | ✅ | [actual files] | [summary or "—"] |
-| ... | | | |
+| [Task Name] | ✅ | [files] | [summary or "—"] |
 
 ### Code Reviews: [X total retry iterations across all tasks]
-
 ### Holistic Review: [Passed / X retry iterations]
 
 ### Commits
-[List of commit hashes with messages from implementation]
+[commit hashes with messages]
 
 ### Discoveries
-[All accumulated discoveries from completed_task_summaries, consolidated. Or "None" if no discoveries were reported.]
+[all accumulated discoveries, or "None"]
 ```
-
-## Edge Cases
-
-**Blocked Task:** Add blocker note with `plan-tasks` → `addNote`. Stop loop. Do not commit. Inform user.
-
-**Failed Task:** Add failure note with `plan-tasks` → `addNote`. Stop loop. Do not commit. Inform user.
-
-**Holistic Review Failed:** Add failure note with `plan-tasks` → `addNote` (HOLISTIC_REVIEW_FAILED, attempts, manual fix required). Keep changes staged. Proceed to archive with warnings in summary.
-
-**Parallel Tasks:** Display note in summary. Let user choose execution order. Execute in specified order.
-
-**Resume Capability:** Automatically resumes from tasks with `[~]` (in-progress) before any `[ ]` (pending) tasks.
-
-**Plan State Tracking:** Checkboxes track task state, git tracks code changes, one commit per task.
-
-**Empty Holistic Review Output:** If code-reviewer returns no Critical/High sections, skip improvement loop and proceed to archive.
-
-**Staged Changes from Previous Iteration:** If a previous iteration had staged changes that weren't committed, those changes remain staged when next iteration begins.

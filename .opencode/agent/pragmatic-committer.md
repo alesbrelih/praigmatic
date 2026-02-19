@@ -1,10 +1,9 @@
 ---
 description: Specialized git committer. Analyzes staged changes, checks for safety, and creates Conventional Commits.
 mode: all
-temperature: 1
+temperature: 0.3
 permission:
   edit: deny
-  write: deny
   read: allow
   bash:
     "*": ask
@@ -132,73 +131,3 @@ Run `git status` to confirm cleanliness.
 
 Detailed summary of changes and the resulting commit.
 
-## Examples
-
-### Example 1: Task commit with enriched context
-
-**Input:**
-```
-[SUBAGENT] Commit staged changes.
-
-## Task Context
-**Task Name:** Add OAuth2 handler
-**Purpose:** Enable third-party authentication via OAuth2 flow
-
-## Plan Context
-**Plan Name:** Add OAuth Authentication
-
-## Commit Metadata
-**Files:** auth/handler.go, auth/handler_test.go, go.mod
-**References:** JIRA-1234, GitHub #56
-**Commit Notes:** Implements callback handling and state validation
-```
-
-**Action:**
-```bash
-git commit -m "feat(auth): add OAuth2 handler implementation" -m "Enable third-party authentication via OAuth2 flow. Implements callback handling and state validation." -m "Refs: JIRA-1234, GitHub #56"
-```
-
-**Output:**
-```
-✅ Committed: feat(auth): add OAuth2 handler implementation
-```
-
-### Example 2: Holistic fix commit
-
-**Input:**
-```
-[SUBAGENT] Commit staged changes.
-
-## Holistic Fix Context
-**Plan Name:** Add OAuth Authentication
-**Fix Type:** Holistic review issues
-**Iterations:** 1 of 3
-
-## Commit Metadata
-**Files:** auth/handler.go, auth/middleware.go
-**References:** JIRA-1234
-```
-
-**Action:**
-```bash
-git commit -m "fix(auth): address holistic review issues" -m "Fix cross-cutting issues found during holistic review of Add OAuth Authentication plan." -m "Refs: JIRA-1234"
-```
-
-**Output:**
-```
-✅ Committed: fix(auth): address holistic review issues
-```
-
-### Example 3: Plain context (backward compatible)
-
-**Input:** `"[SUBAGENT] Commit staged changes. Context: Completed task 'Add OAuth'. Files: auth/handler.go"`
-
-**Action:**
-```bash
-git commit -m "feat(auth): add OAuth2 handler implementation" -m "Adds main OAuth2 flow including callback handling and state validation."
-```
-
-**Output:**
-```
-✅ Committed: feat(auth): add OAuth2 handler implementation
-```

@@ -1,4 +1,5 @@
 import { tool } from "@opencode-ai/plugin";
+import { execSync } from "node:child_process";
 
 export default tool({
   description: "Validate git state - check for uncommitted changes",
@@ -8,9 +9,14 @@ export default tool({
   async execute({ allowUncommitted }) {
     try {
       // Check for uncommitted changes
-      const code = await Bun.$`git diff-index --quiet HEAD --`.exitCode;
+      let hasChanges: boolean;
+      try {
+        execSync("git diff-index --quiet HEAD --", { stdio: "pipe" });
+        hasChanges = false;
+      } catch {
+        hasChanges = true;
+      }
 
-      // If allowUncommitted is true, always return valid
       if (allowUncommitted) {
         return JSON.stringify({
           valid: true,
@@ -19,7 +25,7 @@ export default tool({
         });
       }
 
-      if (code === 0) {
+      if (!hasChanges) {
         return JSON.stringify({
           valid: true,
           message: "Git state is clean",
@@ -28,8 +34,7 @@ export default tool({
       }
 
       // Get changed files
-      const status = await Bun.$`git status --short`.text();
-
+      const status = execSync("git status --short", { encoding: "utf-8" });
       const files = status.trim().split('\n').filter(f => f);
 
       return JSON.stringify({

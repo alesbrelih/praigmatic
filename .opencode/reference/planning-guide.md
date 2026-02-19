@@ -192,107 +192,6 @@ Too Sparse                    ✓ OPTIMAL                      Too Detailed
 
 ---
 
-## Recommended Planfile Template
-
-```markdown
-# [Feature Name] Implementation Plan
-
-## Context
-[1-2 paragraphs: What problem does this solve? Why now?]
-
-## Tasks
-- [ ] **Task 1 Name** (SIZE)
-  - Purpose: [Why this task matters]
-  - Steps: [3-6 high-level implementation steps]
-  - Files: [Primary files to modify]
-  - Dependencies: [If any]
-
-[Repeat for 3-10 tasks total]
-
-## Architecture Overview
-[Diagram or description of how components interact]
-
-## Technical Decisions
-
-### Decision 1: [Choice Made]
-- **Options Considered:** A, B, C
-- **Selected:** B
-- **Rationale:** [Why B over A/C?]
-- **Trade-offs:** [What we're giving up]
-
-[Repeat for 2-5 key decisions]
-
-## Integration Points
-- **Existing System A:** How we connect
-- **Existing System B:** Data flow
-- **External Service C:** API contract
-
-## Security Considerations
-- [Specific security requirement 1]
-- [Specific security requirement 2]
-- [Auth/validation/sanitization strategy]
-
-## Testing Strategy
-- **Unit Tests:** [What functions/modules]
-- **Integration Tests:** [What workflows]
-- **Manual Testing:** [What to verify end-to-end]
-
-## Risk Points & Mitigation
-
-| Risk | Likelihood | Impact | Mitigation |
-|------|------------|--------|------------|
-| Database migration fails | Medium | High | Test on staging, have rollback plan |
-| Performance degradation | Low | Medium | Add monitoring, load test before deploy |
-
-## Dependencies
-- **External:** [Libraries, services, APIs]
-- **Internal:** [Other tasks, team members]
-
-## Success Criteria
-- [ ] All tests pass
-- [ ] Code review approved (score ≥7)
-- [ ] Manual testing completed
-- [ ] Documentation updated
-```
-
----
-
-## Verification Tests
-
-After creating a plan, test with these scenarios:
-
-### 1. Simple Task Test
-**Input:** "Fix typo in README"
-**Expected:**
-- 1 task
-- <10 lines in planfile
-- Completion time: <15 minutes
-
-### 2. Medium Task Test
-**Input:** "Add rate limiting to API"
-**Expected:**
-- 2-3 tasks
-- ~50 lines in planfile
-- Clear technical decisions documented
-
-### 3. Complex Task Test
-**Input:** "Implement OAuth2 authentication"
-**Expected:**
-- 6-10 tasks
-- ~200 lines in planfile
-- Complete architecture overview
-- All integration points documented
-
-### Success Criteria
-
-✅ Plans are readable in <2 minutes
-✅ Developers can start implementing without asking questions
-✅ All technical decisions are documented
-✅ Tasks are appropriately sized (80% are SMALL/MEDIUM)
-✅ Verification section is complete and testable
-
----
-
 ## Common Pitfalls
 
 ### Pitfall 1: Over-specification
@@ -337,7 +236,7 @@ Before finalizing a plan, verify:
 
 ## Related Documents
 
-- [TTD Criteria](./ttd-criteria.md) - When to require Test-Driven Development
+- [TDD Criteria](./tdd-criteria.md) - When to require Test-Driven Development
 - [Code Quality Standards](./code-quality.md) - Quality expectations
 - [Security Checklist](./security-checklist.md) - Security requirements
-- [Tool Patterns](./tool-patterns.md) - Common implementation patterns
+- [Tool Patterns](./tool-patterns.md) - Plan file handling patterns

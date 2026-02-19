@@ -1,6 +1,6 @@
 import { tool } from "@opencode-ai/plugin";
 import { rename, mkdir, access, constants } from "node:fs/promises";
-import { basename, dirname } from "node:path";
+import { basename, dirname, resolve } from "node:path";
 import { existsSync } from "node:fs";
 
 export default tool({
@@ -10,30 +10,23 @@ export default tool({
   },
   async execute(args) {
     try {
+      const planPath = resolve(process.cwd(), args.planPath);
+
       // Validate that source file exists and is readable
-      await access(args.planPath, constants.R_OK);
+      await access(planPath, constants.R_OK);
 
-      // Extract the basename from the plan path using Node.js path utilities
-      // Remove .md extension to prevent double extension (e.g., plan.md-2026-01-21.md)
-      const sourceBasename = basename(args.planPath, '.md');
-
-      // Generate timestamp for the archive file using JavaScript Date API
+      const sourceBasename = basename(planPath, '.md');
       const timestamp = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-
-      // Generate new archive filename with timestamp before .md extension
       const archiveFilename = `${sourceBasename}-${timestamp}.md`;
-      const archivePath = `.opencode/plans/archive/${archiveFilename}`;
+      const archiveDir = resolve(process.cwd(), ".opencode/plans/archive");
+      const archivePath = resolve(archiveDir, archiveFilename);
 
-      // Check if archive already exists to prevent overwrites
       if (existsSync(archivePath)) {
         throw new Error(`Archive file already exists: ${archivePath}`);
       }
 
-      // Ensure archive directory exists using Node.js mkdir with recursive flag
-      await mkdir(dirname(archivePath), { recursive: true });
-
-      // Move the plan file to archive using Node.js rename API (prevents shell injection)
-      await rename(args.planPath, archivePath);
+      await mkdir(archiveDir, { recursive: true });
+      await rename(planPath, archivePath);
 
       return archivePath;
     } catch (error) {

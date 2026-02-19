@@ -13,20 +13,38 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Repository defines the data access interface
+// DBTX is implemented by both *sql.DB and *sql.Tx.
+// Repositories accept DBTX so the service layer can pass a transaction via WithTx.
+type DBTX interface {
+	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
+	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
+}
+
+// Repository defines the data access interface.
+// WithTx returns a new instance of the repository scoped to the given transaction,
+// allowing the service layer to manage transaction boundaries.
 type Repository interface {
 	Get(ctx context.Context, id string) (*Item, error)
 	Create(ctx context.Context, item *Item) error
+	Update(ctx context.Context, item *Item) error
+	WithTx(tx *sql.Tx) Repository
 }
 
 // SQLRepository implements Repository using SQL
 type SQLRepository struct {
-	db *sql.DB
+	db DBTX
 }
 
 // NewSQLRepository creates a new SQL repository
 func NewSQLRepository(db *sql.DB) *SQLRepository {
 	return &SQLRepository{db: db}
+}
+
+// WithTx returns a new SQLRepository scoped to the given transaction.
+// Called by the service layer to run multiple operations atomically.
+func (r *SQLRepository) WithTx(tx *sql.Tx) Repository {
+	return &SQLRepository{db: tx}
 }
 
 // Get retrieves an item by ID
@@ -56,7 +74,6 @@ func (r *SQLRepository) Create(ctx context.Context, item *Item) error {
 		return fmt.Errorf("failed to create item: %w", err)
 	}
 
-	// Verify insertion
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		return fmt.Errorf("failed to get rows affected: %w", err)
@@ -69,50 +86,25 @@ func (r *SQLRepository) Create(ctx context.Context, item *Item) error {
 	return nil
 }
 
-// UpdateWithTransaction demonstrates transaction handling
-func (r *SQLRepository) UpdateWithTransaction(ctx context.Context, item *Item) error {
-	tx, err := r.db.BeginTx(ctx, nil)
+// Update updates an existing item
+func (r *SQLRepository) Update(ctx context.Context, item *Item) error {
+	query := "UPDATE items SET name = $1 WHERE id = $2"
+
+	result, err := r.db.ExecContext(ctx, query, item.Name, item.ID)
 	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
+		return fmt.Errorf("failed to update item: %w", err)
 	}
 
-	defer func() {
-		if p := recover(); p != nil {
-			tx.Rollback()
-			panic(p)
-		}
-	}()
-
-	// Execute multiple operations within transaction
-	if err := r.updateItem(ctx, tx, item); err != nil {
-		tx.Rollback()
-		return err
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
 	}
 
-	if err := r.logChange(ctx, tx, item); err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
+	if rowsAffected != 1 {
+		return fmt.Errorf("expected 1 row affected, got %d", rowsAffected)
 	}
 
 	return nil
-}
-
-// updateItem updates an item within a transaction
-func (r *SQLRepository) updateItem(ctx context.Context, tx *sql.Tx, item *Item) error {
-	query := "UPDATE items SET name = $1 WHERE id = $2"
-	_, err := tx.ExecContext(ctx, query, item.Name, item.ID)
-	return err
-}
-
-// logChange logs a change within a transaction
-func (r *SQLRepository) logChange(ctx context.Context, tx *sql.Tx, item *Item) error {
-	query := "INSERT INTO item_changes (item_id, name, changed_at) VALUES ($1, $2, NOW())"
-	_, err := tx.ExecContext(ctx, query, item.ID, item.Name)
-	return err
 }
 
 // TestSQLRepository_Get tests the Get method
@@ -165,7 +157,6 @@ func TestSQLRepository_Get(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			// Setup
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
 			defer db.Close()
@@ -174,18 +165,14 @@ func TestSQLRepository_Get(t *testing.T) {
 
 			repo := NewSQLRepository(db)
 
-			// Execute
 			got, err := repo.Get(context.Background(), tt.id)
 
-			// Assert
 			if tt.wantErr {
 				require.Error(t, err)
 				return
 			}
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, got)
-
-			// Verify mock expectations
 			require.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
@@ -225,7 +212,6 @@ func TestSQLRepository_Create(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			// Setup
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
 			defer db.Close()
@@ -234,17 +220,13 @@ func TestSQLRepository_Create(t *testing.T) {
 
 			repo := NewSQLRepository(db)
 
-			// Execute
 			err = repo.Create(context.Background(), tt.item)
 
-			// Assert
 			if tt.wantErr {
 				require.Error(t, err)
 				return
 			}
 			require.NoError(t, err)
-
-			// Verify mock expectations
 			require.NoError(t, mock.ExpectationsWereMet())
 		})
 	}

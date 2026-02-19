@@ -29,8 +29,8 @@ Handler → Service → Repository → Database
 
 **Decision guidance:**
 - Handlers: Use `handler_template.go` for HTTP request/response patterns
-- Services: Use `service_template.go` for business logic with mockery v3 generated mocks
-- Repositories: Use `repository_template.go` for database operations with sqlmock
+- Services: Use `service_template.go` for business logic and transaction management with mockery v3 generated mocks
+- Repositories: Use `repository_template.go` for database operations with sqlmock — repositories never start transactions
 - Middleware: Use `middleware_template.go` for cross-cutting concerns
 
 ## Key Patterns
@@ -113,21 +113,27 @@ Handler → Service → Repository → Database
 ### Database Operations
 
 **When to use:** All database interactions
-**Pattern:** Prepared statements for frequent queries, transactions for atomicity, context for cancellation
-**Reference:** `repository_template.go` (connection pool, transactions, queries, sqlmock)
+**Pattern:** Repositories use `DBTX` interface (satisfied by both `*sql.DB` and `*sql.Tx`). Services own transaction boundaries and pass a transaction into the repository via `repo.WithTx(tx)`.
+**References:** `repository_template.go` (DBTX, WithTx, sqlmock), `service_template.go` (transaction management)
+
+**Transaction ownership:**
+- Repositories **never** start transactions — they only execute queries
+- Repository interface includes `WithTx(tx *sql.Tx) Repository` which returns a new instance scoped to the transaction
+- Services start transactions with `db.BeginTx`, call `repo.WithTx(tx)` to get a transactional repo, then commit or rollback
+- `mockery v3` generates `WithTx` on the mock automatically — in tests, set `m.EXPECT().WithTx(mock.Anything).Return(m)` to route calls back to the same mock
 
 **Best practices:**
-- Always use prepared statements to prevent SQL injection
+- Always use parameterized queries to prevent SQL injection
 - Pass context to all DB operations for cancellation
-- Use transactions for multi-step operations
 - Handle `sql.ErrNoRows` explicitly (not an error)
 - Always close rows with `defer rows.Close()`
+- Use a named `committed` bool + deferred rollback to guarantee cleanup
 - Configure connection pool (SetMaxOpenConns, SetMaxIdleConns)
 
 **Common pitfalls:**
+- Putting transaction logic in the repository layer
 - Not checking `rows.Err()` after iteration
 - Forgetting to rollback on transaction errors
-- Not using prepared statements
 - Exposing database error details to clients
 
 ### HTTP Middleware
@@ -228,7 +234,7 @@ svc := NewNotificationService(mock)
 - **Error wrapping:** Always wrap errors with context using `%w`, handle at boundaries
 - **Table-driven tests:** Use `t.Run()` for test cases, `t.Parallel()` for independent tests
 - **Prepared statements:** Always use prepared statements for SQL queries
-- **Transaction atomicity:** Use transactions for multi-step operations, rollback on error
+- **Transaction atomicity:** Start transactions in services, not repositories; use `repo.WithTx(tx)` to scope the repo to the transaction
 - **Middleware chaining:** Chain middleware for cross-cutting concerns, order matters
 - **Goroutine safety:** Use `sync.WaitGroup`, channels, and mutex appropriately, test with `-race`
 - **Observability everywhere:** Add tracing to exported functions, log with context, expose metrics

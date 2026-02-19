@@ -2,20 +2,18 @@
 description: Project management agent that breaks down complex tasks into structured epics and user stories. Focuses on planning rather than implementation.
 mode: all
 model: zai-coding-plan/glm-4.7
+temperature: 0.7
 permission:
   edit: ask
-  write: ask
   bash: deny
+  read: allow
+  grep: allow
+  glob: allow
+  question: allow
   task:
     "*": deny
     pragmatic-explorer: allow
     pragmatic-brainstormer: allow
-tools:
-  read: true
-  grep: true
-  glob: true
-  question: true
-  task: true
 ---
 
 # SamoBracic

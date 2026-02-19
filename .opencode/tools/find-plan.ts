@@ -1,5 +1,6 @@
 import { tool } from "@opencode-ai/plugin";
 import { readdir, stat } from "node:fs/promises";
+import { resolve } from "node:path";
 
 export default tool({
   description: "Find the most recent plan file in .opencode/plans/ or use provided name",
@@ -8,8 +9,10 @@ export default tool({
   },
   async execute({ planName }) {
     try {
+      const plansDir = resolve(process.cwd(), ".opencode/plans");
+
       if (planName) {
-        const path = `.opencode/plans/${planName}`;
+        const path = resolve(plansDir, planName);
         try {
           await stat(path);
           return path;
@@ -18,13 +21,12 @@ export default tool({
         }
       }
 
-      const plansDir = ".opencode/plans";
       let entries: string[];
-      
+
       try {
         entries = await readdir(plansDir);
       } catch {
-        return "Error: .opencode/plans/ directory does not exist";
+        return `Error: .opencode/plans/ directory does not exist (looked in ${plansDir})`;
       }
 
       const mdFiles = entries.filter(
@@ -37,7 +39,7 @@ export default tool({
 
       const filesWithStats = await Promise.all(
         mdFiles.map(async (name) => {
-          const path = `${plansDir}/${name}`;
+          const path = resolve(plansDir, name);
           const stats = await stat(path);
           return { path, mtimeMs: stats.mtimeMs };
         })

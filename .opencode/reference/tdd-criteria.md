@@ -1,8 +1,8 @@
-# TTD Decision Criteria
+# TDD Decision Criteria
 
-Task-Driven Development (TTD) guidelines for when to write tests first.
+Test-Driven Development (TDD) guidelines for when to write tests first.
 
-## TTD_REQUIRED
+## TDD_REQUIRED
 
 Use test-first development for:
 
@@ -15,7 +15,7 @@ Use test-first development for:
 - State management
 - Database queries with performance implications
 
-## NO_TTD
+## NO_TDD
 
 Skip test-first for:
 
@@ -25,16 +25,16 @@ Skip test-first for:
 - Simple utility functions (< 10 lines)
 - Well-understood patterns (copy-paste with minor changes)
 
-## TTD_REQUIRED Special Cases
+## TDD_REQUIRED Special Cases
 
 ### When Business Logic Changes Frequently
 
-- **Invest in TTD** even for "simple" logic if requirements are volatile
+- **Invest in TDD** even for "simple" logic if requirements are volatile
 - High-change code benefits from test safety net
 - Tests serve as living documentation of expected behavior
 - Prevents regression when requirements shift
 
-**Example:** A pricing calculation that seems simple today but has changed 3 times in the past quarter should use TTD.
+**Example:** A pricing calculation that seems simple today but has changed 3 times in the past quarter should use TDD.
 
 ### When Performance is Critical
 
@@ -63,7 +63,7 @@ Skip test-first for:
 
 ### When Code Handles Money, PII, or Security
 
-- **Always use TTD** for code that:
+- **Always use TDD** for code that:
   - Processes financial transactions
   - Handles Personally Identifiable Information (PII)
   - Implements security controls (auth, encryption, sanitization)
@@ -78,7 +78,7 @@ Skip test-first for:
 
 ### When Debugging is Expensive
 
-- **Use TTD** if debugging the code in production would be:
+- **Use TDD** if debugging the code in production would be:
   - Time-consuming (complex state, hard to reproduce)
   - Expensive (downtime costs, customer impact)
   - Risky (safety-critical systems, data loss potential)
@@ -89,7 +89,7 @@ Skip test-first for:
 
 ## Gray Areas - Use Judgment
 
-Some code falls in the middle. Use TTD when:
+Some code falls in the middle. Use TDD when:
 
 - **High cognitive complexity:** >5 nested conditions, multiple state transitions
 - **Multiple collaborators:** Code that multiple people will modify needs test guardrails
