@@ -193,6 +193,70 @@ Required: Manual review and fixes needed
 ```
 Keep changes staged. Inform user of: remaining issues, retry attempts, staged changes, next steps (manual fix or proceed to archive). Proceed to archive with failure notes.
 
+#### 4.9 QA Validation Loop
+
+After holistic review (and any holistic fixes) are complete, validate runtime behavior before archiving.
+
+`qa_retry_count = 0`, `max_qa_retries = 2`
+
+**Initial QA Run:**
+
+1. Build prompt using **Template 7 (QA Validation Prompt)** from templates file. Populate with:
+   - Plan purpose
+   - All completed task summaries and files
+   - Expected behaviors extracted from plan tasks and acceptance criteria
+   - Full list of modified files
+
+2. Invoke: `task(agent: "pragmatic-qa", prompt: "[populated template]")`
+
+3. **Handle QA Response:**
+   - `✅ **QA Passed:**` — Proceed to archive
+   - `⚠️ **QA Partial:**` or `❌ **QA Failed:**` — Enter QA fix loop below
+
+**QA Fix Loop (conditional):**
+
+While QA issues present and `qa_retry_count < max_qa_retries`:
+
+1. Increment `qa_retry_count`. Display `🔄 QA fix attempt [qa_retry_count]/[max_qa_retries]...`
+
+2. **Fix Issues:** Build prompt using **Template 8 (Developer QA Fix Prompt)** from templates file.
+
+   **CRITICAL:** ❌ DO NOT FIX CODE YOURSELF! Invoke `pragmatic-developer` agent to make fixes.
+
+   Invoke: `task(agent: "pragmatic-developer", prompt: "[Template 8 populated with QA issues]")`
+
+   - **Success:** Stage changes with `git add`. **PROCEED TO STEP 3 (MANDATORY RE-VALIDATION).**
+   - **Failed/Blocked:** Exit loop immediately → failure path below.
+
+3. **Re-Validate (MANDATORY):** ❌ DO NOT SKIP THIS STEP. Build prompt using Template 7 with same context, but prepend to Expected Behaviors: "Focus on verifying that previously failing behaviors now work. Previous QA issues: [summary of issues from last QA run]."
+
+   Invoke: `task(agent: "pragmatic-qa", prompt: "[Template 7 updated]")`
+
+4. **Result Check:**
+   - `✅ **QA Passed:**` — Exit loop → commit fixes and proceed to archive
+   - Issues remain + retries available → Loop back to step 1
+   - Issues remain + retries exhausted → Exit loop → failure path
+
+**ENFORCEMENT:** After developer fixes issues (step 2 success), you MUST proceed to step 3 to re-validate. The only ways to exit this loop are:
+- ✅ QA passes (step 4)
+- ❌ Max retries reached with issues still present (step 4)
+- ❌ Developer failed/blocked (step 2)
+
+**Commit QA Fixes (success):**
+Check `git status`. If no files staged: `ℹ️ QA issues resolved without code changes. Proceeding to archive.`
+If files staged: commit using **Template 6b (Holistic Fix Commit)** from templates file with context noting "QA fix".
+- **Committer failure:** Keep staged, inform user, stop. Do not archive.
+
+**Failure path** (max retries / developer failed-blocked):
+
+Annotate plan:
+```
+⚠️ QA_VALIDATION_FAILED: [summary of remaining issues]
+Attempts: [qa_retry_count] iterations completed
+Required: Manual testing and fixes needed
+```
+Keep changes staged. Inform user of: remaining QA issues, retry attempts, staged changes, next steps. Proceed to archive with failure notes.
+
 **Archive:**
 Use `archive-plan` tool with planPath. Stage and commit:
 ```
@@ -211,6 +275,7 @@ If committer fails on archive: inform user, archive move already happened — us
 
 ### Code Reviews: [X total retry iterations across all tasks]
 ### Holistic Review: [Passed / X retry iterations]
+### QA Validation: [Passed / Partial (X issues) / Failed (blocker)]
 
 ### Commits
 [commit hashes with messages]

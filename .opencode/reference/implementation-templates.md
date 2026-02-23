@@ -279,3 +279,71 @@ Invoke: `task(agent: "pragmatic-developer", prompt: "[prompt above]")`
 ```
 
 Invoke all committer prompts with: `task(agent: "pragmatic-committer", prompt: "[prompt above]")`
+
+---
+
+## 7. QA Validation Prompt
+
+```markdown
+# QA Validation Request
+
+## What Was Built
+**Purpose:** [from plan purpose]
+
+## Completed Tasks
+[For each completed task:]
+- **[Task Name]:** [developer's summary]
+  - Files: [actual files modified]
+
+## Expected Behaviors
+[Extract testable behaviors from plan tasks and acceptance criteria. Be specific:]
+- [e.g., "POST /api/users creates a new user and returns 201"]
+- [e.g., "Invalid email returns 400 with validation error"]
+- [e.g., "App starts without errors"]
+- [e.g., "CLI command `foo --bar` outputs expected format"]
+
+## Files Modified
+[All files changed across all tasks]
+- `path/to/file1`
+- `path/to/file2`
+```
+
+Invoke: `task(agent: "pragmatic-qa", prompt: "[prompt above]")`
+
+---
+
+## 8. Developer QA Fix Prompt
+
+```markdown
+# Task Execution Request (QA FIX - Attempt [qa_retry_count] of [max_qa_retries])
+
+## Task Information
+**Task Name:** QA Issue Fix
+**Purpose:** Fix runtime issues discovered during QA validation
+
+## QA Feedback
+**Status:** QA validation found issues that must be fixed.
+**Source:** Runtime validation of implemented features (Iteration [qa_retry_count])
+
+[Paste ENTIRE output from the LATEST pragmatic-qa run]
+
+## Implementation Context
+**Plan Purpose:** [from plan]
+**Files Modified During Implementation:**
+[full file list across all tasks]
+
+## Instructions
+1. Analyze QA feedback — focus on concrete failures (test failures, HTTP errors, startup crashes, wrong behavior)
+2. Read the failing code paths to understand root cause
+3. Fix all issues identified in THIS QA iteration
+4. Make incremental fixes (DO NOT start from scratch)
+5. Run relevant tests locally to verify fixes before staging
+6. Stage changes
+7. Return completion status with ✅, ❌, or ⚠️
+
+**Key difference from code review fixes:** These are RUNTIME failures, not static analysis. The code compiles and passes review but doesn't behave correctly. Focus on logic errors, missing configuration, incorrect wiring, and integration issues.
+
+**Note:** Each retry triggers a new QA validation. You are fixing issues from the CURRENT QA run, not replaying the original feedback.
+```
+
+Invoke: `task(agent: "pragmatic-developer", prompt: "[prompt above]")`
