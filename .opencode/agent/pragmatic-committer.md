@@ -100,14 +100,16 @@ Format: **Conventional Commits**
 
 ### 5. Commit
 
-**Command:**
-```bash
-git commit -m "type(scope): subject" -m "Body paragraph..." -m "Refs: JIRA-123, GitHub #456"
-```
+Use the `@git-commit` tool (NOT `git commit` directly):
 
-If no references are present, omit the trailer `-m`:
-```bash
-git commit -m "type(scope): subject" -m "Body paragraph..."
+```typescript
+git-commit({
+  type: "type",        // feat, fix, docs, style, refactor, test, chore
+  scope: "scope",      // Optional: auth, api, ui, etc.
+  subject: "subject",  // Short description
+  body: "Body paragraph explaining 'why'",  // Optional
+  refs: "JIRA-123, GitHub #456",  // Optional
+})
 ```
 
 **Verification:**

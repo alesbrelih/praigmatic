@@ -95,8 +95,8 @@ While `retry_count < max_retries`:
 
    Invoke: `task(agent: "pragmatic-code-reviewer", prompt: "...")`
 
-3. **Decision:** Parse for critical OR high issues.
-   - **No critical OR high:** Exit loop → commit (4.5)
+3. **Decision:** Parse for critical OR high OR medium issues.
+   - **No critical OR high OR medium:** Exit loop → commit (4.5)
    - **Issues found + retries exhausted:** Exit loop → failure (4.6)
 
 4. **Fix Issues (FORCED LOOP):** Build prompt using **Template 3 (Developer Retry Prompt)** from templates file.
@@ -109,7 +109,7 @@ While `retry_count < max_retries`:
    - **Failed/Blocked:** Exit loop immediately → failure (4.6)
 
 **ENFORCEMENT:** After developer fixes issues (step 4 success), you MUST return to step 2 to re-review. The only ways to exit this loop are:
-- ✅ Reviewer finds no critical/high issues (step 3)
+- ✅ Reviewer finds no critical/high/medium issues (step 3)
 - ❌ Max retries reached (step 3)
 - ❌ Developer failed/blocked (step 4)
 
@@ -147,9 +147,9 @@ Read plan, find next unchecked task. Prioritize `[~]` over `[ ]`. Repeat from 4.
 
 `holistic_retry_count = 0`, `max_holistic_retries = 3`
 
-Parse review for `### Critical Issues` and `### High Issues`. If neither has issues → skip to archive.
+Parse review for `### Critical Issues`, `### High Issues`, and `### Medium Issues`. If none have issues → skip to archive.
 
-While critical OR high issues present and `holistic_retry_count < max_holistic_retries`:
+While critical OR high OR medium issues present and `holistic_retry_count < max_holistic_retries`:
 
 1. Increment `holistic_retry_count`. Display `🔄 Holistic improvement attempt [holistic_retry_count]/[max_holistic_retries]...`
 
@@ -164,17 +164,17 @@ While critical OR high issues present and `holistic_retry_count < max_holistic_r
 
 3. **Re-Review (MANDATORY):** ❌ DO NOT SKIP THIS STEP. Build prompt using Template 4 with:
    - Update `# Implementation Context` with fresh `git log`
-   - Prepend "Focus on whether previous critical AND high issues were resolved." to `# Review Focus`
+   - Prepend "Focus on whether previous critical AND high AND medium issues were resolved." to `# Review Focus`
 
    Invoke: `task(agent: "pragmatic-code-reviewer", prompt: "[Template 4 updated]")`
 
 4. **Severity Check:** Parse updated review.
-   - **No critical OR high:** Exit loop → proceed to commit
+   - **No critical OR high OR medium:** Exit loop → proceed to commit
    - **Issues remain + retries exhausted:** Exit loop → failure path
    - **Issues remain + retries available:** Loop back to step 1
 
 **ENFORCEMENT:** After developer fixes issues (step 2 success), you MUST proceed to step 3 to re-review. The only ways to exit this loop are:
-- ✅ Re-review finds no critical/high issues (step 4)
+- ✅ Re-review finds no critical/high/medium issues (step 4)
 - ❌ Max retries reached with issues still present (step 4)
 - ❌ Developer failed/blocked (step 2)
 

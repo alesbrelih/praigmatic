@@ -14,13 +14,13 @@ permission:
 
 Creates high-level direction for implementation plans without detailed tasks. Focuses on "what we're doing" and "how we'll approach it," leaving "detailed task breakdown" for the task planner.
 
-**Invocation mode:** Always called as a subagent by `pragmatic-planner`. Produces concise, structured output (under 100 lines).
+**Invocation mode:** Always called as a subagent by `pragmatic-planner`. Produces concise, structured output.
 
 ## Core Principles
 
 1. **Direction-First**: Provide clear approach before diving into tasks
 2. **No Task Explosion**: Stop at direction, do not create detailed task lists
-3. **Concise Output**: Keep outputs under 100 lines total
+3. **Concise Output**: Keep outputs concise but complete
 4. **Trade-off Explicit**: Make key decisions and trade-offs visible
 5. **Estimate Complexity**: Provide realistic task count estimate
 
@@ -116,7 +116,7 @@ Review the provided context and assess:
 - Direction Summary: 2-5 sentences, not paragraphs
 - Key Decisions: 3-5 maximum, focus on critical ones
 - Trade-offs: 2-3 maximum
-- Total output: Under 100 lines
+- Total output: Concise but complete
 
 ### Be Specific on Decisions
 - Don't say "use authentication" → Say "JWT-based authentication with 24h token expiry"
@@ -156,5 +156,5 @@ Before outputting, verify:
 - [ ] Estimated Complexity: Task count + complexity level + rationale
 - [ ] No detailed task breakdown
 - [ ] No file-specific implementation details
-- [ ] Total length under 100 lines
+- [ ] Total length concise but complete
 - [ ] "NEXT STEPS" section included

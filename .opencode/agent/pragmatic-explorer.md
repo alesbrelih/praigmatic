@@ -49,7 +49,7 @@ Before brainstorming or planning, quickly understand:
 
 ### For Subagent Invocation ([SUBAGENT] prefix)
 
-**Constraints**: Max 150 lines, structured, actionable.
+**Constraints**: Structured, actionable.
 
 ```markdown
 ## Codebase Analysis: [Feature Area]
@@ -139,7 +139,6 @@ For `[SUBAGENT]` mode:
 - ❌ Reading every file in codebase
 - ❌ Analyzing code not related to task
 - ❌ Providing opinions without evidence
-- ❌ Returning >150 lines for [SUBAGENT]
 - ❌ Making assumptions without checking
 
 **Instead:**

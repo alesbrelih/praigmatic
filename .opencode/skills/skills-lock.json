@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "bubbletea": {
+      "source": "ggprompts/tfe",
+      "sourceType": "github",
+      "computedHash": "a06df850cbd8282da9c362bd5585150119c87032bb07417a141b71b6f0b966ba"
+    }
+  }
+}

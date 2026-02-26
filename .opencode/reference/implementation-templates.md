@@ -26,8 +26,11 @@ Prompt templates for sub-agent invocations used by `pragmatic-implementation`. R
 ### Security Considerations
 [if applicable]
 
-### Planning Context
-[from plan's "## Planning Context" section, if present]
+### Code Style Requirements
+- **Follow existing code style** in this repository only if it aligns with best practices
+- **Unify style across the project** — if similar patterns exist elsewhere, match them
+- If project conventions conflict with best practices, **follow best practices**
+- Do NOT introduce new conventions without explicit approval
 
 ## Previous Tasks (Completed)
 [Omit section if no completed tasks]
@@ -101,6 +104,7 @@ Review ALL currently staged code with full plan context. Consider:
 - Support for upcoming tasks
 - Conflicts with future work
 - **Backwards Compatibility**: Flag breaking changes ONLY if "Required: Yes". If "Required: No", breaking changes are acceptable.
+- **Code Style**: Verify code follows existing patterns in this repo ONLY if they align with best practices. Flag inconsistencies that violate project conventions or introduce conflicting styles.
 
 Do NOT suggest features planned for upcoming tasks.
 
@@ -121,7 +125,7 @@ Invoke: `task(agent: "pragmatic-code-reviewer", prompt: "[prompt above]")`
 **Purpose:** [original purpose]
 
 ## Code Review Feedback
-**Status:** Latest code review found critical OR high issues that must be fixed.
+**Status:** Latest code review found critical OR high OR medium issues that must be fixed.
 **Source:** Fresh review of currently staged changes (Iteration [retry_count])
 
 [Paste ENTIRE output from the LATEST code-reviewer run - NOT from first review]
@@ -131,11 +135,12 @@ Invoke: `task(agent: "pragmatic-code-reviewer", prompt: "[prompt above]")`
 
 ## Instructions
 1. Review the LATEST code review feedback (this is fresh feedback from your most recent changes)
-2. Fix all critical AND high priority issues identified in THIS iteration
+2. Fix all critical AND high AND medium priority issues identified in THIS iteration
 3. Make incremental fixes on staged changes (DO NOT start from scratch)
 4. Ensure fixes don't break existing functionality or introduce regressions
-5. Stage additional changes
-6. Return completion status with ✅, ❌, or ⚠️
+5. **Follow code style** — match existing patterns in this repo only if they align with best practices
+6. Stage additional changes
+7. Return completion status with ✅, ❌, or ⚠️
 
 **Note:** Each retry triggers a new code review. You are fixing issues from the CURRENT review, not replaying the original feedback.
 ```
@@ -184,13 +189,14 @@ N. **Task N:** [Name] - Status: ✅
 - Overall quality, security, maintainability
 - Whether discoveries were properly handled
 - **Backwards Compatibility**: Flag breaking changes ONLY if "Required: Yes"
+- **Code Style**: Verify consistent code style across all tasks — flag deviations that conflict with project conventions or introduce inconsistent patterns
 
 **Note:** Only review completed work. Do not suggest features planned for future tasks.
 ```
 
 Invoke: `task(agent: "pragmatic-code-reviewer", prompt: "[prompt above]")`
 
-For re-reviews after holistic fixes, use same template but update `# Implementation Context` with fresh `git log` and prepend to `# Review Focus`: "This is iteration [N]. Review ALL current code - verify previous critical AND high issues were resolved AND check for any new issues or regressions introduced by fixes."
+For re-reviews after holistic fixes, use same template but update `# Implementation Context` with fresh `git log` and prepend to `# Review Focus`: "This is iteration [N]. Review ALL current code - verify previous critical AND high AND medium issues were resolved AND check for any new issues or regressions introduced by fixes."
 
 ---
 
@@ -205,7 +211,7 @@ For re-reviews after holistic fixes, use same template but update `# Implementat
 **Tasks Completed:** [count]
 
 ## Holistic Review Feedback
-**Status:** Latest holistic review found critical OR high issues that must be fixed.
+**Status:** Latest holistic review found critical OR high OR medium issues that must be fixed.
 **Source:** Fresh review of all completed work (Iteration [holistic_retry_count])
 
 [Paste ENTIRE output from the LATEST holistic code-reviewer run - NOT from first review]
@@ -218,12 +224,13 @@ For re-reviews after holistic fixes, use same template but update `# Implementat
 **Note:** Changes may span multiple tasks and files.
 
 ## Instructions
-1. Review the LATEST holistic review feedback for critical AND high issues (this is fresh feedback from your most recent changes)
+1. Review the LATEST holistic review feedback for critical AND high AND medium issues (this is fresh feedback from your most recent changes)
 2. Fix cross-cutting architectural, integration, or security issues identified in THIS iteration
 3. Make incremental changes (DO NOT start from scratch)
 4. Ensure fixes don't break functionality from completed tasks or introduce regressions
-5. Stage additional changes
-6. Return completion status with ✅, ❌, or ⚠️
+5. **Follow code style** — match existing patterns in this repo only if they align with best practices
+6. Stage additional changes
+7. Return completion status with ✅, ❌, or ⚠️
 
 **Note:** Each retry triggers a new holistic review. You are fixing issues from the CURRENT review, not replaying the original feedback.
 ```
@@ -337,9 +344,10 @@ Invoke: `task(agent: "pragmatic-qa", prompt: "[prompt above]")`
 2. Read the failing code paths to understand root cause
 3. Fix all issues identified in THIS QA iteration
 4. Make incremental fixes (DO NOT start from scratch)
-5. Run relevant tests locally to verify fixes before staging
-6. Stage changes
-7. Return completion status with ✅, ❌, or ⚠️
+5. **Follow code style** — match existing patterns in this repo only if they align with best practices
+6. Run relevant tests locally to verify fixes before staging
+7. Stage changes
+8. Return completion status with ✅, ❌, or ⚠️
 
 **Key difference from code review fixes:** These are RUNTIME failures, not static analysis. The code compiles and passes review but doesn't behave correctly. Focus on logic errors, missing configuration, incorrect wiring, and integration issues.
 

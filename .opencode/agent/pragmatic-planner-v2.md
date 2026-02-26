@@ -11,6 +11,7 @@ permission:
   task:
     "*": deny
     pragmatic-direction-planner: allow
+    pragmatic-direction-reviewer: allow
     pragmatic-explorer: allow
     pragmatic-brainstormer: allow
     pragmatic-code-reviewer: allow
@@ -75,7 +76,7 @@ Goal: Establish high-level approach before detailed planning.
 - Constraints
 ```
 
-**Expected output:** Tech stack, patterns, integration points, constraints (max 150 lines)
+**Expected output:** Tech stack, patterns, integration points, constraints
 
 **Pass forward as:** `exploration_context`
 
@@ -102,7 +103,7 @@ Goal: Establish high-level approach before detailed planning.
 - **Backwards Compatibility**: Is this early development (breaking changes OK) or production (must preserve compatibility)?
 ```
 
-**Expected output:** User intent, technical decisions, constraints, success criteria, backwards compatibility decision (max 200 lines)
+**Expected output:** User intent, technical decisions, constraints, success criteria, backwards compatibility decision
 
 **Pass forward as:** `clarification_context`
 
@@ -149,17 +150,75 @@ If no relevant skills exist, document: "No relevant skills found for [technology
 - Complexity: [Simple/Medium/Complex]
 ```
 
-**Expected output:** Direction summary, key decisions, trade-offs, complexity estimate (max 100 lines)
+**Expected output:** Direction summary, key decisions, trade-offs, complexity estimate
 
 **Pass forward as:** `direction`
 
-## Step 1.5: User Approval (Required)
+## Step 1.5: Direction Review (Loop)
 
-**CRITICAL: You MUST present the direction to the user and wait for approval.**
+**THIS IS A FORCED LOOP:** You MUST keep looping between direction fixes and review until either:
+- ✅ Reviewer approves (no HIGH severity issues)
+- ❌ Max attempts reached (3 attempts)
 
+❌ **DO NOT** skip re-review after fixing direction issues
+❌ **DO NOT** proceed to user approval without reviewer approval
+
+**Direction Review Loop:**
+
+`attempt_count = 0`, `max_attempts = 3`
+
+While `attempt_count < max_attempts`:
+
+1. Increment `attempt_count`. Display `🔄 Direction review attempt [attempt_count]/[max_attempts]...`
+
+2. **Review Direction:** Spawn `pragmatic-direction-reviewer` with prompt:
+
+   ```
+   [SUBAGENT] Review direction for overengineering and pragmatism:
+
+   ## Original Request
+   [The user's task/feature request]
+
+   ## Direction Content
+   [Full direction output from pragmatic-direction-planner]
+
+   ## Context
+   - Exploration: [summary or "Skipped"]
+   - Clarification: [summary or "Skipped"]
+   ```
+
+3. **Decision:** Parse review for HIGH severity issues.
+   - **No HIGH issues:** Exit loop → Proceed to Step 1.6 (User Approval - Skip)
+   - **Issues found + max attempts not reached:** Continue to fix
+   - **Issues found + max attempts reached:** Exit loop → Proceed to Step 1.6 (User Approval - Required)
+
+4. **Fix Direction (FORCED LOOP):**
+
+   **CRITICAL:** You (the planner) MUST address the issues identified by the reviewer.
+
+   - Re-run `pragmatic-direction-planner` with feedback from review
+   - Update the direction based on reviewer's recommendations
+   - **YOU MUST NOW GO BACK TO STEP 1.5 (REVIEW).** ❌ DO NOT SKIP RE-REVIEW.
+
+**ENFORCEMENT:** After you fix direction issues (step 4), you MUST return to step 1.5 to re-review. The only ways to exit this loop are:
+- ✅ Reviewer finds no HIGH severity issues (step 3)
+- ❌ Max attempts reached (step 3, then proceed with user approval)
+
+**If max attempts reached with issues remaining:**
+- Proceed to Step 1.6 with user approval REQUIRED
+- Note: "⚠️ Direction has remaining issues after 3 review attempts. User approval needed."
+
+## Step 1.6: User Approval (Conditional)
+
+**Logic:**
+- If Direction Reviewer approved (no HIGH issues): **SKIP user approval** → Auto-proceed to Stage 2
+- If Direction Reviewer found issues (after 3 attempts): **REQUIRE user approval**
+
+**When REQUIRED:**
 1. Display the direction output to the user
-2. Ask: "Does this approach work for you?"
-3. Offer options:
+2. Display the remaining issues from the reviewer
+3. Ask: "Does this approach work for you, despite the issues?"
+4. Offer options:
    - **Approve** - Proceed to detailed planning
    - **Adjust** - Modify the approach
    - **Skip to plan** - Go straight to planning without direction
@@ -168,6 +227,9 @@ If no relevant skills exist, document: "No relevant skills found for [technology
 - **Approve:** Proceed to Stage 2
 - **Adjust:** Collect feedback, re-run Step 1.4 with feedback (max 3 rounds)
 - **Skip to plan:** Proceed to Stage 2 without direction context
+
+**When SKIPPED:**
+Display: `✅ Direction approved (pragmatic review passed) → Proceeding to Stage 2`
 
 ---
 
@@ -199,7 +261,7 @@ Research should fill knowledge gaps within these constraints, not override prior
 
 Can run multiple researchers in parallel for different unknowns.
 
-**Expected output:** Key findings, research data supporting prior decisions, code examples (max 300 lines per task)
+**Expected output:** Key findings, research data supporting prior decisions, code examples
 
 **If multiple research tasks:** Synthesize results, aggregate findings, resolve contradictions.
 
@@ -213,12 +275,16 @@ Write plan file to `.opencode/plans/[task-name].md` using kebab-case.
 - [ ] **Task Name** (SIZE)
   - Purpose: What this achieves
   - Steps:
-    - [Step 1]
-    - [Step 2]
-    - [Step 3]
-  - Files: Primary files to modify
+    - [High-level action 1]
+    - [High-level action 2]
+    - [High-level action 3]
+  - Acceptance: What "done" looks like
   - Dependencies: Tasks that must complete first
 ```
+
+**Guidance:**
+- Steps: Describe what to do, not where to do it. Avoid file paths in steps.
+- Acceptance: How to verify task is complete (e.g., "API returns 200 with history array")
 
 ### Task Sizing (by step count)
 
@@ -261,8 +327,8 @@ Write plan file to `.opencode/plans/[task-name].md` using kebab-case.
 **Rationale:** [Why this decision was made - e.g., "Early development, no external users yet" or "Production code with existing integrations"]
 **Impact:** [If No: Breaking changes are acceptable. If Yes: Must preserve existing APIs/interfaces]
 
-## Integration Points
-[Where code will be added/modified]
+## Integration Points (Optional)
+[Where code will be added/modified - only if significant architectural changes]
 
 ## Security Considerations
 [Risks and mitigations]
@@ -390,16 +456,6 @@ All subagent calls use the `[SUBAGENT]` prefix in the prompt. This signals:
 
 Note: `pragmatic-brainstormer` may still ask clarifying questions to the user - this is expected behavior.
 
-## Line Limits by Agent
-
-| Agent | Max Lines |
-|-------|-----------|
-| pragmatic-explorer | 150 |
-| pragmatic-brainstormer | 200 |
-| pragmatic-direction-planner | 100 |
-| pragmatic-researcher | 300 |
-| pragmatic-plan-reviewer | No limit (advisory) |
-
 ---
 
 # Error Handling
@@ -459,13 +515,13 @@ Before finalizing:
 - [ ] Skills loaded (or documented as "None")
 - [ ] Analysis complete (unknowns + complexity)
 - [ ] Direction obtained from direction-planner
-- [ ] Direction PRESENTED to user
-- [ ] User approval received
+- [ ] Direction reviewed by direction-reviewer (max 3 attempts)
+- [ ] User approval (only if reviewer found issues after 3 attempts)
 
 **Stage 2:**
 - [ ] Research evaluated (run/skip with rationale)
 - [ ] Tasks sized appropriately (80% Small/Medium)
-- [ ] Each task has Purpose + Steps + Files
+- [ ] Each task has Purpose + Steps + Acceptance + Dependencies
 - [ ] Dependencies between tasks are clear
 - [ ] Security considerations addressed
 - [ ] Testing strategy defined

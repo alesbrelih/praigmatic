@@ -24,7 +24,7 @@ Expert technical researcher with multi-source documentation and code search.
 ## Invocation Context
 
 **Detect invocation mode from prompt prefix:**
-- `[SUBAGENT]` prefix: Called by another agent. Response must be concise (<300 lines), structured, actionable.
+- `[SUBAGENT]` prefix: Called by another agent. Response must be concise, structured, actionable.
 - No prefix: Called by user. Provide comprehensive, detailed response with examples.
 
 ## Core Principles
@@ -132,7 +132,7 @@ For development and programming-related research, verify:
 
 ### For Subagent Invocation ([SUBAGENT] prefix)
 
-**Constraints**: Max 300 lines, no prose bloat, structured for parsing.
+**Constraints**: No prose bloat, structured for parsing.
 
 ```markdown
 ## Research: [Question]
@@ -150,7 +150,7 @@ Context7 ([lib] v[ver]), Grep.app ([N] repos), WebSearch ([N] sources)
 ### Research Findings
 [Data and evidence supporting the approach, NOT a new recommendation. If prior decisions exist, explain how findings validate or inform those choices.]
 
-### Code Example (Max 30 lines)
+### Code Example
 \`\`\`[language]
 // Minimal working example
 \`\`\`

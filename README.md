@@ -7,10 +7,11 @@
 1. `@pragmatic-explorer` - Fast codebase analysis and pattern discovery
 2. `@pragmatic-brainstormer` - Interactive requirements clarification
 3. `@pragmatic-direction-planner` - Creates high-level direction (before tasks)
-4. `@pragmatic-planner` - Creates detailed implementation plans (two-stage workflow)
-5. `@pragmatic-researcher` - Multi-source technical research
-6. `@pragmatic-developer` - Clean, maintainable code implementation
-7. `@pragmatic-code-reviewer` - Quality, security, performance checks
+4. `@pragmatic-direction-reviewer` - Senior dev gatekeeper (YAGNI, KISS, scale checks)
+5. `@pragmatic-planner` - Creates detailed implementation plans (two-stage workflow)
+6. `@pragmatic-researcher` - Multi-source technical research
+7. `@pragmatic-developer` - Clean, maintainable code implementation
+8. `@pragmatic-code-reviewer` - Quality, security, performance checks
 
 ### Commands
 
@@ -58,14 +59,15 @@
 
  | Agent | Mode | Purpose |
  |-------|------|---------|
- | Explorer | agent/subagent | Fast codebase analysis, pattern discovery |
- | Brainstormer | agent/subagent | Interactive Q&A for requirements clarification |
- | Direction Planner | agent/subagent | High-level direction (before tasks) |
- | Planner | agent/subagent | TTD plans, two-stage workflow (direction → tasks) |
- | Researcher | agent/subagent | Context7, Grep.app, WebSearch |
- | Developer | agent/subagent | Pure implementation with structured prompts, plan-agnostic |
- | Committer | agent/subagent | Git commit analysis and conventional commits |
- | Reviewer | agent/subagent | Security, quality, fixes |
+| Explorer | agent/subagent | Fast codebase analysis, pattern discovery |
+| Brainstormer | agent/subagent | Interactive Q&A for requirements clarification |
+| Direction Planner | agent/subagent | High-level direction (before tasks) |
+| Direction Reviewer | agent/subagent | Senior dev gatekeeper (YAGNI, KISS, scale checks) |
+| Planner | agent/subagent | TTD plans, two-stage workflow (direction → tasks) |
+| Researcher | agent/subagent | Context7, Grep.app, WebSearch |
+| Developer | agent/subagent | Pure implementation with structured prompts, plan-agnostic |
+| Committer | agent/subagent | Git commit analysis and conventional commits |
+| Reviewer | agent/subagent | Security, quality, fixes |
 
 ## Agent Workflow
 
@@ -80,15 +82,19 @@ Phase 2: Brainstormer (clarify requirements)
   ↓
 Phase 3: Task Analysis (identify unknowns, assess complexity)
   ↓
-STAGE 1: DIRECTION PLANNING (new - prevents overengineering)
+STAGE 1: DIRECTION PLANNING (prevents overengineering)
   ├─ Direction Planner: Creates high-level direction
   │  ├─ Direction summary (2-5 sentences)
   │  ├─ Key decisions & trade-offs
   │  └─ Task count estimate
-  ├─ USER CHECKPOINT: Review direction
-  │  ├─ Approve → Continue to task planning
-  │  ├─ Adjust direction → Re-present
-  │  └─ Skip checkpoint → Fallback to single-stage
+  ├─ Direction Reviewer: Senior developer gatekeeper
+  │  ├─ YAGNI, KISS, Scale Appropriateness checks
+  │  ├─ Loop: Fix → Re-review (max 3)
+  │  └─ Auto-approve if no HIGH issues
+  └─ USER CHECKPOINT: Only if reviewer found issues
+       ├─ Approve → Continue to task planning
+       ├─ Adjust direction → Re-present
+       └─ Skip checkpoint → Fallback to single-stage
   ↓
 Phase 4: Researcher (parallel research tasks, if needed)
   ↓

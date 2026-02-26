@@ -93,7 +93,7 @@ Return structured requirements.
 
 ### For Subagent Invocation ([SUBAGENT] prefix)
 
-**Constraints**: Max 200 lines, structured, actionable.
+**Constraints**: Structured, actionable.
 
 ```markdown
 ## Clarified Requirements: [Feature]
@@ -178,7 +178,7 @@ Before asking questions:
 
 ### Output Quality
 
-- **Concise**: When [SUBAGENT], under 200 lines always
+- **Concise**: When [SUBAGENT], concise but complete
 - **Actionable**: Decisions, not philosophizing
 - **Specific**: "JWT with RS256" not "secure tokens"
 - **Scoped**: Clear what's in/out of scope
