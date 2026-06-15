@@ -211,11 +211,21 @@ After holistic review (and any holistic fixes) are complete, validate runtime be
 
 3. **Handle QA Response:**
    - `✅ **QA Passed:**` — Proceed to archive
-   - `⚠️ **QA Partial:**` or `❌ **QA Failed:**` — Enter QA fix loop below
+   - `⚠️ **QA Partial:**` or `❌ **QA Failed:**` — Parse issues and classify before entering fix loop:
+
+**Issue Classification & Filtering:**
+
+Parse the QA issues table. For each issue:
+- **Fixable:** `New` issues OR `Preexisting` issues with `Small` or `Medium` effort
+- **Skipped:** `Preexisting` issues with `Large` effort
+
+**Decision:**
+- **Only Skipped issues remain (no fixable):** Treat as `✅ **QA Passed:**` with warning. Log skipped issues in plan annotation: `⚠️ QA_SKIPPED_PREEXISTING: [list of Large Preexisting issues]`. Proceed to archive.
+- **Fixable issues exist:** Enter QA fix loop below. Pass only fixable issues to the developer.
 
 **QA Fix Loop (conditional):**
 
-While QA issues present and `qa_retry_count < max_qa_retries`:
+While fixable QA issues present and `qa_retry_count < max_qa_retries`:
 
 1. Increment `qa_retry_count`. Display `🔄 QA fix attempt [qa_retry_count]/[max_qa_retries]...`
 
@@ -223,23 +233,29 @@ While QA issues present and `qa_retry_count < max_qa_retries`:
 
    **CRITICAL:** ❌ DO NOT FIX CODE YOURSELF! Invoke `pragmatic-developer` agent to make fixes.
 
-   Invoke: `task(agent: "pragmatic-developer", prompt: "[Template 8 populated with QA issues]")`
+   **Populate with:**
+   - Full QA output (for context)
+   - Annotated issue list: mark `Large Preexisting` issues as "SKIPPED — do not fix"
+   - Filtered list of fixable issues (New + Small/Medium Preexisting) for the developer to focus on
+
+   Invoke: `task(agent: "pragmatic-developer", prompt: "[Template 8 populated with fixable QA issues]")`
 
    - **Success:** Stage changes with `git add`. **PROCEED TO STEP 3 (MANDATORY RE-VALIDATION).**
    - **Failed/Blocked:** Exit loop immediately → failure path below.
 
-3. **Re-Validate (MANDATORY):** ❌ DO NOT SKIP THIS STEP. Build prompt using Template 7 with same context, but prepend to Expected Behaviors: "Focus on verifying that previously failing behaviors now work. Previous QA issues: [summary of issues from last QA run]."
+3. **Re-Validate (MANDATORY):** ❌ DO NOT SKIP THIS STEP. Build prompt using Template 7 with same context, but prepend to Expected Behaviors: "Focus on verifying that previously failing behaviors now work. Previous QA issues: [summary of fixable issues from last QA run]."
 
    Invoke: `task(agent: "pragmatic-qa", prompt: "[Template 7 updated]")`
 
-4. **Result Check:**
-   - `✅ **QA Passed:**` — Exit loop → commit fixes and proceed to archive
-   - Issues remain + retries available → Loop back to step 1
-   - Issues remain + retries exhausted → Exit loop → failure path
+4. **Result Check & Re-Classification:**
+   - Parse QA output again for issues, applying the same classification rules.
+   - **`✅ **QA Passed:**` or no fixable issues remain:** Exit loop → commit fixes and proceed to archive
+   - Fixable issues remain + retries available → Loop back to step 1
+   - Fixable issues remain + retries exhausted → Exit loop → failure path
 
 **ENFORCEMENT:** After developer fixes issues (step 2 success), you MUST proceed to step 3 to re-validate. The only ways to exit this loop are:
-- ✅ QA passes (step 4)
-- ❌ Max retries reached with issues still present (step 4)
+- ✅ QA passes or no fixable issues remain (step 4)
+- ❌ Max retries reached with fixable issues still present (step 4)
 - ❌ Developer failed/blocked (step 2)
 
 **Commit QA Fixes (success):**
@@ -251,11 +267,12 @@ If files staged: commit using **Template 6b (Holistic Fix Commit)** from templat
 
 Annotate plan:
 ```
-⚠️ QA_VALIDATION_FAILED: [summary of remaining issues]
+⚠️ QA_VALIDATION_FAILED: [summary of remaining fixable issues]
+⚠️ QA_SKIPPED_PREEXISTING: [list of Large Preexisting issues skipped]
 Attempts: [qa_retry_count] iterations completed
 Required: Manual testing and fixes needed
 ```
-Keep changes staged. Inform user of: remaining QA issues, retry attempts, staged changes, next steps. Proceed to archive with failure notes.
+Keep changes staged. Inform user of: remaining fixable QA issues, skipped preexisting issues, retry attempts, staged changes, next steps. Proceed to archive with failure notes.
 
 **Archive:**
 Use `archive-plan` tool with planPath. Stage and commit:

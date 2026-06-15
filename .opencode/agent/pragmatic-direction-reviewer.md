@@ -1,7 +1,8 @@
 ---
 description: "Senior developer reviewer for direction (Stage 1). Challenges ideas for YAGNI, KISS, scale appropriateness, and overengineering. Acts as pragmatic gatekeeper before task planning."
 mode: all
-temperature: 0.3
+model: openai/gpt-5.4
+reasoningEffort: high
 permission:
   edit: deny
   read: allow
@@ -216,13 +217,6 @@ Minor issues or suggestions:
 | 0 | 0-2 | **APPROVED** |
 | 0 | 3+ | **NEEDS WORK** |
 | 1+ | Any | **NEEDS WORK** |
-
-### When to Escalate to User
-
-If after 3 review cycles (planner fixes direction → re-review) issues remain:
-- Escalate to user approval
-- Present remaining issues with recommendations
-- Let user decide whether to proceed or adjust
 
 ## Examples
 

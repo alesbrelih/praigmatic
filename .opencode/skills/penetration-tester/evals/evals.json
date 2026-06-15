@@ -1,0 +1,77 @@
+{
+  "skill_name": "penetration-tester",
+  "evals": [
+    {
+      "id": 1,
+      "name": "fresh-api-pentest-with-roe-gate",
+      "prompt": "Let's do a backend API pentest for our mobile app. Create the workspace.",
+      "expected_output": "Scaffolds an engagement directory with a scope subdirectory. Creates engagement root AGENTS.md, scope-level ROE.md (gate enforced), scope AGENTS.md, and first plan directory only after ROE is acknowledged.",
+      "files": [],
+      "expectations": [
+        "Engagement root AGENTS.md is created with engagement-agents-template",
+        "Scope directory is created under engagement",
+        "ROE.md is created from template if missing",
+        "Plan directory is NOT created until ROE gate is satisfied",
+        "User is informed why the gate exists and what to do next",
+        "Scope-level AGENTS.md is created with correct structure",
+        "All subdirectories (evidence, audit, findings, notes) are created for the plan"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "add-scope-to-existing-engagement",
+      "prompt": "Add a mobile app pentest scope to the existing engagement.",
+      "expected_output": "Detects existing engagement root, creates new scope directory with ROE.md template, enforces hard gate, and updates engagement AGENTS.md scope list.",
+      "files": [],
+      "expectations": [
+        "Does NOT recreate engagement root if it exists",
+        "New scope directory is created under engagement",
+        "ROE.md is created from template for the new scope",
+        "Plan directory is NOT created until ROE gate is satisfied",
+        "Engagement root AGENTS.md scope list is updated",
+        "Scope-level AGENTS.md is created"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "add-plan-to-existing-scope",
+      "prompt": "Add a new plan for authentication testing to the existing api-pentest scope.",
+      "expected_output": "Detects existing ROE.md, skips the gate, creates plans/02-auth-testing/ with all subdirectories and plan.md.",
+      "files": [],
+      "expectations": [
+        "Does NOT recreate ROE.md if it already exists",
+        "Auto-increments plan number to 02",
+        "Updates scope-level AGENTS.md plans table with the new plan",
+        "Creates all required subdirectories"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "standalone-single-scope",
+      "prompt": "Start a standalone infrastructure audit of a single server.",
+      "expected_output": "Creates a single scope directory without an engagement wrapper. Enforces ROE gate. Creates scope AGENTS.md and plan after ROE confirmed.",
+      "files": [],
+      "expectations": [
+        "No engagement root directory is created",
+        "Scope directory is created directly",
+        "ROE.md is created and gate enforced",
+        "Scope-level AGENTS.md is created",
+        "Plan scaffolding happens only after ROE gate"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "evidence-and-audit-standards-enforced",
+      "prompt": "We're testing a web app and found an XSS vulnerability. Document the finding.",
+      "expected_output": "Creates a finding record using references/finding-template.md with all required fields including Retest Instructions, and references at least one evidence file.",
+      "files": [],
+      "expectations": [
+        "Finding is created in findings/ directory",
+        "Finding references at least one evidence file",
+        "Finding includes 'Retest Instructions' section with exact reproduction steps",
+        "Evidence template structure is used (commands, output, timestamp, environment)",
+        "Agent does NOT continue testing without documenting the finding"
+      ]
+    }
+  ]
+}

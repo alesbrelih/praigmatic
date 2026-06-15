@@ -52,24 +52,50 @@ If neither is provided:
 2. Ask the operator to select a finding ID
 3. Fetch the selected finding
 
-### 3. Gather Business Context (Optional)
+### 3. Check Business Context (Required)
 
-Ask the operator:
-```
-**Business Context (optional):**
-What does this application do? What is its purpose and user base?
-This helps evaluate "by design" arguments and CVSS environmental metrics.
+Determine the scope root by walking up from the current working directory to find
+the directory containing `AGENTS.md`.
 
-Provide context now, or press Enter to skip (you'll be asked again if needed).
-```
+Read `context.md` in the scope root directory.
 
-Store the context. It will be passed to all agents and used at checkpoints if the skeptic raises business reasoning questions.
+**If `context.md` exists and has substantive content** (not just comments/headers):
+1. Use its contents as business context for all agents.
+2. Proceed to Step 4.
+
+**If `context.md` is missing or empty** (only comments/headers, no filled-in content):
+1. **STOP.** Do not proceed with the debate.
+2. Tell the operator:
+
+   ```
+   Business Context is required before verification can proceed.
+
+   Create `context.md` in the scope root at [scope-root-path] with the
+   application's purpose, user base, and data classification.
+
+   Use this template:
+   - Application Purpose: What does this application do?
+   - User Base: Who uses it? Internal, public, partners?
+   - Data Classification: What kind of data does it handle?
+   - Key Business Context: Any "by design" behavior, compensating controls,
+     regulatory requirements?
+
+   Once context.md is filled in, re-run this command.
+   ```
+
+3. Do NOT prompt for context interactively — the operator must write the file.
+   This avoids repetitive prompting across multiple findings in the same scope.
+
+The verify commands read `context.md` fresh each run, so the operator can update
+it as the assessment progresses and new context emerges.
 
 ### 4. Round 1 — Skeptic Challenges
 
 Build prompt for the skeptic using **Template A (Skeptic Prompt)** below.
 
 Invoke: `task(agent: "finding-skeptic", prompt: "[populated template]")`
+
+**⚠️ CRITICAL: Do NOT invoke the presenter (Step 5) until this skeptic task completes and its response is parsed.** Skeptic and presenter MUST run sequentially within each round — NEVER in parallel.
 
 **Parse the response** for:
 - Challenge table (challenge, severity, category, evidence needed, empirical test)
@@ -93,6 +119,8 @@ Build prompt for the presenter using **Template B (Presenter Prompt)** below.
 Include the full skeptic output so the presenter knows what to respond to.
 
 Invoke: `task(agent: "finding-presenter", prompt: "[populated template]")`
+
+**⚠️ CRITICAL: Do NOT invoke the skeptic (Step 6) until this presenter task completes and its response is parsed.** Presenter and skeptic MUST run sequentially — NEVER in parallel.
 
 **Parse the response** for:
 - Defense against each challenge (defended/conceded/partially defended)
@@ -123,6 +151,8 @@ Focus the skeptic on points NOT conceded by the presenter.
 
 Invoke: `task(agent: "finding-skeptic", prompt: "[populated template]")`
 
+**⚠️ CRITICAL: Do NOT invoke the presenter (Step 7) until this skeptic task completes and its response is parsed.** Skeptic and presenter MUST run sequentially within each round — NEVER in parallel.
+
 **Parse and display** same as Step 3.
 
 ### 7. Round 2 — Presenter Responds
@@ -135,6 +165,8 @@ Include:
 - Round 2 skeptic challenges (focus on remaining)
 
 Invoke: `task(agent: "finding-presenter", prompt: "[populated template]")`
+
+**⚠️ CRITICAL: Do NOT proceed to Step 8 until this presenter task completes and its response is parsed.**
 
 **Parse and display** same as Step 4.
 
@@ -278,6 +310,7 @@ payloads that shouldn't be committed to version control.
 ## Finding Verification Complete
 
 **Finding:** [title]
+**Finding ID:** [finding_id]
 **Verdict:** [Confirmed / Downgraded / False Positive / Insufficient Evidence]
 **CVSS:** [original] → [final]
 **Rounds:** 2
@@ -318,182 +351,10 @@ payloads that shouldn't be committed to version control.
 
 **References:** [references]
 
-## Business Context (if provided)
-[business_context]
+## Finding Source
 
-## Your Task
-
-Challenge this finding. For every claim that can be questioned:
-
-1. **Technical accuracy** — Does the exploit actually work? Is the impact demonstrated?
-2. **Business reasoning** — Is this functionality "by design"? Does business context reduce the risk?
-3. **CVSS accuracy** — Does the vector match demonstrated impact?
-4. **Evidence quality** — Is there enough evidence to support the claim?
-
-**CRITICAL: If this finding can be browser-tested, you MUST run Playwright tests.**
-Do not assume — test. XSS must execute, redirects must land externally, errors
-must disclose sensitive data. If the test fails, the claim fails.
-
-Use the output format from Template 1 (Skeptic Challenge — Round 1) in the
-verify-finding skill references.
-```
-
-### Template B: Presenter Prompt (Round 1)
-
-```markdown
-# Presenter Defense — Round 1
-
-## Finding
-
-**Title:** [title]
-**CVSS:** [cvss]
-**Affected Components:** [affected_components]
-
-**Summary:**
-[summary]
-
-**Description:**
-[description]
-
-**Impact:**
-[impact]
-
-**Recommendation:**
-[recommendation]
-
-**Replication:**
-[replication]
-
-## Skeptic Challenges (Round 1)
-
-[Full skeptic output from Step 3]
-
-## Business Context (if provided)
-[business_context]
-
-## Your Task
-
-Defend this finding against the skeptic's challenges. For each challenge:
-
-1. **Strong defense** — If you have evidence that directly refutes the challenge
-2. **Partial defense** — If the challenge has merit but the finding is still partially valid
-3. **Concession** — If the challenge is valid and cannot be rebutted
-
-You may gather new evidence to strengthen your defense, but you MUST NOT:
-- Inflate claims beyond what the evidence shows
-- Argue that theoretical impact equals demonstrated impact
-- Dismiss valid "by design" arguments without counter-evidence
-
-Use the output format from Template 2 (Presenter Defense — Round 1) in the
-verify-finding skill references.
-```
-
-### Template C: Skeptic Prompt (Round 2)
-
-```markdown
-# Skeptic Challenge — Round 2
-
-## Finding
-
-**Title:** [title]
-**CVSS:** [cvss]
-
-## Round 1 Summary
-
-**Your challenges:**
-[Round 1 skeptic challenges]
-
-**Presenter's defense:**
-[Round 1 presenter defense — which challenges were defended, conceded, partially defended]
-
-**Conceded points:**
-[List of points the presenter conceded]
-
-## Business Context (if provided or updated)
-[business_context]
-
-## Your Task
-
-Focus on the points the presenter did NOT concede. Challenge the remaining
-weaknesses:
-
-1. Were the defenses convincing? Or do they rely on theoretical arguments?
-2. Run additional Playwright tests if the presenter claimed the exploit works
-   but your Round 1 test was inconclusive
-3. If the presenter conceded key points, how does that affect the verdict?
-
-**Do not re-challenge conceded points.** Focus on what's still disputed.
-
-Use the output format from Template 3 (Skeptic Challenge — Round 2) in the
-verify-finding skill references.
-```
-
-### Template D: Presenter Prompt (Round 2)
-
-```markdown
-# Presenter Response — Round 2
-
-## Finding
-
-**Title:** [title]
-**CVSS:** [cvss]
-
-## Debate History
-
-**Round 1 — Skeptic challenges:**
-[Round 1 skeptic challenges]
-
-**Round 1 — Your defense:**
-[Round 1 presenter defense]
-
-**Round 2 — Remaining skeptic challenges:**
-[Round 2 skeptic challenges — focus on unconceded points]
-
-**Conceded points (across both rounds):**
-[All conceded points]
-
-## Business Context (if provided or updated)
-[business_context]
-
-## Your Task
-
-Respond to the remaining challenges. This is your final chance to defend the
-finding before the arbiter makes a verdict.
-
-1. **Defend** — If you have evidence for the remaining challenges
-2. **Concede** — If you cannot defend, acknowledge honestly
-3. **Identify operator questions** — If a point requires business context only the
-   operator can provide
-
-Use the output format from Template 4 (Presenter Response — Round 2) in the
-verify-finding skill references.
-```
-
-### Template E: Arbiter Prompt
-
-```markdown
-# Arbiter Verdict
-
-## Finding
-
-**Title:** [title]
-**CVSS:** [cvss]
-**Affected Components:** [affected_components]
-
-**Summary:**
-[summary]
-
-**Description:**
-[description]
-
-**Impact:**
-[impact]
-
-**Recommendation:**
-[recommendation]
-
-**Replication:**
-[replication]
+**Type:** SysReptor
+**Finding ID:** [finding_id]
 
 ## Debate Record
 
@@ -544,7 +405,7 @@ skill references.
 ```markdown
 # Finding Verification: [title]
 
-**Finding ID:** [finding_id]
+**Source:** SysReptor finding [finding_id]
 **Date:** [YYYY-MM-DD HH:MM]
 **Original CVSS:** [cvss]
 

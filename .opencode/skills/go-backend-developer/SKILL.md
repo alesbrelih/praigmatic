@@ -68,9 +68,85 @@ Handler → Service → Repository → Database
 
 **Common pitfalls:**
 - Returning unwrapped errors (loss of context)
-- Using `panic` for expected error conditions
+- Using `panic` for recoverable runtime errors (startup `log.Fatalf` for missing config is appropriate — see Startup Assertions)
 - Exposing internal error details to clients
 - Ignoring errors or only logging them
+
+### Startup Assertions
+
+**When to use:** Program initialization — env vars, config, required services, DB connections
+**Pattern:** Fail fast at startup with `log.Fatalf` or `os.Exit(1)` when required configuration is missing or invalid. Never nil-check a dependency at runtime that should have been available from the start.
+**Reference:** `service_template.go` (mustGetEnv, mustConnectDB)
+
+**Principle:** A misconfigured program should fail loudly and immediately with a clear error message and a non-zero exit code. Silently degrading or nil-checking at runtime hides bugs until they surface in production under load.
+
+**`must` helper pattern:**
+```go
+// mustGetEnv retrieves an env var or fatals if unset/empty.
+func mustGetEnv(key string) string {
+    val := os.Getenv(key)
+    if val == "" {
+        log.Fatalf("required environment variable %s is not set", key)
+    }
+    return val
+}
+```
+
+**Wiring pattern — config read in main, deps passed to constructors:**
+```go
+// main reads config and wires everything together.
+// Services/handlers never read env vars — they receive their deps as arguments.
+func main() {
+    dbURL := mustGetEnv("DATABASE_URL")
+    apiKey := mustGetEnv("NOTIFICATION_API_KEY")
+
+    db := mustConnectDB(dbURL)
+    repo := NewSQLRepository(db)
+    svc := NewService(db, repo)
+    notifSvc := NewNotificationService(apiKey)
+
+    handler := NewHandler(svc, notifSvc) // interfaces, not env vars
+    ...
+}
+
+// PREFER: Constructor trusts its deps — main guarantees non-nil
+func NewService(db *sql.DB, repo Repository) *Service {
+    return &Service{db: db, repo: repo}
+}
+
+// AVOID: Nil-checking deps that main must provide
+// func NewService(db *sql.DB, repo Repository) *Service {
+//     if db == nil { log.Fatalf("db is required") }   // unnecessary — if main passes nil, method call panics immediately
+//     if repo == nil { log.Fatalf("repo is required") } // also doesn't catch nil pointer in interface
+//     ...
+// }
+
+// AVOID: Optional construction hides misconfiguration
+// var svc *NotificationService
+// if apiKey != "" {
+//     svc = NewNotificationService(apiKey)
+// }
+// if svc != nil {  // <-- this nil check means your program is broken
+//     handler.Use(svc)
+// }
+```
+
+**Best practices:**
+- Use `log.Fatalf` for startup failures — it logs the message then calls `os.Exit(1)` with no stack trace noise
+- Use `os.Exit(1)` directly when you've already logged the error yourself
+- Write `must*` helpers for repeated assertions (env vars, file existence, DB connections)
+- Read env vars and validate config in `main()` — never in service constructors or business logic
+- Wire deps through constructors: `main` reads config → creates concrete deps → passes to `NewService(deps...)`
+- Constructors trust their deps — `main` guarantees non-nil; nil-checking deps in constructors is unnecessary defensive noise (and doesn't catch nil pointer in interface anyway)
+- Fail at the boundary: `main()` or package-level `init()` — never deep in business logic
+
+**Common pitfalls:**
+- Nil-checking a dependency that should always exist (`if svc != nil { ... }`) — trust your wiring
+- Checking `if repo == nil` on an interface — doesn't catch a nil pointer wrapped in an interface (Go's nil interface trap)
+- Using `panic` instead of `log.Fatalf` for startup failures (panic produces noisy stack traces, `log.Fatalf` is clean)
+- Soft-degrading when a required service is unavailable (skip feature → hidden bug)
+- Validating config lazily (first request) instead of eagerly (startup)
+- Reading env vars in service constructors instead of in `main`
 
 ### Testing
 
@@ -239,7 +315,8 @@ svc := NewNotificationService(mock)
 - **Goroutine safety:** Use `sync.WaitGroup`, channels, and mutex appropriately, test with `-race`
 - **Observability everywhere:** Add tracing to exported functions, log with context, expose metrics
 - **Resource cleanup:** Use `defer` for cleanup, close resources (rows, statements, channels)
-- **Security first:** Validate inputs, use prepared statements, sanitize error messages, never panic
+- **Security first:** Validate inputs, use prepared statements, sanitize error messages
+- **Startup assertions:** Fail fast with `log.Fatalf` on missing config; never nil-check a dependency that must exist
 
 ## Commands
 

@@ -9,6 +9,9 @@ import (
 	"regexp"
 
 	"github.com/stretchr/testify/assert"
+)
+
+var validIDRe = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 	"github.com/stretchr/testify/require"
 )
 
@@ -57,8 +60,7 @@ func writeError(w http.ResponseWriter, r *http.Request, status int, err error) {
 // isValidID validates the ID format to prevent injection attacks
 // Only allows alphanumeric characters, dashes, and underscores
 func isValidID(id string) bool {
-	matched, _ := regexp.MatchString(`^[a-zA-Z0-9_-]+$`, id)
-	return matched
+	return validIDRe.MatchString(id)
 }
 
 // Handler is an example HTTP handler

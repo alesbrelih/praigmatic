@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -38,6 +37,8 @@ func RequestID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestID := r.Header.Get("X-Request-ID")
 		if requestID == "" {
+			// In production, use uuid.New() or crypto/rand for collision-safe IDs.
+			// UnixNano is sufficient for template demonstration only.
 			requestID = fmt.Sprintf("req-%d", time.Now().UnixNano())
 		}
 
@@ -61,12 +62,9 @@ func GetRequestID(ctx context.Context) string {
 type responseWriter struct {
 	http.ResponseWriter
 	status int
-	mu     sync.Mutex
 }
 
 func (rw *responseWriter) WriteHeader(code int) {
-	rw.mu.Lock()
-	defer rw.mu.Unlock()
 	rw.status = code
 	rw.ResponseWriter.WriteHeader(code)
 }

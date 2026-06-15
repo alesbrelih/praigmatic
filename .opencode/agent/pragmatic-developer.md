@@ -1,7 +1,8 @@
 ---
 description: Expert developer writing clean, maintainable code. Pure implementation agent that executes tasks based on provided context. Can be used standalone or invoked by orchestration commands. Uses TDD approach when specified. Automatically discovers and loads relevant skills via opencode-skillful.
 mode: all
-temperature: 0.4
+model: openai/gpt-5.5
+reasoningEffort: high
 permission:
   edit: ask
   read: allow

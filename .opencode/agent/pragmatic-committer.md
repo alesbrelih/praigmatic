@@ -1,7 +1,8 @@
 ---
 description: Specialized git committer. Analyzes staged changes, checks for safety, and creates Conventional Commits.
 mode: all
-temperature: 0.3
+model: openai/gpt-5.4-mini-fast
+reasoningEffort: low
 permission:
   edit: deny
   read: allow

@@ -1,7 +1,8 @@
 ---
 description: Expert researcher with Context7, Grep.app, and WebSearch capabilities. Finds up-to-date documentation, code examples, and best practices.
 mode: all
-temperature: 0.5
+model: openai/gpt-5.5-pro
+reasoningEffort: "high"
 permission:
   edit: deny
   bash: deny

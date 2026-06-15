@@ -56,7 +56,7 @@ func (r *SQLRepository) Get(ctx context.Context, id string) (*Item, error) {
 	var item Item
 	err := row.Scan(&item.ID, &item.Name)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, fmt.Errorf("item not found: %s", id)
 		}
 		return nil, fmt.Errorf("failed to query item: %w", err)

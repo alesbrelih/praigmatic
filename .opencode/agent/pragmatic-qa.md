@@ -1,7 +1,8 @@
 ---
 description: QA engineer that validates runtime behavior. Starts the app, runs test suites, hits real endpoints, and verifies features work end-to-end. Does not modify code.
 mode: all
-temperature: 0.3
+model: openai/gpt-5.4-mini
+reasoningEffort: medium
 permission:
   edit: deny
   read: allow
@@ -98,12 +99,23 @@ You receive a structured prompt describing **what to validate**. All context is 
 - [Behavior 2]: ❌ [what happened instead]
 
 **Issues Found:**
-| # | Severity | Description | Evidence |
-|---|----------|-------------|----------|
-| 1 | Critical | [description] | [what was observed] |
-| 2 | Medium | [description] | [what was observed] |
+| # | Type | Effort | Severity | Description | Evidence |
+|---|------|--------|----------|-------------|----------|
+| 1 | New | — | Critical | [description] | [what was observed] |
+| 2 | Preexisting | Small | Medium | [description] | [what was observed] |
 
-**Summary:** [X/Y behaviors verified. Z issues need developer attention.]
+**Issue Classification Rules:**
+- **New:** The failing code is in a file from the "Files Modified" list (introduced by this implementation).
+- **Preexisting:** The failing code is in a file NOT in the "Files Modified" list (existed before this implementation).
+
+**Effort Estimation (Preexisting only):**
+- **Small:** Fixable in 1 file with minimal changes (typo, missing import, simple logic error).
+- **Medium:** Fixable in 2 files or requires moderate refactoring.
+- **Large:** Requires changes across 3+ files or significant structural/architectural changes.
+
+For New issues, always use `—` (dash) in the Effort column.
+
+**Summary:** [X/Y behaviors verified. Z issues need developer attention (A New, B Preexisting).]
 ```
 
 #### Fail

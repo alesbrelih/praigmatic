@@ -313,6 +313,14 @@ Invoke all committer prompts with: `task(agent: "pragmatic-committer", prompt: "
 [All files changed across all tasks]
 - `path/to/file1`
 - `path/to/file2`
+
+## Issue Classification Instructions
+For each issue found during validation, classify it as:
+- **Type:** `New` (failing code is in a file from Files Modified list) or `Preexisting` (failing code is NOT in a file from Files Modified list)
+- **Effort** (Preexisting only): `Small` (fixable in 1 file with minimal changes), `Medium` (2 files or moderate complexity), `Large` (3+ files or significant structural/architectural changes)
+
+Report issues using this table format:
+| # | Type | Effort | Severity | Description | Evidence |
 ```
 
 Invoke: `task(agent: "pragmatic-qa", prompt: "[prompt above]")`
@@ -342,12 +350,16 @@ Invoke: `task(agent: "pragmatic-qa", prompt: "[prompt above]")`
 ## Instructions
 1. Analyze QA feedback — focus on concrete failures (test failures, HTTP errors, startup crashes, wrong behavior)
 2. Read the failing code paths to understand root cause
-3. Fix all issues identified in THIS QA iteration
-4. Make incremental fixes (DO NOT start from scratch)
-5. **Follow code style** — match existing patterns in this repo only if they align with best practices
-6. Run relevant tests locally to verify fixes before staging
-7. Stage changes
-8. Return completion status with ✅, ❌, or ⚠️
+3. **Fix ALL `New` issues** — these were introduced by the implementation and must be resolved
+4. **Fix `Preexisting` issues that are `Small` or `Medium` effort** — do NOT skip easy wins in files you touched or nearby
+5. **DO NOT fix `Preexisting` issues marked `Large`** — these existed before this implementation and are out of scope. Report them as skipped.
+6. Make incremental fixes (DO NOT start from scratch)
+7. **Follow code style** — match existing patterns in this repo only if they align with best practices
+8. Run relevant tests locally to verify fixes before staging
+9. Stage changes
+10. Return completion status with ✅, ❌, or ⚠️ and include an issue resolution summary:
+    - Issues fixed: [list with brief description]
+    - Issues skipped (Large Preexisting): [list]
 
 **Key difference from code review fixes:** These are RUNTIME failures, not static analysis. The code compiles and passes review but doesn't behave correctly. Focus on logic errors, missing configuration, incorrect wiring, and integration issues.
 
