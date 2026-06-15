@@ -1,6 +1,6 @@
 # Implementation Templates
 
-Prompt templates for sub-agent invocations used by `pragmatic-implementation`. Read on-demand by the orchestrator — not injected into context by default.
+Prompt templates for sub-agent invocations used by `pragmatic-implementation`.
 
 ---
 
@@ -27,14 +27,13 @@ Prompt templates for sub-agent invocations used by `pragmatic-implementation`. R
 [if applicable]
 
 ### Code Style Requirements
-- **Follow existing code style** in this repository only if it aligns with best practices
-- **Unify style across the project** — if similar patterns exist elsewhere, match them
-- If project conventions conflict with best practices, **follow best practices**
-- Do NOT introduce new conventions without explicit approval
+- Follow existing code style in this repo if it aligns with best practices
+- Unify style across the project — match similar patterns
+- If project conventions conflict with best practices, follow best practices
 
 ## Previous Tasks (Completed)
 [Omit section if no completed tasks]
-[Older tasks (beyond last 3) — single-line format:]
+[Older tasks (beyond last 3) — single-line:]
 - **Task N: [Name]** — ✅ (N files, one-sentence summary)
 [Last 3 completed tasks — full detail:]
 - **Task N: [Name]** — ✅
@@ -45,6 +44,9 @@ Prompt templates for sub-agent invocations used by `pragmatic-implementation`. R
 ## Task Steps
 [from plan as numbered list]
 
+## Acceptance Criteria
+[from plan]
+
 ## Files to Modify
 [from plan as markdown list]
 
@@ -53,6 +55,9 @@ Prompt templates for sub-agent invocations used by `pragmatic-implementation`. R
 
 ### Discoveries from Previous Tasks
 [Omit if none. All discoveries from any task, regardless of age.]
+
+## Output Contract
+Return the normal human-readable completion message AND a `## Structured Result` section with a fenced `json` block matching the developer contract.
 ```
 
 Invoke: `task(agent: "pragmatic-developer", prompt: "[prompt above]")`
@@ -68,6 +73,7 @@ Invoke: `task(agent: "pragmatic-developer", prompt: "[prompt above]")`
 **Task Name:** [Task Name]
 **Purpose:** [from plan]
 **Steps:** [from plan as numbered list]
+**Acceptance:** [from plan]
 **Files Modified:** [staged files list]
 
 # Task Context
@@ -93,22 +99,23 @@ Invoke: `task(agent: "pragmatic-developer", prompt: "[prompt above]")`
 - Tasks that depend on this: [list]
 
 ### Overall Architecture
-[Architecture Overview section from plan]
+[Architecture Overview from plan]
 
 ### Technical Decisions
-[Technical Decisions section from plan]
+[Technical Decisions from plan]
 
-# Review Instructions
-Review ALL currently staged code with full plan context. Consider:
+# Review Focus
 - Alignment with planned architecture
-- Support for upcoming tasks
-- Conflicts with future work
-- **Backwards Compatibility**: Flag breaking changes ONLY if "Required: Yes". If "Required: No", breaking changes are acceptable.
-- **Code Style**: Verify code follows existing patterns in this repo ONLY if they align with best practices. Flag inconsistencies that violate project conventions or introduce conflicting styles.
+- Support for upcoming tasks, conflicts with future work
+- Backwards Compatibility: Flag breaking changes ONLY if "Required: Yes"
+- Code Style: Verify code follows existing patterns; flag inconsistencies
 
 Do NOT suggest features planned for upcoming tasks.
 
-**Iteration [retry_count] of [max_retries]**: If this is a retry, verify previous issues were fixed AND check for new issues or regressions introduced by fixes. Provide fresh, complete feedback on current code state.
+**Review pass [review_count]**: If this is not the first pass, verify previous issues were fixed AND check for regressions.
+
+## Output Contract
+Return the normal human-readable review AND a `## Structured Result` section with a fenced `json` block matching the reviewer contract.
 ```
 
 Invoke: `task(agent: "pragmatic-code-reviewer", prompt: "[prompt above]")`
@@ -118,31 +125,28 @@ Invoke: `task(agent: "pragmatic-code-reviewer", prompt: "[prompt above]")`
 ## 3. Developer Retry Prompt (Code Review Issues)
 
 ```markdown
-# Task Execution Request (CODE REVIEW RETRY - Attempt [retry_count] of [max_retries])
+# Task Execution Request (CODE REVIEW RETRY - Attempt [fix_retry_count] of [max_fix_retries])
 
 ## Task Information
 **Task Name:** [original task name]
 **Purpose:** [original purpose]
 
 ## Code Review Feedback
-**Status:** Latest code review found critical OR high OR medium issues that must be fixed.
-**Source:** Fresh review of currently staged changes (Iteration [retry_count])
+**Status:** Latest code review found critical/high/medium issues that must be fixed.
 
-[Paste ENTIRE output from the LATEST code-reviewer run - NOT from first review]
+[Paste ENTIRE output from the LATEST code-reviewer run]
 
 ## Previous Implementation Context
 [original task steps, files, context, architecture, decisions, backwards compatibility, security]
 
 ## Instructions
-1. Review the LATEST code review feedback (this is fresh feedback from your most recent changes)
-2. Fix all critical AND high AND medium priority issues identified in THIS iteration
+1. Review the LATEST code review feedback
+2. Fix all critical AND high AND medium issues from THIS iteration
 3. Make incremental fixes on staged changes (DO NOT start from scratch)
 4. Ensure fixes don't break existing functionality or introduce regressions
-5. **Follow code style** — match existing patterns in this repo only if they align with best practices
-6. Stage additional changes
-7. Return completion status with ✅, ❌, or ⚠️
-
-**Note:** Each retry triggers a new code review. You are fixing issues from the CURRENT review, not replaying the original feedback.
+5. Follow code style — match existing patterns
+6. Return completion status with ✅, ❌, or ⚠️
+7. Include the `## Structured Result` JSON block required by the developer contract
 ```
 
 Invoke: `task(agent: "pragmatic-developer", prompt: "[prompt above]")`
@@ -160,21 +164,15 @@ Invoke: `task(agent: "pragmatic-developer", prompt: "[prompt above]")`
 **Total Tasks:** [number]
 **All Tasks Completed:** [Yes/No]
 
-# Completed Tasks (with Implementation Details)
-[For each completed task:]
-N. **Task N:** [Name] - Status: ✅
-   - Files Modified: [actual files]
-   - Summary: [developer's summary]
-   - Discoveries: [if any]
+# Completed Tasks
+[For each task:]
+N. **Task N:** [Name] - ✅ | Files: [actual files] | Summary: [developer's summary] | Discoveries: [if any]
 
 # Architecture & Decisions
 [Architecture Overview + Technical Decisions from plan]
 
 # Backwards Compatibility
 [from plan — Required: Yes/No, Rationale, Impact]
-
-# Planning Context
-[from plan's "## Planning Context" section, if present]
 
 # Accumulated Discoveries
 [all discoveries consolidated]
@@ -187,16 +185,15 @@ N. **Task N:** [Name] - Status: ✅
 - Architecture coherence with plan
 - Integration issues between tasks
 - Overall quality, security, maintainability
-- Whether discoveries were properly handled
-- **Backwards Compatibility**: Flag breaking changes ONLY if "Required: Yes"
-- **Code Style**: Verify consistent code style across all tasks — flag deviations that conflict with project conventions or introduce inconsistent patterns
+- Backwards Compatibility: Flag breaking changes ONLY if "Required: Yes"
+- Code Style: Verify consistent style across tasks
 
-**Note:** Only review completed work. Do not suggest features planned for future tasks.
+**Note:** Only review completed work. Do not suggest features from future tasks.
 ```
 
 Invoke: `task(agent: "pragmatic-code-reviewer", prompt: "[prompt above]")`
 
-For re-reviews after holistic fixes, use same template but update `# Implementation Context` with fresh `git log` and prepend to `# Review Focus`: "This is iteration [N]. Review ALL current code - verify previous critical AND high AND medium issues were resolved AND check for any new issues or regressions introduced by fixes."
+For re-reviews after holistic fixes: Update `# Implementation Context` with fresh git log. Prepend to `# Review Focus`: "This is iteration [N]. Verify previous issues were resolved AND check for regressions."
 
 ---
 
@@ -211,85 +208,30 @@ For re-reviews after holistic fixes, use same template but update `# Implementat
 **Tasks Completed:** [count]
 
 ## Holistic Review Feedback
-**Status:** Latest holistic review found critical OR high OR medium issues that must be fixed.
-**Source:** Fresh review of all completed work (Iteration [holistic_retry_count])
+**Status:** Latest holistic review found critical/high/medium issues.
 
-[Paste ENTIRE output from the LATEST holistic code-reviewer run - NOT from first review]
+[Paste ENTIRE output from the LATEST holistic code-reviewer run]
 
 ## Implementation Context
 [relevant commits from git log]
 [task list from plan]
-[backwards compatibility section from plan]
-
-**Note:** Changes may span multiple tasks and files.
+[backwards compatibility from plan]
 
 ## Instructions
-1. Review the LATEST holistic review feedback for critical AND high AND medium issues (this is fresh feedback from your most recent changes)
-2. Fix cross-cutting architectural, integration, or security issues identified in THIS iteration
+1. Review the LATEST holistic review feedback
+2. Fix cross-cutting architectural, integration, or security issues
 3. Make incremental changes (DO NOT start from scratch)
-4. Ensure fixes don't break functionality from completed tasks or introduce regressions
-5. **Follow code style** — match existing patterns in this repo only if they align with best practices
-6. Stage additional changes
-7. Return completion status with ✅, ❌, or ⚠️
-
-**Note:** Each retry triggers a new holistic review. You are fixing issues from the CURRENT review, not replaying the original feedback.
+4. Ensure fixes don't break functionality from completed tasks
+5. Follow code style
+6. Return completion status with ✅, ❌, or ⚠️
+7. Include the `## Structured Result` JSON block required by the developer contract
 ```
 
 Invoke: `task(agent: "pragmatic-developer", prompt: "[prompt above]")`
 
 ---
 
-## 6. Committer Prompts
-
-### Task Commit
-```
-[SUBAGENT] Commit staged changes.
-
-## Task Context
-**Task Name:** [Task Name]
-**Purpose:** [from plan task]
-
-## Plan Context
-**Plan Name:** [from plan]
-
-## Commit Metadata
-**Files:** [file list]
-**References:** [Plan-level References + Task-level Refs, if any]
-**Commit Notes:** [Task-level Commit Notes, if any]
-```
-
-### Holistic Fix Commit
-```
-[SUBAGENT] Commit staged changes.
-
-## Holistic Fix Context
-**Plan Name:** [Plan Name]
-**Fix Type:** Holistic review issues
-**Iterations:** [holistic_retry_count] of [max_holistic_retries]
-
-## Commit Metadata
-**Files:** [file list]
-**References:** [Plan-level References, if any]
-```
-
-### Archive Commit
-```
-[SUBAGENT] Commit staged changes.
-
-## Archive Context
-**Plan Name:** [Name]
-**Action:** Plan completed and archived
-
-## Commit Metadata
-**Files:** [plan path, archive path]
-**References:** [Plan-level References, if any]
-```
-
-Invoke all committer prompts with: `task(agent: "pragmatic-committer", prompt: "[prompt above]")`
-
----
-
-## 7. QA Validation Prompt
+## 6. QA Validation Prompt
 
 ```markdown
 # QA Validation Request
@@ -299,35 +241,27 @@ Invoke all committer prompts with: `task(agent: "pragmatic-committer", prompt: "
 
 ## Completed Tasks
 [For each completed task:]
-- **[Task Name]:** [developer's summary]
-  - Files: [actual files modified]
+- **[Task Name]:** [developer's summary] | Files: [actual files]
 
 ## Expected Behaviors
-[Extract testable behaviors from plan tasks and acceptance criteria. Be specific:]
+[Extract testable behaviors from plan tasks and acceptance criteria. Be specific.]
 - [e.g., "POST /api/users creates a new user and returns 201"]
 - [e.g., "Invalid email returns 400 with validation error"]
-- [e.g., "App starts without errors"]
-- [e.g., "CLI command `foo --bar` outputs expected format"]
 
 ## Files Modified
 [All files changed across all tasks]
 - `path/to/file1`
 - `path/to/file2`
 
-## Issue Classification Instructions
-For each issue found during validation, classify it as:
-- **Type:** `New` (failing code is in a file from Files Modified list) or `Preexisting` (failing code is NOT in a file from Files Modified list)
-- **Effort** (Preexisting only): `Small` (fixable in 1 file with minimal changes), `Medium` (2 files or moderate complexity), `Large` (3+ files or significant structural/architectural changes)
-
-Report issues using this table format:
-| # | Type | Effort | Severity | Description | Evidence |
+## Issue Classification
+For each issue: **Type:** New (in Files Modified list) or Preexisting (NOT in Files Modified list). **Effort** (Preexisting only): Small (1 file), Medium (2 files/moderate), Large (3+ files/significant).
 ```
 
 Invoke: `task(agent: "pragmatic-qa", prompt: "[prompt above]")`
 
 ---
 
-## 8. Developer QA Fix Prompt
+## 7. Developer QA Fix Prompt
 
 ```markdown
 # Task Execution Request (QA FIX - Attempt [qa_retry_count] of [max_qa_retries])
@@ -338,32 +272,28 @@ Invoke: `task(agent: "pragmatic-qa", prompt: "[prompt above]")`
 
 ## QA Feedback
 **Status:** QA validation found issues that must be fixed.
-**Source:** Runtime validation of implemented features (Iteration [qa_retry_count])
 
 [Paste ENTIRE output from the LATEST pragmatic-qa run]
 
 ## Implementation Context
 **Plan Purpose:** [from plan]
-**Files Modified During Implementation:**
-[full file list across all tasks]
+**Files Modified During Implementation:** [full file list across all tasks]
 
 ## Instructions
-1. Analyze QA feedback — focus on concrete failures (test failures, HTTP errors, startup crashes, wrong behavior)
-2. Read the failing code paths to understand root cause
-3. **Fix ALL `New` issues** — these were introduced by the implementation and must be resolved
-4. **Fix `Preexisting` issues that are `Small` or `Medium` effort** — do NOT skip easy wins in files you touched or nearby
-5. **DO NOT fix `Preexisting` issues marked `Large`** — these existed before this implementation and are out of scope. Report them as skipped.
+1. Analyze QA feedback — focus on concrete failures (test failures, HTTP errors, startup crashes)
+2. Read failing code paths to understand root cause
+3. Fix ALL `New` issues
+4. Fix `Preexisting` issues that are `Small` or `Medium` effort — do NOT skip easy wins
+5. DO NOT fix `Preexisting` issues marked `Large` — report as skipped
 6. Make incremental fixes (DO NOT start from scratch)
-7. **Follow code style** — match existing patterns in this repo only if they align with best practices
-8. Run relevant tests locally to verify fixes before staging
-9. Stage changes
-10. Return completion status with ✅, ❌, or ⚠️ and include an issue resolution summary:
-    - Issues fixed: [list with brief description]
+7. Follow code style
+8. Run relevant tests locally to verify fixes
+9. Return completion status with ✅, ❌, or ⚠️ and include resolution summary:
+    - Issues fixed: [list]
     - Issues skipped (Large Preexisting): [list]
+10. Include the `## Structured Result` JSON block required by the developer contract
 
-**Key difference from code review fixes:** These are RUNTIME failures, not static analysis. The code compiles and passes review but doesn't behave correctly. Focus on logic errors, missing configuration, incorrect wiring, and integration issues.
-
-**Note:** Each retry triggers a new QA validation. You are fixing issues from the CURRENT QA run, not replaying the original feedback.
+**Key:** These are RUNTIME failures, not static analysis. Focus on logic errors, missing config, incorrect wiring, integration issues.
 ```
 
 Invoke: `task(agent: "pragmatic-developer", prompt: "[prompt above]")`

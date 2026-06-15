@@ -8,8 +8,8 @@ export default tool({
   },
   async execute({ full }) {
     try {
-      const format = full ? "%H" : "%h";
-      const commit = execSync(`git rev-parse ${format}`, {
+      const args = full ? "HEAD" : "--short HEAD";
+      const commit = execSync(`git rev-parse ${args}`, {
         encoding: "utf-8",
         stdio: ["pipe", "pipe", "pipe"],
       }).trim();

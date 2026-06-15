@@ -1,5 +1,5 @@
 import { tool } from "@opencode-ai/plugin";
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 
 export default tool({
   description: "Creates a git commit with proper multiline message handling",
@@ -13,26 +13,29 @@ export default tool({
   },
   async execute({ type, scope, subject, body, refs, noVerify }) {
     try {
-      const verifyFlag = noVerify ? "--no-verify" : "";
-      
       const subjectLine = scope 
         ? `${type}(${scope}): ${subject}` 
         : `${type}: ${subject}`;
 
-      let cmd = `git commit ${verifyFlag} -m "${subjectLine}"`;
-      
-      if (body) {
-        cmd += ` -m "${body}"`;
-      }
-      
-      if (refs) {
-        cmd += ` -m "Refs: ${refs}"`;
+      const args = ["commit"];
+
+      if (noVerify) {
+        args.push("--no-verify");
       }
 
-      const result = execSync(cmd, {
+      args.push("-m", subjectLine);
+
+      if (body) {
+        args.push("-m", body);
+      }
+
+      if (refs) {
+        args.push("-m", `Refs: ${refs}`);
+      }
+
+      const result = execFileSync("git", args, {
         encoding: "utf-8",
         stdio: ["pipe", "pipe", "pipe"],
-        shell: true,
       });
 
       return JSON.stringify({

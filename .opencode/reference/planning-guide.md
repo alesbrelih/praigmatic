@@ -56,6 +56,8 @@ Each task should contain:
 4. **Where** (1 line): Primary files to modify
 5. **Dependencies** (0-2 lines): What must be done first (if any)
 
+**Canonical executable contract:** Every executable task must include `Purpose`, `Acceptance`, `Steps`, `Files`, and `Dependencies`. Optional metadata is limited to `Refs` and `Commit Notes`.
+
 ### Example - Good Task Granularity
 
 ```markdown

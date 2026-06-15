@@ -8,15 +8,6 @@ export default tool({
   },
   async execute({ allowUncommitted }) {
     try {
-      // Check for uncommitted changes
-      let hasChanges: boolean;
-      try {
-        execSync("git diff-index --quiet HEAD --", { stdio: "pipe" });
-        hasChanges = false;
-      } catch {
-        hasChanges = true;
-      }
-
       if (allowUncommitted) {
         return JSON.stringify({
           valid: true,
@@ -25,7 +16,13 @@ export default tool({
         });
       }
 
-      if (!hasChanges) {
+      const status = execSync("git status --short", { encoding: "utf-8" });
+      const files = status
+        .split("\n")
+        .map((line) => line.trimEnd())
+        .filter((line) => line);
+
+      if (files.length === 0) {
         return JSON.stringify({
           valid: true,
           message: "Git state is clean",
@@ -33,14 +30,10 @@ export default tool({
         });
       }
 
-      // Get changed files
-      const status = execSync("git status --short", { encoding: "utf-8" });
-      const files = status.trim().split('\n').filter(f => f);
-
       return JSON.stringify({
         valid: false,
         message: "Uncommitted changes detected",
-        files: files,
+        files,
       });
     } catch (error) {
       return JSON.stringify({

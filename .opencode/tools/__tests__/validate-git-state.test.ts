@@ -12,7 +12,7 @@ describe("validate-git-state tool", () => {
   });
 
   it("should return valid when git state is clean", async () => {
-    vi.mocked(execSync).mockReturnValue(Buffer.from(""));
+    vi.mocked(execSync).mockReturnValue("" as any);
 
     const result = JSON.parse(await validateGitState.execute({}));
 
@@ -22,11 +22,7 @@ describe("validate-git-state tool", () => {
   });
 
   it("should return invalid when uncommitted changes exist", async () => {
-    vi.mocked(execSync)
-      .mockImplementationOnce(() => {
-        throw new Error("exit code 1");
-      })
-      .mockReturnValueOnce("M file1.ts\n?? file2.ts\n" as any);
+    vi.mocked(execSync).mockReturnValue("M file1.ts\n?? file2.ts\n" as any);
 
     const result = JSON.parse(await validateGitState.execute({}));
 
@@ -36,9 +32,7 @@ describe("validate-git-state tool", () => {
   });
 
   it("should return valid when allowUncommitted is true regardless of state", async () => {
-    vi.mocked(execSync).mockImplementation(() => {
-      throw new Error("exit code 1");
-    });
+    vi.mocked(execSync).mockReturnValue("?? file.ts\n" as any);
 
     const result = JSON.parse(
       await validateGitState.execute({ allowUncommitted: true })
@@ -57,19 +51,23 @@ describe("validate-git-state tool", () => {
       await validateGitState.execute({ allowUncommitted: true })
     );
 
-    // With allowUncommitted, should still return valid
     expect(result.valid).toBe(true);
   });
 
   it("should filter empty lines from status output", async () => {
-    vi.mocked(execSync)
-      .mockImplementationOnce(() => {
-        throw new Error("exit code 1");
-      })
-      .mockReturnValueOnce("M file1.ts\n\n\n" as any);
+    vi.mocked(execSync).mockReturnValue("M file1.ts\n\n\n" as any);
 
     const result = JSON.parse(await validateGitState.execute({}));
 
     expect(result.files).toEqual(["M file1.ts"]);
+  });
+
+  it("should treat untracked files as uncommitted changes", async () => {
+    vi.mocked(execSync).mockReturnValue("?? new-file.ts\n" as any);
+
+    const result = JSON.parse(await validateGitState.execute({}));
+
+    expect(result.valid).toBe(false);
+    expect(result.files).toEqual(["?? new-file.ts"]);
   });
 });

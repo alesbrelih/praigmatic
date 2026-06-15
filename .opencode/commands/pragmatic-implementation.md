@@ -6,19 +6,15 @@ description: Load plan file and orchestrate plan-driven implementation
 
 **YOU ARE AN ORCHESTRATOR - NOT A DEVELOPER**
 
-You MUST follow these strict rules:
 1. ❌ **NEVER edit, write, or modify code files yourself**
 2. ❌ **NEVER fix code review issues directly**
 3. ✅ **ALWAYS delegate code changes to `pragmatic-developer` agent**
 4. ✅ **ALWAYS delegate code review to `pragmatic-code-reviewer` agent**
 5. ✅ **Your job:** Coordinate workflow, parse responses, manage git state
 
-**If code needs changes:** Invoke developer agent with clear instructions.
-**If you try to edit code yourself:** You are breaking the workflow and bypassing quality controls.
-
 ---
 
-YOU MUST EXECUTE THE FOLLOWING WORKFLOW IMMEDIATELY. This is not documentation - you must now perform these steps in sequence.
+YOU MUST EXECUTE THE FOLLOWING WORKFLOW IMMEDIATELY.
 
 ## Workflow Steps
 
@@ -28,8 +24,16 @@ Use `find-plan` tool to locate most recent plan file (or specify planName argume
 ### 2. Validate Git State
 Use `validate-git-state` tool to check for uncommitted changes. If changes found, display files and prompt user to continue (y/N). Only proceed if user confirms.
 
-### 3. Parse Plan
-Read plan file and parse tasks (format: `- [ ] **Task Name** (SIZE)`). Status: `[ ]` = pending, `[~]` = in-progress, `[x]` = completed. Sizes: `(Small)`, `(Medium)`, `(Large)`.
+### 3. Validate and Parse Plan
+1. Run `validate-plan(planPath)` on the selected plan file.
+2. If validation fails, stop and show the violations. Do NOT try to execute an invalid plan.
+3. Run `parse-plan(planName?)` and use its structured JSON as the source of truth for:
+   - plan metadata
+   - ordered tasks
+   - task status and size
+   - task fields (`Purpose`, `Steps`, `Acceptance`, `Files`, `Dependencies`)
+   - plan-level `References`
+4. Do NOT scrape raw markdown for task fields if the parsed JSON is available.
 
 ### 4. Implementation Loop
 
@@ -47,7 +51,7 @@ The holistic review receives full context for all tasks (no budget cap).
 For each task:
 
 #### 4.1 Mark In-Progress
-Update plan checkbox to `[~]` before invoking developer.
+Use `update-plan-task(planPath, taskName, action: "mark_in_progress")` before invoking developer.
 
 #### 4.2 Invoke Developer
 
@@ -59,80 +63,47 @@ Invoke: `task(agent: "pragmatic-developer", prompt: "[populated template]")`
 
 #### 4.3 Handle Developer Response
 
-**Validate output** — must contain one status marker:
-- `✅ **Task Completed:**` — Success
-- `🔀 **Task Deviated:**` — Treat as success, log deviation
-- `❌ **Task Failed:**` — Annotate plan with `⚠️ FAILED: [error]`, stop loop
-- `⚠️ **Task Blocked:**` — Annotate plan with `⚠️ BLOCKED: [blocker] — Required: [action]`, stop loop
+1. Run `parse-task-result(output)` on the full developer response.
+2. If parsing fails, use `update-plan-task(..., action: "annotate_failure")` with a message like `Developer output missing valid structured result`, then stop.
+3. If `status` is `failed`, annotate failure and stop.
+4. If `status` is `blocked`, use `update-plan-task(..., action: "annotate_blocked")` with the structured blocker fields, then stop.
+5. If `status` is `completed` or `deviated`, stage only the files from `files_modified` using `git add [exact file list]`.
+6. The orchestrator owns staging. The developer only reports files.
 
-**No marker found:** Display warning, annotate plan `⚠️ FAILED: Developer output missing structured status marker`, stop loop.
+#### 4.4 Code Review (ADAPTIVE ROUTING)
 
-**Marker found but missing sections** (e.g., no `**Files Modified:**`): Warn `⚠️ Developer output incomplete — missing [section]. Proceeding with available data.`
+**Task-size-based routing:**
+- **Small tasks (1-3 steps):** Skip code review. Developer self-reviewed. Proceed to commit (4.5).
+- **Medium/Large tasks:** Run code review loop below.
+- **Security override:** If ANY task touches security-critical files (auth, crypto, middleware, secrets), force code review regardless of size.
 
-**On success/deviated:** Collect file list from `**Files Modified:**`, stage with `git add`, proceed to code review. For deviations, log in plan annotation:
-```
-- **Actual Files:** [actual file list]
-- **Notes:** DEVIATED — Original: [summary]. Actual: [summary].
-```
+**Code Review Flow (for Medium/Large tasks):**
 
-#### 4.4 Code Review Loop (MANDATORY)
-
-**THIS IS A FORCED LOOP:** You MUST keep looping between developer fixes and code review until either:
-- ✅ Reviewer approves (no critical/high issues)
-- ❌ Max retries reached
-- ❌ Developer fails/blocks
-
-❌ **DO NOT** skip re-review after developer makes fixes
-❌ **DO NOT** proceed to commit without reviewer approval
-
-`retry_count = 0`, `max_retries = 3`
-
-While `retry_count < max_retries`:
-
-1. Increment `retry_count`. Display `🔄 Code review attempt [retry_count]/[max_retries]...`
-
-2. **Review:** Verify staged files with `git status`. Build prompt using **Template 2 (Code Review Prompt)** from templates file.
-
-   Invoke: `task(agent: "pragmatic-code-reviewer", prompt: "...")`
-
-3. **Decision:** Parse for critical OR high OR medium issues.
-   - **No critical OR high OR medium:** Exit loop → commit (4.5)
-   - **Issues found + retries exhausted:** Exit loop → failure (4.6)
-
-4. **Fix Issues (FORCED LOOP):** Build prompt using **Template 3 (Developer Retry Prompt)** from templates file.
-
-   **CRITICAL:** ❌ DO NOT FIX CODE YOURSELF! Invoke `pragmatic-developer` agent to make fixes.
-
-   Invoke: `task(agent: "pragmatic-developer", prompt: "[Template 3 populated with review issues]")`
-
-   - **Success:** Stage changes with `git add`. **YOU MUST NOW GO BACK TO STEP 2 (REVIEW).** ❌ DO NOT SKIP RE-REVIEW. ❌ DO NOT PROCEED TO COMMIT WITHOUT RE-REVIEWING.
-   - **Failed/Blocked:** Exit loop immediately → failure (4.6)
-
-**ENFORCEMENT:** After developer fixes issues (step 4 success), you MUST return to step 2 to re-review. The only ways to exit this loop are:
-- ✅ Reviewer finds no critical/high/medium issues (step 3)
-- ❌ Max retries reached (step 3)
-- ❌ Developer failed/blocked (step 4)
+1. Ask `pragmatic-code-reviewer` to review the staged changes using **Template 2 (Code Review Prompt)**.
+2. Run `parse-review-result(output)` on the reviewer response.
+3. If the review result cannot be parsed, stop and treat it as review failure.
+4. If the reviewer returns `decision: "approved"` or no issue above `low`, proceed to commit (4.5).
+5. If the reviewer finds issues, ask `pragmatic-developer` to fix them using **Template 3 (Developer Retry Prompt)**. ❌ DO NOT FIX CODE YOURSELF.
+6. Parse that developer retry response with `parse-task-result(output)`.
+7. If the developer succeeds, stage the reported files with `git add`, then re-run `pragmatic-code-reviewer` on the staged changes.
+8. If critical, high, or medium issues still remain after that one developer fix attempt, stop and handle it as review failure (4.6).
+9. If the developer fails or is blocked while fixing review issues, stop and handle it as failure (4.6).
 
 #### 4.5 Commit and Accumulate Context
 
-1. Mark task `[x]` in plan.
-2. Commit using **Template 6a (Task Commit)** from templates file: `task(agent: "pragmatic-committer", prompt: "...")`
-   - **Committer failure** (`❌ Commit Failed`): Do NOT mark completed. Keep staged, inform user, stop loop.
-3. **Accumulate** task name, files, summary, discoveries for subsequent tasks.
-4. **Annotate plan** below the task:
-   ```
-   - **Actual Files:** [actual file list]
-   - **Notes:** [developer's summary, deviations if any]
-   ```
+1. Use `update-plan-task(..., action: "mark_completed")`.
+2. Use `update-plan-task(..., action: "annotate_execution", actualFiles, notes)` to record actual files and summary.
+3. Use `extract-commit-metadata(planPath, taskName, kind: "task")` to resolve merged refs and commit notes.
+4. **Commit using `git-commit` tool directly** (no committer agent):
+   - Task commits: pass `type`, `scope`, `subject`, plus `refs`/`body` from `extract-commit-metadata`
+   - Holistic/QA fix commits: resolve plan-level refs with `kind: "holistic_fix"` or `kind: "qa_fix"`
+   - Archive commits: resolve plan-level refs with `kind: "archive"`
+   - **Commit failure:** Do NOT treat the task as fully complete. Keep staged, inform user, stop loop.
+5. **Accumulate** task name, files, summary, discoveries for subsequent tasks.
 
 #### 4.6 Handle Max Retries / Failure
 
-Annotate plan:
-```
-⚠️ CODE_REVIEW_FAILED_AFTER_RETRIES: [summary]
-Attempts: [retry_count] iterations completed
-Required: Manual review and fixes needed
-```
+Use `update-plan-task(..., action: "annotate_review_failed")` with the reviewer summary.
 Do not commit. Keep files staged. Inform user of remaining issues and next steps.
 
 #### 4.7 Continue to Next Task
@@ -140,146 +111,59 @@ Read plan, find next unchecked task. Prioritize `[~]` over `[ ]`. Repeat from 4.
 
 #### 4.8 All Tasks Complete — Holistic Review
 
+Run holistic review only if ANY of the following are true:
+- the parsed plan contains more than one task
+- the plan changes public interfaces or explicitly requires backwards-compatibility care
+- the work touches security-sensitive behavior or files
+
 1. Get commits: `git log --oneline --all --grep="[Plan Name]"`
-2. Build prompt using **Template 4 (Holistic Review Prompt)** from templates file. Invoke `task(agent: "pragmatic-code-reviewer", prompt: "...")`.
+2. Build prompt using **Template 4 (Holistic Review Prompt)**. Invoke `task(agent: "pragmatic-code-reviewer", prompt: "...")`.
 
-**Holistic Improvement Loop (conditional):**
+**Holistic Improvement Flow (conditional):**
 
-`holistic_retry_count = 0`, `max_holistic_retries = 3`
-
-Parse review for `### Critical Issues`, `### High Issues`, and `### Medium Issues`. If none have issues → skip to archive.
-
-While critical OR high OR medium issues present and `holistic_retry_count < max_holistic_retries`:
-
-1. Increment `holistic_retry_count`. Display `🔄 Holistic improvement attempt [holistic_retry_count]/[max_holistic_retries]...`
-
-2. **Fix Issues:** Build prompt using **Template 5 (Holistic Developer Retry Prompt)** from templates file.
-
-   **CRITICAL:** ❌ DO NOT FIX CODE YOURSELF! Invoke `pragmatic-developer` agent to make fixes.
-
-   Invoke: `task(agent: "pragmatic-developer", prompt: "[Template 5 populated with holistic issues]")`
-
-   - **Success:** Stage changes with `git add`. **PROCEED TO STEP 3 (MANDATORY RE-REVIEW).**
-   - **Failed/Blocked:** Exit loop immediately → failure path below.
-
-3. **Re-Review (MANDATORY):** ❌ DO NOT SKIP THIS STEP. Build prompt using Template 4 with:
-   - Update `# Implementation Context` with fresh `git log`
-   - Prepend "Focus on whether previous critical AND high AND medium issues were resolved." to `# Review Focus`
-
-   Invoke: `task(agent: "pragmatic-code-reviewer", prompt: "[Template 4 updated]")`
-
-4. **Severity Check:** Parse updated review.
-   - **No critical OR high OR medium:** Exit loop → proceed to commit
-   - **Issues remain + retries exhausted:** Exit loop → failure path
-   - **Issues remain + retries available:** Loop back to step 1
-
-**ENFORCEMENT:** After developer fixes issues (step 2 success), you MUST proceed to step 3 to re-review. The only ways to exit this loop are:
-- ✅ Re-review finds no critical/high/medium issues (step 4)
-- ❌ Max retries reached with issues still present (step 4)
-- ❌ Developer failed/blocked (step 2)
+1. Run the holistic review with **Template 4**.
+2. Parse the holistic review with `parse-review-result(output)`.
+3. If the reviewer finds no critical, high, or medium issues, skip to archive.
+4. If issues are found, ask `pragmatic-developer` to fix them using **Template 5**. ❌ DO NOT FIX CODE YOURSELF.
+5. Parse that developer response with `parse-task-result(output)`.
+6. If the developer succeeds, stage the reported files and re-run the holistic review.
+7. Repeat this fix-and-re-review cycle for up to 3 developer fix attempts.
+8. If issues still remain after the third developer fix attempt, use `update-plan-task(..., action: "annotate_holistic_failed")`, keep staged changes, inform the user, and proceed to archive with notes.
+9. If the developer fails or is blocked during a holistic fix attempt, use `update-plan-task(..., action: "annotate_holistic_failed")`, keep staged changes, inform the user, and proceed to archive with notes.
 
 **Commit Holistic Fixes (success):**
-Check `git status`. If no files staged: `ℹ️ Holistic review resolved without code changes. Proceeding to archive.`
-If files staged: commit using **Template 6b (Holistic Fix Commit)** from templates file.
-- **Committer failure:** Keep staged, inform user, stop. Do not archive.
+If files staged: resolve refs with `extract-commit-metadata(kind: "holistic_fix")`, then `git-commit(type: "fix", subject: "holistic review fixes for [plan name]")`. No files staged: proceed to archive.
 
-**Failure path** (max retries / developer failed-blocked):
+#### 4.9 QA Validation Loop (OPT-IN)
 
-Annotate plan:
-```
-⚠️ HOLISTIC_REVIEW_FAILED: [summary]
-Attempts: [holistic_retry_count] iterations completed
-Required: Manual review and fixes needed
-```
-Keep changes staged. Inform user of: remaining issues, retry attempts, staged changes, next steps (manual fix or proceed to archive). Proceed to archive with failure notes.
+QA validation is **optional** — only run if:
+- User requests via flag (`/pragmatic-implementation --qa`)
+- Plan contains a `## QA Required` section
+- Default: skip QA, proceed directly to archive
 
-#### 4.9 QA Validation Loop
+If QA is requested:
 
-After holistic review (and any holistic fixes) are complete, validate runtime behavior before archiving.
+1. Build prompt using **Template 7 (QA Validation Prompt)**. Invoke: `task(agent: "pragmatic-qa", prompt: "[populated template]")`
 
-`qa_retry_count = 0`, `max_qa_retries = 2`
-
-**Initial QA Run:**
-
-1. Build prompt using **Template 7 (QA Validation Prompt)** from templates file. Populate with:
-   - Plan purpose
-   - All completed task summaries and files
-   - Expected behaviors extracted from plan tasks and acceptance criteria
-   - Full list of modified files
-
-2. Invoke: `task(agent: "pragmatic-qa", prompt: "[populated template]")`
-
-3. **Handle QA Response:**
+2. **Handle QA Response:**
    - `✅ **QA Passed:**` — Proceed to archive
-   - `⚠️ **QA Partial:**` or `❌ **QA Failed:**` — Parse issues and classify before entering fix loop:
+   - `⚠️ **QA Partial:**` or `❌ **QA Failed:**` — Classify issues:
+     - **Fixable:** New issues OR Preexisting with Small/Medium effort
+     - **Skipped:** Preexisting with Large effort
+   - Only Skipped issues remain → treat as passed with warning
+   - Fixable issues exist → continue below
 
-**Issue Classification & Filtering:**
+3. **QA Fix Flow:** Build prompt using **Template 8** and ask `pragmatic-developer` to fix the QA issues.
+4. Parse that developer response with `parse-task-result(output)`.
+5. If the developer succeeds, stage the reported files and re-run QA with **Template 7**.
+6. Repeat this QA fix-and-revalidate cycle for up to 2 developer fix attempts.
+7. If fixable issues still remain after the second developer fix attempt, use `update-plan-task(..., action: "annotate_qa_failed")`, keep staged changes, inform the user, and proceed to archive with notes.
+8. If the developer fails or is blocked while fixing QA issues, use `update-plan-task(..., action: "annotate_qa_failed")`, keep staged changes, inform the user, and proceed to archive with notes.
 
-Parse the QA issues table. For each issue:
-- **Fixable:** `New` issues OR `Preexisting` issues with `Small` or `Medium` effort
-- **Skipped:** `Preexisting` issues with `Large` effort
-
-**Decision:**
-- **Only Skipped issues remain (no fixable):** Treat as `✅ **QA Passed:**` with warning. Log skipped issues in plan annotation: `⚠️ QA_SKIPPED_PREEXISTING: [list of Large Preexisting issues]`. Proceed to archive.
-- **Fixable issues exist:** Enter QA fix loop below. Pass only fixable issues to the developer.
-
-**QA Fix Loop (conditional):**
-
-While fixable QA issues present and `qa_retry_count < max_qa_retries`:
-
-1. Increment `qa_retry_count`. Display `🔄 QA fix attempt [qa_retry_count]/[max_qa_retries]...`
-
-2. **Fix Issues:** Build prompt using **Template 8 (Developer QA Fix Prompt)** from templates file.
-
-   **CRITICAL:** ❌ DO NOT FIX CODE YOURSELF! Invoke `pragmatic-developer` agent to make fixes.
-
-   **Populate with:**
-   - Full QA output (for context)
-   - Annotated issue list: mark `Large Preexisting` issues as "SKIPPED — do not fix"
-   - Filtered list of fixable issues (New + Small/Medium Preexisting) for the developer to focus on
-
-   Invoke: `task(agent: "pragmatic-developer", prompt: "[Template 8 populated with fixable QA issues]")`
-
-   - **Success:** Stage changes with `git add`. **PROCEED TO STEP 3 (MANDATORY RE-VALIDATION).**
-   - **Failed/Blocked:** Exit loop immediately → failure path below.
-
-3. **Re-Validate (MANDATORY):** ❌ DO NOT SKIP THIS STEP. Build prompt using Template 7 with same context, but prepend to Expected Behaviors: "Focus on verifying that previously failing behaviors now work. Previous QA issues: [summary of fixable issues from last QA run]."
-
-   Invoke: `task(agent: "pragmatic-qa", prompt: "[Template 7 updated]")`
-
-4. **Result Check & Re-Classification:**
-   - Parse QA output again for issues, applying the same classification rules.
-   - **`✅ **QA Passed:**` or no fixable issues remain:** Exit loop → commit fixes and proceed to archive
-   - Fixable issues remain + retries available → Loop back to step 1
-   - Fixable issues remain + retries exhausted → Exit loop → failure path
-
-**ENFORCEMENT:** After developer fixes issues (step 2 success), you MUST proceed to step 3 to re-validate. The only ways to exit this loop are:
-- ✅ QA passes or no fixable issues remain (step 4)
-- ❌ Max retries reached with fixable issues still present (step 4)
-- ❌ Developer failed/blocked (step 2)
-
-**Commit QA Fixes (success):**
-Check `git status`. If no files staged: `ℹ️ QA issues resolved without code changes. Proceeding to archive.`
-If files staged: commit using **Template 6b (Holistic Fix Commit)** from templates file with context noting "QA fix".
-- **Committer failure:** Keep staged, inform user, stop. Do not archive.
-
-**Failure path** (max retries / developer failed-blocked):
-
-Annotate plan:
-```
-⚠️ QA_VALIDATION_FAILED: [summary of remaining fixable issues]
-⚠️ QA_SKIPPED_PREEXISTING: [list of Large Preexisting issues skipped]
-Attempts: [qa_retry_count] iterations completed
-Required: Manual testing and fixes needed
-```
-Keep changes staged. Inform user of: remaining fixable QA issues, skipped preexisting issues, retry attempts, staged changes, next steps. Proceed to archive with failure notes.
+9. **Commit QA Fixes:** resolve refs with `extract-commit-metadata(kind: "qa_fix")`, then `git-commit(type: "fix", subject: "qa fixes for [plan name]")`
 
 **Archive:**
-Use `archive-plan` tool with planPath. Stage and commit:
-```
-git add "[plan]" "[archive]" && task(agent: "pragmatic-committer", prompt: "[Template 6c - Archive Commit]")
-```
-If committer fails on archive: inform user, archive move already happened — user can commit manually.
+Use `archive-plan` tool with planPath. Then stage the moved plan files, resolve archive commit refs with `extract-commit-metadata(kind: "archive")`, and create the archive commit with `git-commit`.
 
 **Final Summary:**
 ```markdown
@@ -288,11 +172,11 @@ If committer fails on archive: inform user, archive move already happened — us
 ### Tasks: [X/Y completed]
 | Task | Status | Files | Notes |
 |------|--------|-------|-------|
-| [Task Name] | ✅ | [files] | [summary or "—"] |
+| [Task Name] | ✅ | [files] | [summary] |
 
-### Code Reviews: [X total retry iterations across all tasks]
+### Code Reviews: [X total retry iterations]
 ### Holistic Review: [Passed / X retry iterations]
-### QA Validation: [Passed / Partial (X issues) / Failed (blocker)]
+### QA Validation: [Skipped / Passed / Partial / Failed]
 
 ### Commits
 [commit hashes with messages]

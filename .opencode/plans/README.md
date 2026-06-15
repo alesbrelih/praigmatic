@@ -30,9 +30,12 @@ This directory contains detailed implementation plans created by the pragmatic-p
 ### Implementing Plans
 
 1. **Use the `/pragmatic-implementation` command**: This command reads the plan file and starts implementation (plan checkboxes track progress)
+   - It validates the plan format before execution
+   - It uses structured plan parsing instead of ad hoc markdown scraping
 
 2. **Progress tracking**: As tasks complete, the plan file checkboxes are updated:
    - `- [ ]` = Pending task
+   - `- [~]` = In-progress task
    - `- [x]` = Completed task
 
 ### After Implementation
@@ -73,6 +76,7 @@ Plans follow a standard template:
 
 - [ ] **Task 1 Name** (Small)
   - Purpose: What this achieves
+  - Acceptance: What "done" looks like
   - Steps:
     - Implementation step 1
     - Implementation step 2
@@ -83,6 +87,7 @@ Plans follow a standard template:
 
 - [ ] **Task 2 Name** (Medium)
   - Purpose: What this achieves
+  - Acceptance: What "done" looks like
   - Steps:
     - Implementation step 1
   - Files: file3.go
@@ -124,6 +129,23 @@ Plans support an optional `## Metadata` section for tracking references and othe
 - `Commit Notes:` — Extra context included in the commit message body (e.g., "Implements the callback flow discussed in design review").
 
 Both are optional — existing plans without metadata continue to work unchanged.
+
+### Canonical Executable Contract
+
+Executable plans must use this task shape:
+- status + title + size in the checkbox header
+- required fields: `Purpose`, `Acceptance`, `Steps`, `Files`, `Dependencies`
+- optional fields: `Refs`, `Commit Notes`
+
+Workflow runtime annotations such as `Actual Files`, `Notes`, and warning lines beginning with `⚠️` may be added by tooling during execution.
+
+## Workflow Tools
+
+The hardened workflow uses dedicated tools instead of relying on raw markdown parsing alone:
+- `parse-plan` — structured plan JSON
+- `validate-plan` — canonical contract validation
+- `update-plan-task` — safe checkbox and annotation updates
+- `extract-commit-metadata` — commit refs and notes resolution
 
 ## Best Practices
 
