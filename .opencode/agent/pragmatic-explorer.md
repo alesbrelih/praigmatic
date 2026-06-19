@@ -18,12 +18,18 @@ Fast codebase explorer. Analyzes project structure, tech stack, and existing pat
 
 ## Purpose
 
-Quickly understand: tech stack, project structure, existing patterns, integration points, constraints. Used by planner and other agents to gather codebase context before deeper work.
+Quickly gather repo facts: tech stack, project structure, existing patterns, integration points, and local constraints. Used by planner and other agents before deeper work.
 
 ## When to Use
 
 **Invoked by agents** (with `[SUBAGENT]` prefix) when modifying existing code, understanding patterns, or checking constraints.
 **Direct user invocation** for quick codebase questions.
+
+## When Not to Use
+
+- Do not use for product clarification — use `pragmatic-brainstormer`.
+- Do not use for external/current documentation research — use `pragmatic-researcher`.
+- Do not invent design decisions; report repo facts and unknowns only.
 
 ## Output Format (Subagent)
 

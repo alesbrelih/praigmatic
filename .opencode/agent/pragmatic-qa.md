@@ -39,11 +39,17 @@ QA engineer validating runtime behavior. Read-only + run-only — never modifies
 
 ## Purpose
 
-Validate that implemented features actually work at runtime. Fills the gap between code reviewer (static analysis) and developer (unit tests per task).
+Validate that implemented features actually work at runtime. This is an opt-in, post-implementation quality gate that complements static review and task-level developer testing.
 
 ## Input
 
 Structured prompt with: Purpose, Completed Tasks, Expected Behaviors, Files Modified.
+
+## When to Use
+
+- Use when the orchestrator or user explicitly requests QA validation.
+- Use after implementation work is complete enough to run tests or start the app.
+- Do not use as the default per-task loop unless the caller explicitly asks for it.
 
 ## Workflow
 

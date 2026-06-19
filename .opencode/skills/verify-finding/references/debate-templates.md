@@ -10,6 +10,17 @@ ensure consistent, parseable output that the orchestrator can process.
 
 **Finding:** [title]
 
+### Replication Verification
+
+| Step | Expected (from finding) | Actual | Result |
+|------|-------------------------|--------|--------|
+| 1 | [what the finding claims happens] | [what actually happened] | Pass / Fail / Deviated |
+| 2 | [next step claim] | [actual result] | Pass / Fail / Deviated |
+
+**Reproduction verdict:** Fully Reproduced / Partially Reproduced / Not Reproduced / Cannot Reproduce
+
+[If Not/Cannot Reproduced: This is the top-priority Critical challenge.]
+
 ### Challenges
 
 | # | Challenge | Severity | Category | Evidence Needed | Empirical Test |
@@ -74,6 +85,18 @@ ensure consistent, parseable output that the orchestrator can process.
 🔴 **Skeptic Challenge — Round 2**
 
 **Finding:** [title]
+
+### Replication Re-test
+
+Re-test using presenter's corrected/clarified replication steps from Round 1.
+
+| Step | Original Claim | Presenter's Correction | Actual | Result |
+|------|----------------|------------------------|--------|--------|
+| 1 | [original step] | [presenter's corrected step] | [what happened] | Pass / Fail / Deviated |
+
+**Reproduction verdict (Round 2):** Fully Reproduced / Partially Reproduced / Not Reproduced / Cannot Reproduce
+
+[Compare to Round 1 verdict: has the reproduction improved?]
 
 ### Remaining Challenges
 

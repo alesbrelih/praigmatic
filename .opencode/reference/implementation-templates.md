@@ -6,108 +6,106 @@ Prompt templates for sub-agent invocations used by `pragmatic-implementation`.
 
 ## 1. Developer Task Prompt
 
+Produced by: `render-developer-task-prompt(developerTaskPacketJson)`
+
 ```markdown
 # Task Execution Request
 
-## Task Information
-**Task Name:** [from plan]
-**Purpose:** [from plan]
+## Developer Task Packet
+**Task Name:** [from packet]
+**Purpose:** [from packet]
+**Dependencies:** [direct dependencies only]
 
-## Context
-### Architecture
-[relevant parts from plan]
+## Core Task Data
+### Task Steps
+[from packet as numbered list]
 
-### Decisions
-[relevant parts from plan]
+### Acceptance Criteria
+[from packet]
 
-### Backwards Compatibility
-[from plan — Required: Yes/No, Rationale, Impact]
-
-### Security Considerations
-[if applicable]
+### Files to Modify
+[from packet as markdown list]
 
 ### Code Style Requirements
 - Follow existing code style in this repo if it aligns with best practices
 - Unify style across the project — match similar patterns
 - If project conventions conflict with best practices, follow best practices
 
-## Previous Tasks (Completed)
-[Omit section if no completed tasks]
-[Older tasks (beyond last 3) — single-line:]
-- **Task N: [Name]** — ✅ (N files, one-sentence summary)
-[Last 3 completed tasks — full detail:]
-- **Task N: [Name]** — ✅
-  Files Modified: [actual files]
-  Summary: [from developer response]
-  Discoveries: [if any]
+## Optional Packet Context
+### Dependency Context
+[Omit if none. Direct dependency summaries only.]
 
-## Task Steps
-[from plan as numbered list]
+### Other Completed Work
+[Omit if none. At most one compact summary line.]
 
-## Acceptance Criteria
-[from plan]
+### Relevant Discoveries
+[Omit if none. Include only discoveries selected for this task.]
 
-## Files to Modify
-[from plan as markdown list]
+### Architecture Constraints
+[Omit unless packet requires architecture context.]
 
-## Additional Context
-[any other relevant info]
+### Decision Constraints
+[Omit unless packet requires decision context.]
 
-### Discoveries from Previous Tasks
-[Omit if none. All discoveries from any task, regardless of age.]
+### Backwards Compatibility Constraints
+[Include ONLY if plan has Backwards Compatibility section with Required: Yes. If absent, breaking changes are acceptable.]
+
+### Security Constraints
+[Omit unless packet requires security context.]
 
 ## Output Contract
-Return the normal human-readable completion message AND a `## Structured Result` section with a fenced `json` block matching the developer contract.
+Return the normal human-readable completion message AND a `## Structured Result` section with a fenced `json` block matching the developer contract. Handle this task only; do not stage, commit, or orchestrate follow-up steps.
 ```
 
-Invoke: `task(agent: "pragmatic-developer", prompt: "[prompt above]")`
+Invoke: `task(agent: "pragmatic-developer", prompt: "[rendered prompt]")`
 
 ---
 
 ## 2. Code Review Prompt
 
+Produced by: `render-code-review-prompt(reviewPacketJson)`
+
 ```markdown
-[SUBAGENT] Review STAGED changes for: [Task Name].
+[SUBAGENT] Review the orchestrator-provided staged diff and review packet for: [Task Name].
 
-# Current Task
-**Task Name:** [Task Name]
-**Purpose:** [from plan]
-**Steps:** [from plan as numbered list]
-**Acceptance:** [from plan]
+# Review Packet
+**Task Name:** [from packet]
+**Purpose:** [from packet]
+**Steps:** [from packet as numbered list]
+**Acceptance:** [from packet]
 **Files Modified:** [staged files list]
+**Review Pass:** [review_count]
 
-# Task Context
-### Architecture
-[relevant parts from plan]
-### Decisions
-[relevant parts from plan]
-### Backwards Compatibility
-[from plan — Required: Yes/No, Rationale, Impact]
-### Security Considerations
-[if applicable]
+## Issues To Re-check
+[Omit on first pass. On re-review, include only the normalized prior issues the reviewer should verify as fixed.]
+**Previous Review Summary:** [from packet, if present]
+- **[Severity] [Title]**: [summary]
+  Recommendation: [recommendation]
 
-# Full Plan Context
-**Total Tasks:** [number]
-**Completed Tasks:** [number]
-**Current Task:** [task name]
-
-### Upcoming Tasks
-[list remaining tasks with name and purpose]
-
-### Task Dependencies
+## Task Relationships
 - This task depends on: [list]
 - Tasks that depend on this: [list]
 
-### Overall Architecture
-[Architecture Overview from plan]
+## Additional Plan Context (only if relevant)
+### Upcoming Tasks
+[Omit unless packet includes relevant downstream tasks.]
 
-### Technical Decisions
-[Technical Decisions from plan]
+### Architecture Constraints
+[Omit unless packet includes architecture context.]
+
+### Decision Constraints
+[Omit unless packet includes decision context.]
+
+### Backwards Compatibility Constraints
+[Include ONLY if plan has Backwards Compatibility section with Required: Yes. If absent, breaking changes are acceptable.]
+
+### Security Constraints
+[Omit unless packet includes security context.]
 
 # Review Focus
 - Alignment with planned architecture
 - Support for upcoming tasks, conflicts with future work
-- Backwards Compatibility: Flag breaking changes ONLY if "Required: Yes"
+- Backwards Compatibility: Flag breaking changes ONLY if plan has Backwards Compatibility section with Required: Yes. If absent, breaking changes are acceptable.
 - Code Style: Verify code follows existing patterns; flag inconsistencies
 
 Do NOT suggest features planned for upcoming tasks.
@@ -115,32 +113,39 @@ Do NOT suggest features planned for upcoming tasks.
 **Review pass [review_count]**: If this is not the first pass, verify previous issues were fixed AND check for regressions.
 
 ## Output Contract
-Return the normal human-readable review AND a `## Structured Result` section with a fenced `json` block matching the reviewer contract.
+Return the normal human-readable review AND a `## Structured Result` section with a fenced `json` block matching the reviewer contract. This is advisory only; do not modify files or direct workflow state changes.
 ```
 
-Invoke: `task(agent: "pragmatic-code-reviewer", prompt: "[prompt above]")`
+Invoke: `task(agent: "pragmatic-code-reviewer", prompt: "[rendered prompt]")`
 
 ---
 
 ## 3. Developer Retry Prompt (Code Review Issues)
 
+Produced by: `render-developer-retry-prompt(retryPacketJson, developerTaskPacketJson)`
+
 ```markdown
 # Task Execution Request (CODE REVIEW RETRY - Attempt [fix_retry_count] of [max_fix_retries])
 
-## Task Information
+## Retry Issue Packet
 **Task Name:** [original task name]
 **Purpose:** [original purpose]
+**Highest Severity:** [from retry packet]
+**Summary:** [from retry packet]
 
-## Code Review Feedback
-**Status:** Latest code review found critical/high/medium issues that must be fixed.
+## Unresolved Issues
+[Normalized unresolved issue list from retry packet]
+- **[Severity] [Title]**: [summary]
+  Recommendation: [recommendation]
 
-[Paste ENTIRE output from the LATEST code-reviewer run]
+## Current Task Packet
+[Compact developer_task_packet content for the same task]
 
-## Previous Implementation Context
-[original task steps, files, context, architecture, decisions, backwards compatibility, security]
+## Regression-Sensitive Constraints
+[Omit if none. Include only architecture, compatibility, or security constraints that must still hold.]
 
 ## Instructions
-1. Review the LATEST code review feedback
+1. Review the retry issue packet only
 2. Fix all critical AND high AND medium issues from THIS iteration
 3. Make incremental fixes on staged changes (DO NOT start from scratch)
 4. Ensure fixes don't break existing functionality or introduce regressions
@@ -149,7 +154,7 @@ Invoke: `task(agent: "pragmatic-code-reviewer", prompt: "[prompt above]")`
 7. Include the `## Structured Result` JSON block required by the developer contract
 ```
 
-Invoke: `task(agent: "pragmatic-developer", prompt: "[prompt above]")`
+Invoke: `task(agent: "pragmatic-developer", prompt: "[rendered prompt]")`
 
 ---
 
@@ -158,26 +163,32 @@ Invoke: `task(agent: "pragmatic-developer", prompt: "[prompt above]")`
 ```markdown
 [SUBAGENT] Perform holistic review of entire functionality.
 
-# Plan Overview
-**Plan Name:** [from plan]
-**Plan Purpose:** [from plan]
+## Holistic Context Packet
+**Plan Name:** [from packet]
+**Plan Purpose:** [from packet]
 **Total Tasks:** [number]
 **All Tasks Completed:** [Yes/No]
 
-# Completed Tasks
-[For each task:]
+## Completed Tasks
+[Compressed completed task summaries]
 N. **Task N:** [Name] - ✅ | Files: [actual files] | Summary: [developer's summary] | Discoveries: [if any]
 
-# Architecture & Decisions
-[Architecture Overview + Technical Decisions from plan]
+## Compact Plan Context
+[Compact architecture + decisions summary]
 
-# Backwards Compatibility
-[from plan — Required: Yes/No, Rationale, Impact]
+### Backwards Compatibility
+[Include ONLY if plan has Backwards Compatibility section with Required: Yes]
 
-# Accumulated Discoveries
+### Security Considerations
+[Include if relevant]
+
+### Testing Strategy
+[Include if relevant]
+
+## Accumulated Discoveries
 [all discoveries consolidated]
 
-# Implementation Context
+## Implementation Context
 [commits from git log]
 
 # Review Focus
@@ -185,7 +196,7 @@ N. **Task N:** [Name] - ✅ | Files: [actual files] | Summary: [developer's summ
 - Architecture coherence with plan
 - Integration issues between tasks
 - Overall quality, security, maintainability
-- Backwards Compatibility: Flag breaking changes ONLY if "Required: Yes"
+- Backwards Compatibility: Flag breaking changes ONLY if plan has Backwards Compatibility section with Required: Yes. If absent, breaking changes are acceptable.
 - Code Style: Verify consistent style across tasks
 
 **Note:** Only review completed work. Do not suggest features from future tasks.
@@ -209,13 +220,15 @@ For re-reviews after holistic fixes: Update `# Implementation Context` with fres
 
 ## Holistic Review Feedback
 **Status:** Latest holistic review found critical/high/medium issues.
+**Highest Severity:** [from retry packet]
+**Summary:** [from retry packet]
 
-[Paste ENTIRE output from the LATEST holistic code-reviewer run]
+## Unresolved Issues
+[Normalized unresolved issue list from retry packet]
 
 ## Implementation Context
 [relevant commits from git log]
-[task list from plan]
-[backwards compatibility from plan]
+[compact holistic context packet]
 
 ## Instructions
 1. Review the LATEST holistic review feedback
@@ -234,7 +247,7 @@ Invoke: `task(agent: "pragmatic-developer", prompt: "[prompt above]")`
 ## 6. QA Validation Prompt
 
 ```markdown
-# QA Validation Request
+# QA Validation Request (OPT-IN POST-IMPLEMENTATION)
 
 ## What Was Built
 **Purpose:** [from plan purpose]
@@ -263,6 +276,8 @@ Invoke: `task(agent: "pragmatic-qa", prompt: "[prompt above]")`
 
 ## 7. Developer QA Fix Prompt
 
+Produced by: `render-developer-qa-fix-prompt(qaRetryPacketJson, planPurpose?, relevantFilesJson?)`
+
 ```markdown
 # Task Execution Request (QA FIX - Attempt [qa_retry_count] of [max_qa_retries])
 
@@ -273,11 +288,17 @@ Invoke: `task(agent: "pragmatic-qa", prompt: "[prompt above]")`
 ## QA Feedback
 **Status:** QA validation found issues that must be fixed.
 
-[Paste ENTIRE output from the LATEST pragmatic-qa run]
+## QA Issue Packet
+[Structured packet from `parse-qa-result(output)`]
+**Status:** [from packet status]
+**Summary:** [from packet summary]
+- `fixable_issues`: [normalized runtime issues the developer should address]
+- `skipped_issues`: [large preexisting issues left untouched]
+- `files_or_areas_implicated`: [relevant files or integration areas, when available]
 
 ## Implementation Context
 **Plan Purpose:** [from plan]
-**Files Modified During Implementation:** [full file list across all tasks]
+**Files Modified During Implementation:** [relevant file list for the QA failures]
 
 ## Instructions
 1. Analyze QA feedback — focus on concrete failures (test failures, HTTP errors, startup crashes)
@@ -296,4 +317,4 @@ Invoke: `task(agent: "pragmatic-qa", prompt: "[prompt above]")`
 **Key:** These are RUNTIME failures, not static analysis. Focus on logic errors, missing config, incorrect wiring, integration issues.
 ```
 
-Invoke: `task(agent: "pragmatic-developer", prompt: "[prompt above]")`
+Invoke: `task(agent: "pragmatic-developer", prompt: "[rendered prompt]")`

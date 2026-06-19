@@ -4,6 +4,53 @@ Instructions for using Playwright MCP to empirically verify web vulnerability
 claims. The skeptic MUST test any finding that can be browser-validated before
 accepting theoretical arguments.
 
+## Replication Step Re-execution (MANDATORY FIRST STEP)
+
+Before any ad-hoc vulnerability-specific testing, the skeptic MUST attempt to
+reproduce the finding by following its own Steps to Reproduce verbatim. This is
+the most fundamental empirical test — if the documented steps don't produce the
+claimed result, the finding fails its own evidence standard.
+
+### Procedure
+
+1. **Read the Steps to Reproduce** from the finding document
+2. **Execute each step in Playwright** exactly as written — same URL, same payload,
+   same parameter, same authentication context
+3. **Record the actual outcome** at every step, not what was expected
+4. **Classify the reproduction result:**
+   - **Fully Reproduced** — Every step produces the claimed result
+   - **Partially Reproduced** — Core behavior works but deviates from the description
+     (e.g., wrong payload variant needed, extra prerequisite, different error message,
+     slightly different URL)
+   - **Not Reproduced** — Steps fail to produce the claimed vulnerability
+   - **Cannot Reproduce** — Steps are incomplete: missing URLs, missing credentials,
+     undefined parameters, or references to resources that don't exist
+
+### Handling Reproduction Failures
+
+- **Not Reproduced** → Critical challenge. The finding's own evidence doesn't support
+  its claim. The skeptic should flag this as the top-priority challenge before any
+  theoretical argument.
+- **Cannot Reproduce** → High challenge. The replication steps are insufficient for
+  independent verification. This maps to "Insufficient Evidence" verdict territory.
+- **Partially Reproduced** → Document every deviation. Each deviation is a potential
+  High or Medium challenge (severity depends on whether the core claim holds).
+
+### Round 2 Re-execution
+
+If the presenter provides corrected or clarified replication steps during the
+debate, the skeptic MUST re-test those steps in Round 2. The Round 2 replication
+table should compare:
+- Original steps vs. presenter's corrected steps
+- Whether the corrected steps now reproduce the finding
+- Any remaining deviations
+
+### Reporting
+
+Use the `### Replication Verification` section in Template 1 (Round 1) and
+Template 3 (Round 2) from the debate-templates reference. Each step gets a row
+in the step table, plus an overall reproduction verdict.
+
 ## General Testing Principles
 
 1. **Test the actual claim** — If the finding says "XSS executes alert(1)", test

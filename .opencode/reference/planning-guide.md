@@ -29,9 +29,9 @@ This guide provides explicit guidance on how to structure planfiles with the rig
 - **Trade-offs:** Honest assessment of what we're giving up
 
 **5. Verification is Non-negotiable**
-- Every plan must include **Success Criteria** section
-- Must be testable: "All tests pass" > "Code works"
-- Must be complete: Unit + integration + manual testing
+- Every executable task must include an **Acceptance** field
+- Acceptance must be testable: "All tests pass" > "Code works"
+- Plans should still include a testing strategy covering the right mix of unit, integration, and manual validation
 
 ---
 
@@ -41,7 +41,8 @@ This guide provides explicit guidance on how to structure planfiles with the rig
 |------|------------|---------|
 | **Small** | 1-3 steps | Add validation to existing endpoint |
 | **Medium** | 4-8 steps | Implement JWT auth middleware |
-| **Large** | 9-15 steps | Build complete OAuth2 flow |
+| **Large** | 9-12 steps | Build complete OAuth2 flow |
+| **Justify** | 13-15 steps | Accept only when tightly coupled and hard to split cleanly |
 | **Split** | >15 steps | Should be decomposed into smaller tasks |
 
 ---
@@ -52,17 +53,23 @@ Each task should contain:
 
 1. **What** (1 line): Clear deliverable
 2. **Why** (0-1 line): Business/technical justification (optional for obvious tasks)
-3. **How** (3-6 bullets): High-level implementation steps
+3. **How** (1-12 bullets): High-level implementation steps
 4. **Where** (1 line): Primary files to modify
 5. **Dependencies** (0-2 lines): What must be done first (if any)
 
-**Canonical executable contract:** Every executable task must include `Purpose`, `Acceptance`, `Steps`, `Files`, and `Dependencies`. Optional metadata is limited to `Refs` and `Commit Notes`.
+**Canonical executable contract:** Every executable task must include `Purpose`, `Acceptance`, `Steps`, `Files`, and `Dependencies`. Optional metadata is `Context Tags`, `Produces`, `Consumes`, `Refs`, and `Commit Notes`.
+
+Use the optional context metadata only when it materially changes packet selection:
+- `Context Tags`: `architecture`, `security`, `backwards_compat`, `interface`, `integration`
+- `Produces`: named outputs or interfaces this task creates or changes
+- `Consumes`: named outputs or interfaces this task depends on
 
 ### Example - Good Task Granularity
 
 ```markdown
 - [ ] **Implement JWT authentication middleware** (MEDIUM)
   - Purpose: Secure API endpoints with token-based authentication
+  - Acceptance: Valid tokens attach user context, invalid tokens return 401, and automated tests cover the happy path plus failure cases
   - Steps:
     1. Create middleware in `internal/auth/jwt_middleware.go`
     2. Parse and validate JWT from Authorization header
@@ -71,6 +78,8 @@ Each task should contain:
     5. Write table-driven tests for valid/invalid/expired tokens
   - Files: `internal/auth/jwt_middleware.go`, `internal/server/routes.go`
   - Dependencies: JWT library selection (Task 1)
+  - Context Tags: security, integration
+  - Produces: authenticated-request-context
 ```
 
 ### Example - Too Granular (Anti-pattern)
@@ -133,7 +142,7 @@ Too Sparse                    ✓ OPTIMAL                      Too Detailed
 
 ## Plan Review Loop Workflow
 
-**Automated quality review (Phase 7):**
+**Automated quality review:**
 
 1. Planner writes initial plan to `.opencode/plans/[feature].md`
 2. Planner invokes pragmatic-plan-reviewer with full plan content
@@ -145,14 +154,14 @@ Too Sparse                    ✓ OPTIMAL                      Too Detailed
    - Phase Decisions Quality (rationale provided)
 4. If Critical/High issues found:
    - Planner revises plan to address issues
-   - Re-invoke reviewer (max 3 attempts)
-5. If no Critical/High issues OR max retries reached:
+   - Re-invoke reviewer once
+5. If no Critical/High issues OR issues still remain after that single revision pass:
    - Present plan to user for feedback
    - User approves or requests changes
 6. Approved plan is ready for implementation
 
 **Key Points:**
-- Max 3 revision attempts (initial + 2 fixes)
+- One reviewer pass plus one planner revision pass is the bounded default
 - Only Critical/High issues block progression
 - Medium/Low issues are advisory only
 - User ultimately approves regardless of review outcome
@@ -183,7 +192,7 @@ Too Sparse                    ✓ OPTIMAL                      Too Detailed
 
 ### Split if
 
-- Task has >10 implementation steps
+- Task has >12 implementation steps
 - Task requires multiple people
 - Task has natural pause points (e.g., "implement feature" then "write docs")
 
@@ -209,8 +218,8 @@ Too Sparse                    ✓ OPTIMAL                      Too Detailed
 **Solution:** Add Context section and Architecture Overview
 
 ### Pitfall 4: No Verification
-**Problem:** Plan has no clear success criteria
-**Solution:** Add testable Success Criteria section
+**Problem:** Plan has no clear acceptance criteria
+**Solution:** Add a testable `Acceptance` field to each task and a testing strategy for the overall plan
 
 ### Pitfall 5: Assuming Knowledge
 **Problem:** Plan assumes developer knows specific patterns or tools
@@ -223,16 +232,31 @@ Too Sparse                    ✓ OPTIMAL                      Too Detailed
 Before finalizing a plan, verify:
 
 - [ ] Each task is sized appropriately (SMALL/MEDIUM/LARGE)
-- [ ] Tasks include 3-6 implementation steps
+- [ ] Every task includes `Purpose`, `Acceptance`, `Steps`, `Files`, and `Dependencies`
+- [ ] Tasks stay within the recommended step ranges for their size
 - [ ] Primary files to modify are listed
 - [ ] Dependencies between tasks are clear
 - [ ] Technical decisions are documented with rationale
 - [ ] Security considerations are addressed
 - [ ] Testing strategy is defined
-- [ ] Success criteria are testable
+- [ ] Acceptance criteria are testable
 - [ ] Plan is readable in <2 minutes
 - [ ] No copy-pasted code snippets (patterns only)
 - [ ] Context section explains the "why"
+
+---
+
+## Post-Stabilization Redesign Gate
+
+After hardening the current agent prompts and contracts, consider simplifying the `pragmatic-*` set only if the cleaned-up workflow still shows one or more of these signals:
+
+- The orchestrator still has to compensate for ambiguous agent responsibilities
+- `pragmatic-direction-reviewer` rarely adds distinct value over planner judgment
+- `pragmatic-plan-reviewer` mostly repeats planner constraints instead of catching unique issues
+- `pragmatic-researcher` and `pragmatic-explorer` still overlap enough that routing between them is noisy
+- Prompt clarity improves, but the workflow still feels coordination-heavy relative to the value each agent adds
+
+If those signals remain, the next pass should evaluate aggressive simplification while preserving structured contracts and tool-enforced workflow boundaries.
 
 ---
 

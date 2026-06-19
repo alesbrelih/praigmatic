@@ -31,20 +31,26 @@ Use `validate-git-state` tool to check for uncommitted changes. If changes found
    - plan metadata
    - ordered tasks
    - task status and size
-   - task fields (`Purpose`, `Steps`, `Acceptance`, `Files`, `Dependencies`)
+   - task fields (`Purpose`, `Steps`, `Acceptance`, `Files`, `Dependencies`, optional `Context Tags`, `Produces`, `Consumes`, `Refs`, `Commit Notes`)
    - plan-level `References`
 4. Do NOT scrape raw markdown for task fields if the parsed JSON is available.
 
 ### 4. Implementation Loop
 
-**Context Accumulation:** Track each completed task's name, files modified, summary, and discoveries. Pass accumulated context to subsequent developer invocations, code reviews, and holistic review.
+**Execution State:** Track each completed task's name, files modified, summary, and discoveries. This is the source material for building minimal execution packets for developer, reviewer, retry, and holistic-review invocations.
 
-**Context Budget** (prevents context overflow on large plans):
-- **Last 3 completed tasks:** full detail (files, summary, discoveries)
-- **Older tasks:** single-line: `- **Task N: [Name]** — ✅ ([file count] files, [1-sentence summary])`
-- **All discoveries** from any task always included regardless of age
+**Workflow Tool Layer:** Before each agent invocation, build a deterministic packet from parsed plan data plus execution state using the workflow tools:
+- `build-developer-task-packet(planPath, taskName, completedTasksJson)` → `developer_task_packet`
+- `build-review-packet(planPath, taskName, stagedFiles, reviewPass)` → `review_packet`
+- `build-retry-packet(parsedReviewJson)` → `retry_packet`
+- `build-holistic-context-packet(planPath, completedTasksJson)` → `holistic_context_packet`
+- `parse-qa-result(output)` → structured QA retry packet
+- `render-developer-task-prompt(developerTaskPacketJson)` → developer prompt markdown
+- `render-code-review-prompt(reviewPacketJson)` → reviewer prompt markdown
+- `render-developer-retry-prompt(retryPacketJson, developerTaskPacketJson)` → developer retry prompt markdown
+- `render-developer-qa-fix-prompt(qaRetryPacketJson, planPurpose?, relevantFilesJson?)` → QA fix prompt markdown
 
-The holistic review receives full context for all tasks (no budget cap).
+Do NOT assemble prompts from broad narrative sections by default. The command should attach richer context only when the packet flags require it.
 
 **Task Selection:** Prioritize `[~]` (in-progress) over `[ ]` (pending). Execute sequentially.
 
@@ -57,9 +63,23 @@ Use `update-plan-task(planPath, taskName, action: "mark_in_progress")` before in
 
 **REMINDER:** ❌ You are the orchestrator. Do NOT implement the task yourself.
 
-Build prompt using **Template 1 (Developer Task Prompt)** from `~/.config/opencode/reference/implementation-templates.md`. Populate all placeholders from plan context and accumulated task data.
+Build a `developer_task_packet` using `build-developer-task-packet(planPath, taskName, completedTasksJson)`.
 
-Invoke: `task(agent: "pragmatic-developer", prompt: "[populated template]")`
+Context gates for developer packets:
+- Always include: task name, purpose, steps, acceptance, files, direct dependencies
+- When present, `Context Tags` override heuristic context selection
+- Include dependency context only for direct dependencies
+- Include at most one compact summary line for other completed work
+- Include relevant discoveries only when they match current files, dependencies, or named integration points
+- Include architecture/decision context only when the packet flags the task as architecture-sensitive, dependency-sensitive, interface-sensitive, or security-sensitive
+- Include backwards-compat context only when the plan marks it as required
+- Include security context only when the task or changed files are security-sensitive
+- Use `Produces`/`Consumes` to drive downstream context when present; fall back to dependencies, then conservative keyword inference only when metadata is absent
+
+Render the developer prompt with `render-developer-task-prompt(developerTaskPacketJson)`.
+If prompt rendering fails, stop as a workflow error. Do NOT fall back to manual assembly.
+
+Invoke: `task(agent: "pragmatic-developer", prompt: "[rendered prompt]")`
 
 #### 4.3 Handle Developer Response
 
@@ -79,15 +99,24 @@ Invoke: `task(agent: "pragmatic-developer", prompt: "[populated template]")`
 
 **Code Review Flow (for Medium/Large tasks):**
 
-1. Ask `pragmatic-code-reviewer` to review the staged changes using **Template 2 (Code Review Prompt)**.
-2. Run `parse-review-result(output)` on the reviewer response.
-3. If the review result cannot be parsed, stop and treat it as review failure.
-4. If the reviewer returns `decision: "approved"` or no issue above `low`, proceed to commit (4.5).
-5. If the reviewer finds issues, ask `pragmatic-developer` to fix them using **Template 3 (Developer Retry Prompt)**. ❌ DO NOT FIX CODE YOURSELF.
-6. Parse that developer retry response with `parse-task-result(output)`.
-7. If the developer succeeds, stage the reported files with `git add`, then re-run `pragmatic-code-reviewer` on the staged changes.
-8. If critical, high, or medium issues still remain after that one developer fix attempt, stop and handle it as review failure (4.6).
-9. If the developer fails or is blocked while fixing review issues, stop and handle it as failure (4.6).
+1. Build a `review_packet` using `build-review-packet(planPath, taskName, stagedFiles, reviewPass, previousReviewJson?)`.
+2. Render the reviewer prompt with `render-code-review-prompt(reviewPacketJson)`.
+3. If prompt rendering fails, stop as a workflow error. Do NOT fall back to manual assembly.
+4. Ask `pragmatic-code-reviewer` to review the staged changes using the rendered prompt.
+5. Context gates for review packets:
+   - Always include: staged files, current task block, direct dependency relationships, current review pass
+   - On re-review, include the normalized previous-review issue list and summary so the reviewer has an explicit checklist of what should now be fixed
+   - Include upcoming-task context only when downstream tasks depend on the current task's outputs or interfaces
+   - Include architecture/decision context only when it constrains correctness for the reviewed diff
+   - Do NOT include default full-plan context for ordinary task review
+6. Run `parse-review-result(output)` on the reviewer response.
+7. If the review result cannot be parsed, stop and treat it as review failure.
+8. If the reviewer returns `decision: "approved"` or no issue above `low`, proceed to commit (4.5).
+9. If the reviewer finds issues, build a `retry_packet` with `build-retry-packet(parsedReviewJson)`, then render the developer retry prompt with `render-developer-retry-prompt(retryPacketJson, developerTaskPacketJson)` and ask `pragmatic-developer` to fix them. ❌ DO NOT FIX CODE YOURSELF.
+10. Parse that developer retry response with `parse-task-result(output)`.
+11. If the developer succeeds, stage the reported files with `git add`, then re-run `pragmatic-code-reviewer` on the staged changes using `build-review-packet(..., previousReviewJson: parsedReviewJson)` followed by `render-code-review-prompt(reviewPacketJson)` so the reviewer can explicitly re-check the prior issues.
+12. If critical, high, or medium issues still remain after that one developer fix attempt, stop and handle it as review failure (4.6).
+13. If the developer fails or is blocked while fixing review issues, stop and handle it as failure (4.6).
 
 #### 4.5 Commit and Accumulate Context
 
@@ -113,18 +142,19 @@ Read plan, find next unchecked task. Prioritize `[~]` over `[ ]`. Repeat from 4.
 
 Run holistic review only if ANY of the following are true:
 - the parsed plan contains more than one task
-- the plan changes public interfaces or explicitly requires backwards-compatibility care
+- the plan includes a Backwards Compatibility section with Required: Yes
 - the work touches security-sensitive behavior or files
 
 1. Get commits: `git log --oneline --all --grep="[Plan Name]"`
-2. Build prompt using **Template 4 (Holistic Review Prompt)**. Invoke `task(agent: "pragmatic-code-reviewer", prompt: "...")`.
+2. Build a `holistic_context_packet` using `build-holistic-context-packet(planPath, completedTasksJson)`.
+3. Build prompt using **Template 4 (Holistic Review Prompt)**. Invoke `task(agent: "pragmatic-code-reviewer", prompt: "...")`.
 
 **Holistic Improvement Flow (conditional):**
 
 1. Run the holistic review with **Template 4**.
 2. Parse the holistic review with `parse-review-result(output)`.
 3. If the reviewer finds no critical, high, or medium issues, skip to archive.
-4. If issues are found, ask `pragmatic-developer` to fix them using **Template 5**. ❌ DO NOT FIX CODE YOURSELF.
+4. If issues are found, build a compact retry issue packet from `build-retry-packet(parsedReviewJson)` and ask `pragmatic-developer` to fix them using **Template 5**. ❌ DO NOT FIX CODE YOURSELF.
 5. Parse that developer response with `parse-task-result(output)`.
 6. If the developer succeeds, stage the reported files and re-run the holistic review.
 7. Repeat this fix-and-re-review cycle for up to 3 developer fix attempts.
@@ -143,7 +173,7 @@ QA validation is **optional** — only run if:
 
 If QA is requested:
 
-1. Build prompt using **Template 7 (QA Validation Prompt)**. Invoke: `task(agent: "pragmatic-qa", prompt: "[populated template]")`
+1. Build prompt using **Template 6 (QA Validation Prompt)**. Invoke: `task(agent: "pragmatic-qa", prompt: "[populated template]")`
 
 2. **Handle QA Response:**
    - `✅ **QA Passed:**` — Proceed to archive
@@ -153,9 +183,9 @@ If QA is requested:
    - Only Skipped issues remain → treat as passed with warning
    - Fixable issues exist → continue below
 
-3. **QA Fix Flow:** Build prompt using **Template 8** and ask `pragmatic-developer` to fix the QA issues.
+3. **QA Fix Flow:** Run `parse-qa-result(output)` on the latest QA run. If parsing fails, stop and treat it as a workflow error. Render the QA fix prompt with `render-developer-qa-fix-prompt(qaRetryPacketJson, planPurpose?, relevantFilesJson?)` and ask `pragmatic-developer` to fix only the normalized `fixable_issues`.
 4. Parse that developer response with `parse-task-result(output)`.
-5. If the developer succeeds, stage the reported files and re-run QA with **Template 7**.
+5. If the developer succeeds, stage the reported files and re-run QA with **Template 6**.
 6. Repeat this QA fix-and-revalidate cycle for up to 2 developer fix attempts.
 7. If fixable issues still remain after the second developer fix attempt, use `update-plan-task(..., action: "annotate_qa_failed")`, keep staged changes, inform the user, and proceed to archive with notes.
 8. If the developer fails or is blocked while fixing QA issues, use `update-plan-task(..., action: "annotate_qa_failed")`, keep staged changes, inform the user, and proceed to archive with notes.

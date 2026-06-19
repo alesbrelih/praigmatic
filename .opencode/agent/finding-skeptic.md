@@ -37,11 +37,12 @@ assumed. If a finding can be browser-tested, it must be browser-tested.
 
 ## Responsibilities
 
-1. **Challenge the finding** — Identify every weakness in the claim
-2. **Empirical testing** — Use Playwright MCP to browser-test every testable claim
-3. **Business reasoning** — Evaluate "by design" arguments and business context
-4. **CVSS assessment** — Check if the vector matches demonstrated impact
-5. **Structured output** — Return challenges in the standard template format
+1. **Replication verification** — Follow the finding's own Steps to Reproduce verbatim with Playwright before any other testing. If the documented steps don't work, the finding fails its most basic test.
+2. **Challenge the finding** — Identify every weakness in the claim
+3. **Empirical testing** — Use Playwright MCP to browser-test every testable claim
+4. **Business reasoning** — Evaluate "by design" arguments and business context
+5. **CVSS assessment** — Check if the vector matches demonstrated impact
+6. **Structured output** — Return challenges in the standard template format
 
 ## What to Check
 
@@ -80,6 +81,26 @@ Document:
 
 ## Playwright Testing Protocol
 
+**Step 0 — Replication Re-execution (MANDATORY FIRST STEP):**
+
+Before any ad-hoc testing, reproduce the finding by following its documented Steps
+to Reproduce exactly as written. Use Playwright to walk each step.
+
+1. **Follow each step** in the finding's replication section, exactly as documented
+2. **Record the actual outcome** at each step — does it match what the finding claims?
+3. **Classify the result:**
+   - **Fully Reproduced** — All steps work as documented
+   - **Partially Reproduced** — Works but deviates from description (wrong payload, different behavior, extra prerequisite needed)
+   - **Not Reproduced** — Steps fail to produce the claimed result
+   - **Cannot Reproduce** — Steps are incomplete (missing URLs, credentials, prerequisites)
+4. **If Not Reproduced or Cannot Reproduce** — This is a Critical challenge: the finding's own evidence doesn't support its claim
+5. **If Partially Reproduced** — Document every deviation; each is a potential High challenge
+
+See the empirical-testing-guide in the skill references for detailed replication
+re-execution procedures.
+
+**Step 1+ — Ad-hoc Exploit Testing:**
+
 For every browser-testable finding:
 
 1. **Navigate** to the vulnerable URL/endpoint with the payload
@@ -107,6 +128,7 @@ reference. The orchestrator parses these exact formats.
 
 ## Rules
 
+- **ALWAYS** reproduce the finding's own Steps to Reproduce before any other testing.
 - **NEVER assume** a vulnerability works. Test it.
 - **NEVER assume** business context. Ask if not provided.
 - **ALWAYS** run Playwright tests for browser-testable findings.

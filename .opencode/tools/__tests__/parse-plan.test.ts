@@ -12,6 +12,22 @@ Make the workflow safer and easier to execute.
 ## Metadata
 **References:** JIRA-123, GH-9
 
+## Architecture Overview
+The orchestrator coordinates execution while worker agents stay focused.
+
+## Technical Decisions
+- Use packet helpers instead of broad prompt assembly.
+
+## Backwards Compatibility
+**Required:** Yes | **Rationale:** Existing workflow users expect the current command shape.
+
+## Security Considerations
+Security-sensitive tasks still carry explicit constraints into prompts.
+
+## Testing Strategy
+- Unit: Packet helpers
+- Integration: Command/template compatibility
+
 ## Tasks
 - [ ] **Build parser** (Medium)
   - Purpose: Parse plan files safely
@@ -21,6 +37,8 @@ Make the workflow safer and easier to execute.
     - Add parse-plan tool
   - Files: .opencode/tools/lib/plan-workflow.ts, .opencode/tools/parse-plan.ts
   - Dependencies: None
+  - Context Tags: architecture, integration
+  - Produces: plan-parser-json
   - Refs: TASK-1
   - Commit Notes: Implements the parsing contract
 
@@ -31,6 +49,7 @@ Make the workflow safer and easier to execute.
     - Add validate-plan tool
   - Files: .opencode/tools/validate-plan.ts
   - Dependencies: Build parser
+  - Consumes: plan-parser-json
 
 ## QA Required
 Run QA after implementation.
@@ -58,12 +77,19 @@ describe("parse-plan tool", () => {
 
     expect(result.title).toBe("Harden Workflow");
     expect(result.references).toEqual(["JIRA-123", "GH-9"]);
+    expect(result.architectureOverview).toContain("orchestrator coordinates execution");
+    expect(result.technicalDecisions).toContain("packet helpers");
+    expect(result.backwardsCompatibility).toContain("Required:** Yes");
+    expect(result.securityConsiderations).toContain("Security-sensitive tasks");
+    expect(result.testingStrategy).toContain("Unit: Packet helpers");
     expect(result.qaRequired).toBe(true);
     expect(result.tasks).toHaveLength(2);
     expect(result.tasks[0]).toMatchObject({
       title: "Build parser",
       status: "pending",
       size: "Medium",
+      contextTags: ["architecture", "integration"],
+      produces: ["plan-parser-json"],
       refs: ["TASK-1"],
       commitNotes: "Implements the parsing contract",
     });
@@ -72,6 +98,7 @@ describe("parse-plan tool", () => {
       status: "in_progress",
       size: "Small",
       dependencies: ["Build parser"],
+      consumes: ["plan-parser-json"],
     });
   });
 
@@ -94,5 +121,62 @@ Bad plan
 
     expect(result.error).toBe("Plan validation failed");
     expect(result.violations.join(" | ")).toContain('missing required field "Acceptance"');
+  });
+
+  it("rejects invalid context tag values", async () => {
+    writeFileSync(
+      join(rootDir, ".opencode", "plans", "invalid-tags.md"),
+      `# Invalid Tags
+
+## Purpose
+Reject invalid metadata.
+
+## Tasks
+- [ ] **Bad task** (Small)
+  - Purpose: Exercise validation
+  - Acceptance: Validator rejects unsupported tags
+  - Steps:
+    - Run validation
+  - Files: .opencode/tools/lib/plan-workflow.ts
+  - Dependencies: None
+  - Context Tags: architecture, risky
+`,
+      "utf-8",
+    );
+
+    const result = JSON.parse(await parsePlan.execute({ planName: "invalid-tags.md" }));
+
+    expect(result.error).toBe("Plan validation failed");
+    expect(result.violations.join(" | ")).toContain('invalid Context Tags entry "risky"');
+  });
+
+  it("keeps legacy plans without context metadata backward compatible", async () => {
+    writeFileSync(
+      join(rootDir, ".opencode", "plans", "legacy.md"),
+      `# Legacy Plan
+
+## Purpose
+Support older plans.
+
+## Tasks
+- [ ] **Legacy task** (Small)
+  - Purpose: Keep old format valid
+  - Acceptance: Plan still parses
+  - Steps:
+    - Parse the plan
+  - Files: README.md
+  - Dependencies: None
+`,
+      "utf-8",
+    );
+
+    const result = JSON.parse(await parsePlan.execute({ planName: "legacy.md" }));
+
+    expect(result.tasks[0]).toMatchObject({
+      title: "Legacy task",
+      contextTags: [],
+      produces: [],
+      consumes: [],
+    });
   });
 });

@@ -3,6 +3,12 @@ import { resolve } from "node:path";
 
 export type TaskStatus = "pending" | "in_progress" | "completed";
 export type TaskSize = "Small" | "Medium" | "Large";
+export type ContextTag =
+  | "architecture"
+  | "security"
+  | "backwards_compat"
+  | "interface"
+  | "integration";
 
 export interface ParsedPlanTask {
   title: string;
@@ -13,6 +19,9 @@ export interface ParsedPlanTask {
   steps: string[];
   files: string[];
   dependencies: string[];
+  contextTags: ContextTag[];
+  produces: string[];
+  consumes: string[];
   refs: string[];
   commitNotes?: string;
   actualFiles: string[];
@@ -27,6 +36,11 @@ export interface ParsedPlan {
   title: string;
   purpose: string;
   references: string[];
+  architectureOverview: string;
+  technicalDecisions: string;
+  backwardsCompatibility: string;
+  securityConsiderations: string;
+  testingStrategy: string;
   tasks: ParsedPlanTask[];
   qaRequired: boolean;
 }
@@ -39,9 +53,34 @@ export interface PlanInspection {
 const TASK_HEADER_RE = /^- \[( |~|x)\] \*\*(.+?)\*\* \((Small|Medium|Large)\)$/;
 const SECTION_RE = /^##\s+(.+)$/;
 const FIELD_RE = /^  - ([A-Za-z][A-Za-z ]+):\s*(.*)$/;
+const LIST_TASK_FIELDS = new Set([
+  "Steps",
+  "Files",
+  "Dependencies",
+  "Context Tags",
+  "Produces",
+  "Consumes",
+  "Refs",
+  "Actual Files",
+]);
+const ALLOWED_CONTEXT_TAGS = new Set<ContextTag>([
+  "architecture",
+  "security",
+  "backwards_compat",
+  "interface",
+  "integration",
+]);
 
 const REQUIRED_TASK_FIELDS = ["Purpose", "Acceptance", "Steps", "Files", "Dependencies"] as const;
-const OPTIONAL_TASK_FIELDS = ["Refs", "Commit Notes", "Actual Files", "Notes"] as const;
+const OPTIONAL_TASK_FIELDS = [
+  "Context Tags",
+  "Produces",
+  "Consumes",
+  "Refs",
+  "Commit Notes",
+  "Actual Files",
+  "Notes",
+] as const;
 const ALLOWED_TASK_FIELDS = new Set<string>([
   ...REQUIRED_TASK_FIELDS,
   ...OPTIONAL_TASK_FIELDS,
@@ -61,6 +100,10 @@ function splitInlineList(value: string): string[] {
 
 function stripTicks(value: string): string {
   return value.replace(/^`+|`+$/g, "").trim();
+}
+
+function isListTaskField(field: string): boolean {
+  return LIST_TASK_FIELDS.has(field);
 }
 
 function symbolToStatus(symbol: string): TaskStatus {
@@ -90,6 +133,19 @@ function buildSections(lines: string[]): Array<{ title: string; start: number; e
   }
 
   return headings;
+}
+
+function readSectionBody(
+  lines: string[],
+  section: { start: number; end: number } | undefined,
+): string {
+  if (!section) return "";
+
+  return lines
+    .slice(section.start + 1, section.end)
+    .map((line) => line.trimEnd())
+    .join("\n")
+    .trim();
 }
 
 function parseMetadataSection(
@@ -155,7 +211,7 @@ function parseTaskBlock(
 
       currentField = field;
 
-      if (field === "Steps" || field === "Files" || field === "Dependencies" || field === "Refs" || field === "Actual Files") {
+      if (isListTaskField(field)) {
         if (field === "Dependencies" && rawValue.toLowerCase() === "none") {
           lists.set(field, []);
         } else {
@@ -170,7 +226,7 @@ function parseTaskBlock(
 
     const nestedMatch = line.match(/^    - (.+)$/);
     if (nestedMatch) {
-      if (!currentField || !(currentField === "Steps" || currentField === "Files" || currentField === "Dependencies" || currentField === "Refs" || currentField === "Actual Files")) {
+      if (!currentField || !isListTaskField(currentField)) {
         violations.push(`Task "${title}" has nested list item without a list field: "${line.trim()}"`);
         continue;
       }
@@ -182,7 +238,7 @@ function parseTaskBlock(
     }
 
     const continuationMatch = line.match(/^    (.+)$/);
-    if (continuationMatch && currentField && !(currentField === "Steps" || currentField === "Files" || currentField === "Dependencies" || currentField === "Refs" || currentField === "Actual Files")) {
+    if (continuationMatch && currentField && !isListTaskField(currentField)) {
       const previous = scalars.get(currentField) ?? "";
       scalars.set(currentField, previous ? `${previous}\n${continuationMatch[1].trim()}` : continuationMatch[1].trim());
       continue;
@@ -240,6 +296,36 @@ function parseTaskBlock(
     return inline ? splitInlineList(inline) : [];
   })();
 
+  const contextTags = (() => {
+    const listed = lists.get("Context Tags");
+    if (listed && listed.length > 0) return listed;
+    const inline = scalars.get("Context Tags");
+    return inline ? splitInlineList(inline) : [];
+  })();
+
+  const invalidContextTags = contextTags.filter(
+    (tag): tag is string => !ALLOWED_CONTEXT_TAGS.has(tag as ContextTag),
+  );
+  for (const tag of invalidContextTags) {
+    violations.push(
+      `Task "${title}" has invalid Context Tags entry "${tag}" (allowed: ${[...ALLOWED_CONTEXT_TAGS].join(", ")})`,
+    );
+  }
+
+  const produces = (() => {
+    const listed = lists.get("Produces");
+    if (listed && listed.length > 0) return listed;
+    const inline = scalars.get("Produces");
+    return inline ? splitInlineList(inline) : [];
+  })();
+
+  const consumes = (() => {
+    const listed = lists.get("Consumes");
+    if (listed && listed.length > 0) return listed;
+    const inline = scalars.get("Consumes");
+    return inline ? splitInlineList(inline) : [];
+  })();
+
   const actualFiles = (() => {
     const listed = lists.get("Actual Files");
     if (listed && listed.length > 0) return listed;
@@ -256,6 +342,11 @@ function parseTaskBlock(
     steps,
     files,
     dependencies,
+    contextTags: uniqueList(contextTags).filter((tag): tag is ContextTag =>
+      ALLOWED_CONTEXT_TAGS.has(tag as ContextTag),
+    ),
+    produces: uniqueList(produces),
+    consumes: uniqueList(consumes),
     refs,
     commitNotes: scalars.get("Commit Notes")?.trim() || undefined,
     actualFiles,
@@ -286,6 +377,11 @@ export function inspectPlanContent(content: string, planPath: string): PlanInspe
   const purposeSection = findSection("Purpose");
   const tasksSection = findSection("Tasks");
   const metadataSection = findSection("Metadata");
+  const architectureOverviewSection = findSection("Architecture Overview");
+  const technicalDecisionsSection = findSection("Technical Decisions");
+  const backwardsCompatibilitySection = findSection("Backwards Compatibility");
+  const securityConsiderationsSection = findSection("Security Considerations");
+  const testingStrategySection = findSection("Testing Strategy");
   const qaRequired = Boolean(findSection("QA Required"));
 
   if (!purposeSection) {
@@ -295,13 +391,7 @@ export function inspectPlanContent(content: string, planPath: string): PlanInspe
     violations.push('Plan is missing required "## Tasks" section');
   }
 
-  const purpose = purposeSection
-    ? lines
-        .slice(purposeSection.start + 1, purposeSection.end)
-        .map((line) => line.trim())
-        .filter(Boolean)
-        .join("\n")
-    : "";
+  const purpose = purposeSection ? readSectionBody(lines, purposeSection) : "";
 
   if (purposeSection && !purpose) {
     violations.push('Plan "## Purpose" section must not be empty');
@@ -358,6 +448,11 @@ export function inspectPlanContent(content: string, planPath: string): PlanInspe
       title: titleMatch[1].trim(),
       purpose,
       references,
+      architectureOverview: readSectionBody(lines, architectureOverviewSection),
+      technicalDecisions: readSectionBody(lines, technicalDecisionsSection),
+      backwardsCompatibility: readSectionBody(lines, backwardsCompatibilitySection),
+      securityConsiderations: readSectionBody(lines, securityConsiderationsSection),
+      testingStrategy: readSectionBody(lines, testingStrategySection),
       tasks,
       qaRequired,
     },
@@ -421,6 +516,9 @@ export function renderTaskBlock(task: ParsedPlanTask, overrides?: Partial<Parsed
     steps: overrides?.steps ?? task.steps,
     files: overrides?.files ?? task.files,
     dependencies: overrides?.dependencies ?? task.dependencies,
+    contextTags: overrides?.contextTags ?? task.contextTags,
+    produces: overrides?.produces ?? task.produces,
+    consumes: overrides?.consumes ?? task.consumes,
     actualFiles: overrides?.actualFiles ?? task.actualFiles,
     runtimeWarnings: overrides?.runtimeWarnings ?? task.runtimeWarnings,
   };
@@ -434,6 +532,18 @@ export function renderTaskBlock(task: ParsedPlanTask, overrides?: Partial<Parsed
     `  - Files: ${formatInlineList(next.files)}`,
     `  - Dependencies: ${formatInlineList(next.dependencies)}`,
   ];
+
+  if (next.contextTags.length > 0) {
+    lines.push(`  - Context Tags: ${formatInlineList(next.contextTags)}`);
+  }
+
+  if (next.produces.length > 0) {
+    lines.push(`  - Produces: ${formatInlineList(next.produces)}`);
+  }
+
+  if (next.consumes.length > 0) {
+    lines.push(`  - Consumes: ${formatInlineList(next.consumes)}`);
+  }
 
   if (next.refs.length > 0) {
     lines.push(`  - Refs: ${formatInlineList(next.refs)}`);

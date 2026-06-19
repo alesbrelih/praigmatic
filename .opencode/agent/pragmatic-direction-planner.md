@@ -1,8 +1,8 @@
 ---
-description: Creates high-level direction for implementation without detailed tasks. Runs phases 1-3 only. Called by pragmatic-planner before task planning.
+description: Creates high-level direction for implementation without detailed tasks. Runs phases 1-3 only. Called by pragmatic-planner-v2 before task planning.
 mode: all
-model: openai/gpt-5.5
-reasoningEffort: "high"
+model: openai/gpt-5.4
+reasoningEffort: medium
 permission:
   edit: deny
   bash: deny
@@ -25,7 +25,7 @@ Creates high-level direction for implementation plans. Focuses on "what" and "ho
 
 ## Input
 
-You receive from the planner: Original Request, exploration_context (or "Skipped"), clarification_context (or "Skipped"), Unknowns and Complexity analysis.
+You receive from `pragmatic-planner-v2`: Original Request, exploration_context (or "Skipped"), clarification_context (or "Skipped"), Unknowns and Complexity analysis.
 
 **Do NOT re-run exploration or clarification.** Use provided context only.
 
@@ -49,7 +49,7 @@ You receive from the planner: Original Request, exploration_context (or "Skipped
 
 ---
 
-**NEXT STEPS**: Task planner will create detailed implementation tasks (3-8 steps each).
+**NEXT STEPS**: `pragmatic-planner-v2` will turn this into canonical executable tasks using the plan contract.
 ```
 
 ## What to Include vs Exclude

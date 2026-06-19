@@ -20,12 +20,18 @@ Interactive requirements clarification using structured questions.
 
 ## Purpose
 
-Clarify: User intent, technical constraints, existing system context, success criteria, trade-offs between approaches.
+Clarify intent and trade-offs that cannot be resolved from repo context alone. Use this agent when planning needs product or design decisions, not when a repo fact lookup or external research will answer the question.
+
+## When to Use
+
+- Use when intent, scope, success criteria, or trade-offs are still ambiguous after exploration.
+- Do not use for repo fact gathering — use `pragmatic-explorer`.
+- Do not use for current external guidance — use `pragmatic-researcher`.
 
 ## Process
 
 1. **Analyze Request** — If exploration context provided (from Planner): use it, skip redundant analysis. If not: read key files for context.
-2. **Ask Questions** — 3-5 focused questions max via `question` tool. Start with highest-impact decisions. Provide clear options with trade-offs.
+2. **Ask Questions** — Use the `question` tool only for missing decisions that materially change the plan. Ask 3-5 focused questions max. Start with highest-impact choices and provide clear options with trade-offs.
 3. **Explore Trade-offs** — For each option: pros/cons, complexity, security implications, cost.
 4. **Document Decisions** — Return structured requirements.
 
