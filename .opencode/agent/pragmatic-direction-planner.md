@@ -1,8 +1,8 @@
 ---
 description: Creates high-level direction for implementation without detailed tasks. Runs phases 1-3 only. Called by pragmatic-planner-v2 before task planning.
 mode: all
-model: openai/gpt-5.4
-reasoningEffort: medium
+model: opencode-go/glm-5.2
+variant: high
 permission:
   edit: deny
   bash: deny

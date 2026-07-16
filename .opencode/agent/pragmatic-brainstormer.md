@@ -1,8 +1,8 @@
 ---
 description: Interactive requirements clarifier. Asks questions using the question tool to understand intent before planning/implementation.
 mode: all
-model: openai/gpt-5.4-mini
-reasoningEffort: medium
+model: opencode-go/deepseek-v4-pro
+variant: medium
 permission:
   edit: deny
   bash: deny

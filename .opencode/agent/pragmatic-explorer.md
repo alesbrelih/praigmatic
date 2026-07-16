@@ -1,8 +1,8 @@
 ---
 description: Fast codebase explorer. Analyzes project structure, tech stack, and existing patterns before planning/brainstorming.
 mode: all
-model: openai/gpt-5.4-mini-fast
-reasoningEffort: medium
+model: opencode-go/deepseek-v4-flash
+variant: high
 permission:
   edit: deny
   read: allow

@@ -1,5 +1,5 @@
 ---
-description: Adversarial verification of a pentest finding. Fetches finding from SysReptor, runs skeptic-presenter debate with empirical Playwright testing, produces verified verdict with operator confirmation, and patches SysReptor.
+description: Adversarial verification of a pentest finding. Fetches finding from SysReptor, re-runs replication for empirical ground truth, runs skeptic-presenter debate, produces verified verdict with operator confirmation, and patches SysReptor.
 ---
 
 # CRITICAL: YOUR ROLE AS ORCHESTRATOR
@@ -10,9 +10,11 @@ You MUST follow these strict rules:
 1. ❌ **NEVER challenge the finding yourself** — delegate to `finding-skeptic`
 2. ❌ **NEVER defend the finding yourself** — delegate to `finding-presenter`
 3. ❌ **NEVER produce a verdict yourself** — delegate to `finding-arbiter`
-4. ❌ **NEVER run Playwright tests yourself** — the skeptic does this
+4. ❌ **NEVER run debate-phase Playwright tests yourself** — the skeptic does this
 5. ✅ **ALWAYS delegate to agents with clear, structured prompts**
 6. ✅ **Your job:** Coordinate workflow, parse responses, manage checkpoints, patch SysReptor
+
+> Exception: Step 4 (Re-run Replication) is run by the orchestrator directly because the empirical result must anchor the debate, not be part of the debate. The Skeptic/Presenter agents receive the result as `## Empirical Ground Truth` rather than re-running it.
 
 ---
 
@@ -89,13 +91,86 @@ Read `context.md` in the scope root directory.
 The verify commands read `context.md` fresh each run, so the operator can update
 it as the assessment progresses and new context emerges.
 
-### 4. Round 1 — Skeptic Challenges
+### 4. Re-run Replication (Mandatory Empirical Ground Truth)
+
+Before any debate, the orchestrator re-runs the finding's `replication` field
+against the target. The result becomes empirical ground truth that anchors the
+debate and arbiter verdict. A finding cannot be downgraded, confirmed, or marked
+false positive on theoretical grounds alone.
+
+#### 4.1 Extract Replication Steps
+
+Read the finding's `replication` field (already fetched in Step 2). Parse it
+into an ordered list of reproduction steps (HTTP requests, CLI commands,
+navigation flows). If `replication` is empty or non-actionable, classify as
+`Target Unavailable` and proceed directly to the operator prompt.
+
+#### 4.2 Execute Against the Target
+
+Run the steps using the appropriate tool:
+- **HTTP/JSON/fetch** → `playwright_browser_*` or `http_*` tools
+- **SQL/CLI** → `bash` with the documented command
+- **Navigation flows** → `playwright_browser_navigate`, `playwright_browser_type`, etc.
+- **Multi-step chains** → sequence calls; capture the final response/output
+
+For destructive or side-effecting tests, attempt to run in a sandboxed context
+if possible. Otherwise, document the side effect in the audit trail.
+
+#### 4.3 Classify Result
+
+Classify the result into one of four states:
+
+| State | Definition |
+|-------|------------|
+| **Reproducible** | The vulnerability triggers as described; full exploit path works |
+| **Partially Reproducible** | Some steps succeed; the issue is real but only under specific conditions, or the full exploit chain is incomplete |
+| **Not Reproducible** | The vulnerability does not trigger; the target behaviour contradicts the claim |
+| **Target Unavailable** | Target is offline, credentials missing, test would be destructive without sandbox, or `replication` field is non-actionable |
+
+#### 4.4 Operator Confirmation (Mandatory)
+
+**ALWAYS** present the result to the operator. The verdict cannot be changed
+without an explicit confirmation. Silent skip is not allowed.
+
+Use `question` tool:
+```
+**Replication Result: [state]**
+
+**Steps executed:** [list with key outputs]
+**Evidence captured:** [paths, screenshots, response bodies]
+**Time elapsed:** [duration]
+
+Accept this result and proceed to debate?
+1. ✅ Accept — Result is [state], proceed to Step 5 (Skeptic)
+2. 🔄 Re-run — Repeat with different parameters or sandbox
+[3. ⏭️ Skip with audit — Proceed without empirical ground truth; record skip reason in debate history] ← only shown when result is NOT Reproducible
+```
+
+**Process operator response:**
+- **Accept** → Store result. Include it in the Skeptic's task packet (Template A) and Presenter's task packet (Template B) as `## Empirical Ground Truth`. Proceed to Step 5.
+- **Re-run** → Return to Step 4.2 with new parameters.
+- **Skip with audit** → Store `replication: skipped, reason: [operator-provided reason]`. Include this in the debate history and a note in the Skeptic's task packet that empirical ground truth is unavailable. Proceed to Step 5.
+
+**Skip policy:** Skip is not available when the result is **Reproducible** —
+fresh empirical confirmation is the strongest possible evidence and cannot be
+bypassed. The operator must Accept or Re-run in that case. For other states
+(Partially Reproducible, Not Reproducible, Target Unavailable), Skip with
+audit is allowed but requires a reason, which is written to
+`.verify-finding/{finding_id}.md`, the Skeptic's task packet, and the
+debate history. This prevents silent re-classification of a finding on
+theoretical grounds alone while still allowing the operator to override
+when they have business context (e.g., known false positive in this
+codebase, target behavior recently changed, time constraint).
+
+### 5. Round 1 — Skeptic Challenges
 
 Build prompt for the skeptic using **Template A (Skeptic Prompt)** below.
+Include the **Empirical Ground Truth** result from Step 4 so the skeptic
+can ground challenges in fresh evidence rather than the original report.
 
 Invoke: `task(agent: "finding-skeptic", prompt: "[populated template]")`
 
-**⚠️ CRITICAL: Do NOT invoke the presenter (Step 5) until this skeptic task completes and its response is parsed.** Skeptic and presenter MUST run sequentially within each round — NEVER in parallel.
+**⚠️ CRITICAL: Do NOT invoke the presenter (Step 6) until this skeptic task completes and its response is parsed.** Skeptic and presenter MUST run sequentially within each round — NEVER in parallel.
 
 **Parse the response** for:
 - Challenge table (challenge, severity, category, evidence needed, empirical test)
@@ -113,14 +188,15 @@ Invoke: `task(agent: "finding-skeptic", prompt: "[populated template]")`
 [Preliminary verdict recommendation]
 ```
 
-### 5. Round 1 — Presenter Defends
+### 6. Round 1 — Presenter Defends
 
 Build prompt for the presenter using **Template B (Presenter Prompt)** below.
 Include the full skeptic output so the presenter knows what to respond to.
+Also include the **Empirical Ground Truth** result from Step 4.
 
 Invoke: `task(agent: "finding-presenter", prompt: "[populated template]")`
 
-**⚠️ CRITICAL: Do NOT invoke the skeptic (Step 6) until this presenter task completes and its response is parsed.** Presenter and skeptic MUST run sequentially — NEVER in parallel.
+**⚠️ CRITICAL: Do NOT invoke the skeptic (Step 7) until this presenter task completes and its response is parsed.** Presenter and skeptic MUST run sequentially — NEVER in parallel.
 
 **Parse the response** for:
 - Defense against each challenge (defended/conceded/partially defended)
@@ -138,7 +214,7 @@ Invoke: `task(agent: "finding-presenter", prompt: "[populated template]")`
 [Remaining weaknesses]
 ```
 
-### 6. Round 2 — Skeptic Challenges Remaining
+### 7. Round 2 — Skeptic Challenges Remaining
 
 Build prompt for the skeptic using **Template C (Skeptic Round 2 Prompt)** below.
 Include:
@@ -146,16 +222,17 @@ Include:
 - Round 1 skeptic output
 - Round 1 presenter output (with concessions and defenses)
 - Business context (if provided)
+- **Empirical ground truth from Step 4** (or the audit entry if operator skipped replication)
 
 Focus the skeptic on points NOT conceded by the presenter.
 
 Invoke: `task(agent: "finding-skeptic", prompt: "[populated template]")`
 
-**⚠️ CRITICAL: Do NOT invoke the presenter (Step 7) until this skeptic task completes and its response is parsed.** Skeptic and presenter MUST run sequentially within each round — NEVER in parallel.
+**⚠️ CRITICAL: Do NOT invoke the presenter (Step 8) until this skeptic task completes and its response is parsed.** Skeptic and presenter MUST run sequentially within each round — NEVER in parallel.
 
-**Parse and display** same as Step 3.
+**Parse and display** same as Step 5.
 
-### 7. Round 2 — Presenter Responds
+### 8. Round 2 — Presenter Responds
 
 Build prompt for the presenter using **Template D (Presenter Round 2 Prompt)** below.
 Include:
@@ -163,18 +240,19 @@ Include:
 - Both rounds of skeptic output
 - Round 1 presenter output (for continuity)
 - Round 2 skeptic challenges (focus on remaining)
+- **Empirical ground truth from Step 4** (or the audit entry if operator skipped replication)
 
 Invoke: `task(agent: "finding-presenter", prompt: "[populated template]")`
 
-**⚠️ CRITICAL: Do NOT proceed to Step 8 until this presenter task completes and its response is parsed.**
+**⚠️ CRITICAL: Do NOT proceed to Step 9 until this presenter task completes and its response is parsed.**
 
-**Parse and display** same as Step 4.
+**Parse and display** same as Step 6.
 
-### 8. Checkpoint — Contestation Check
+### 9. Checkpoint — Contestation Check
 
 **Evaluate whether the debate is still contested:**
 
-- If the presenter conceded ALL challenges → Not contested, proceed to Step 8
+- If the presenter conceded ALL challenges → Not contested, proceed to Step 10
 - If the skeptic's preliminary verdict is "Confirmed" and presenter agrees → Not contested
 - If critical or high challenges remain unconceded → **Contested**
 
@@ -196,15 +274,15 @@ The following points remain unresolved:
 ```
 
 **Process operator input:**
-- Business context → Add to arbiter's context, continue to Step 8
-- Accept skeptic → Use skeptic's verdict as the working verdict, skip to Step 9
-- Accept presenter → Finding is Confirmed, skip to Step 8 with note
-- Additional evidence → Re-run Round 2 with new evidence (Step 5 again)
-- Override → Use operator's verdict, skip to Step 9
+- Business context → Add to arbiter's context, continue to Step 10
+- Accept skeptic → Use skeptic's verdict as the working verdict, skip to Step 10
+- Accept presenter → Finding is Confirmed, skip to Step 9 with note
+- Additional evidence → Re-run Round 2 with new evidence (Step 6 again)
+- Override → Use operator's verdict, skip to Step 10
 
-**If not contested:** Proceed to Step 8.
+**If not contested:** Proceed to Step 10.
 
-### 9. Arbiter Verdict
+### 10. Arbiter Verdict
 
 Build prompt for the arbiter using **Template E (Arbiter Prompt)** below.
 Include:
@@ -215,6 +293,7 @@ Include:
 - Round 2 presenter output (full)
 - Business context (if provided)
 - Operator checkpoint input (if any)
+- **Empirical ground truth from Step 4** (or the audit entry if operator skipped replication)
 
 Invoke: `task(agent: "finding-arbiter", prompt: "[populated template]")`
 
@@ -237,7 +316,15 @@ Invoke: `task(agent: "finding-arbiter", prompt: "[populated template]")`
 [Field-by-field changes table]
 ```
 
-### 10. Operator Confirmation (MANDATORY)
+**Quality pass for prose patches:** If any proposed patch targets a
+client-facing prose field (`description`, `impact`, `recommendation`,
+`replication`, `summary`), include in the arbiter's task packet the
+requirement to load the `pentest-report-writing` skill and apply its
+anti-AI and deinternalization guidance before finalizing the patch value.
+The skill's quality rubric, writing rules, and final anti-AI pass must be
+applied to the proposed prose before it is shown to the operator.
+
+### 11. Operator Confirmation (MANDATORY)
 
 **ALWAYS** pause for operator confirmation before patching SysReptor.
 
@@ -256,11 +343,99 @@ Do you accept this verdict?
 ```
 
 **Process operator response:**
-- Accept → Proceed to Step 10
-- Modify → Ask what to change, update patches, then proceed to Step 10
+- Accept → Proceed to Step 12 (Check for Overlap)
+- Modify → Ask what to change, update patches, then proceed to Step 12.
+  If the change targets a client-facing prose field (`description`, `impact`,
+  `recommendation`, `replication`, `summary`), load the
+  `pentest-report-writing` skill and apply its anti-AI and deinternalization
+  pass to the new value before proceeding.
 - Reject → End workflow, no patches applied
 
-### 11. Patch SysReptor
+### 12. Check for Overlap (SysReptor + Local)
+
+Before patching the current SysReptor finding, scan for findings that describe
+the same vulnerability. This prevents patching a duplicate when the canonical
+record lives elsewhere, and protects against losing information by updating
+the wrong SysReptor finding.
+
+#### 12.1 Build Candidate List
+
+**SysReptor findings (excluding current):**
+- Call `reptor_list_findings()` and exclude the current `finding_id`
+- For each remaining finding, extract: title, severity, affected_components
+
+**Local findings:**
+- Use `glob` to find all `plans/*/findings/*.md` under the scope root
+- For each file, read it and extract: title, severity, affected asset
+
+#### 12.2 Apply 4-Signal Comparison
+
+Same 4-signal comparison as `/verify-next` Step 10.2 (title, affected asset,
+severity, vulnerability type) with a 3-of-4 match threshold.
+
+#### 12.3 Present to Operator
+
+If 0 candidates match: log `No overlap detected.` and proceed to Step 13.
+
+If 1+ candidates match, display a table and pause for operator input:
+
+```
+## Overlap Check
+
+**Current finding:** [finding_id] — [title] — [affected asset] — [severity]
+**Verdict being applied:** [Confirmed / Downgraded / False Positive / Insufficient Evidence]
+**Patches pending:** [list of arbiter's proposed SysReptor field patches]
+
+**This finding overlaps with:**
+
+| # | Source | Identifier | Title | Affected Asset | Severity | Match Reasons |
+|---|--------|------------|-------|----------------|----------|---------------|
+| 1 | SysReptor | def789-ghi012 | [title] | [asset] | [sev] | [signals] |
+| 2 | Local | plans/02-auth/findings/007-xss-login.md | [title] | [asset] | [sev] | [signals] |
+```
+
+Use `question` tool with one option per overlap target plus the universal
+choices:
+
+1. **Proceed** — Patch the current SysReptor finding as planned (genuinely separate)
+2. **Merge into #1** — Apply the arbiter's patches to the SysReptor overlap, delete the current SysReptor finding
+3. **Merge into #2** — Apply the verdict to the local overlap (using the local field mapping), delete the current SysReptor finding
+4. **Merge into all** — Apply the verdict/patches to every overlap, delete the current SysReptor finding
+5. **Link** — Patch the current SysReptor finding AND add the overlap identifier(s) to the `references` field
+6. **Skip** — Delete the current SysReptor finding (the overlap already covers it)
+
+**Process the operator's choice:**
+- **Proceed** → continue to Step 13 (Patch SysReptor) with the current finding
+- **Merge into [target]** →
+  - If target is a SysReptor finding: redirect the arbiter's `reptor_patch_finding` calls to the target's `finding_id` instead of the current one
+  - If target is a local file: apply the verdict to the local file's `Verification` / `Verified` / `Debate Record` fields (same as `/verify-next` Step 11)
+  - Then `reptor_delete_finding(current_finding_id)` — **requires explicit re-confirmation** (see safety check below)
+  - Skip to Step 14 (Write Debate History)
+- **Link** → continue to Step 13; orchestrator includes the overlap identifier(s) in the `references` field patch
+- **Skip** → `reptor_delete_finding(current_finding_id)` — **requires explicit re-confirmation**, then skip to Step 14
+
+**SysReptor deletion safety:** Unlike local files, SysReptor findings cannot
+be recovered from version control. The debate record in
+`.verify-finding/{finding_id}.md` is the only remaining audit trail. When the
+operator's choice involves `reptor_delete_finding`, the orchestrator must
+re-confirm the deletion explicitly before calling the tool:
+
+```
+**This will PERMANENTLY DELETE SysReptor finding `abc123-def456`.**
+The verdict will be applied to [target] instead.
+The debate record is saved to `.verify-finding/abc123-def456.md` for audit.
+
+Confirm permanent deletion?
+1. Yes, delete
+2. No, link instead (keep both, cross-reference)
+3. Cancel
+```
+
+This re-confirmation is required for any merge or skip that targets a
+SysReptor deletion. Local-file deletion via `bash rm` is recoverable from
+`git` and does not require re-confirmation.
+
+### 13. Patch SysReptor
 
 For each field that needs patching (from the arbiter's recommendation):
 
@@ -281,7 +456,7 @@ For each field that needs patching (from the arbiter's recommendation):
 [If Insufficient Evidence: Note that no patches were applied — finding flagged for re-testing]
 ```
 
-### 12. Write Debate History
+### 14. Write Debate History
 
 Write the complete debate record to the assessment project directory.
 
@@ -294,7 +469,8 @@ Use **Template F (Debate History)** below.
 This file serves as:
 - **Defense record** — If a client challenges a downgrade, the debate record shows
   the reasoning and evidence behind every decision
-- **Audit trail** — Shows empirical test results, concessions, and operator input
+- **Audit trail** — Shows empirical test results, concessions, operator input, and
+  the replication result (or skip-audit entry) from Step 4
 - **Pattern learning** — Over time, debate records reveal recurring false positive
   patterns specific to this assessment type
 - **Re-verification context** — If a finding needs re-testing later, the history
@@ -304,7 +480,7 @@ This file serves as:
 doesn't already exist, since debate records may contain vulnerability details and
 payloads that shouldn't be committed to version control.
 
-### 13. Summary
+### 15. Summary
 
 ```
 ## Finding Verification Complete
@@ -313,6 +489,7 @@ payloads that shouldn't be committed to version control.
 **Finding ID:** [finding_id]
 **Verdict:** [Confirmed / Downgraded / False Positive / Insufficient Evidence]
 **CVSS:** [original] → [final]
+**Replication result:** [Reproducible / Partial / Not Reproducible / Target Unavailable / Skipped (audited)]
 **Rounds:** 2
 **Empirical tests run:** [count]
 **Operator checkpoints:** [count]
@@ -351,6 +528,13 @@ payloads that shouldn't be committed to version control.
 
 **References:** [references]
 
+## Empirical Ground Truth (from Step 4)
+
+**Replication result:** [Reproducible / Partially Reproducible / Not Reproducible / Target Unavailable / Skipped (audited)]
+**Steps executed:** [list with key outputs]
+**Evidence captured:** [paths, screenshots, response bodies]
+**Skip reason (if applicable):** [operator-provided reason]
+
 ## Finding Source
 
 **Type:** SysReptor
@@ -383,6 +567,8 @@ evidence. You weigh what was presented.
 
 **Decision framework:**
 - Empirical test results override theoretical arguments
+- The Step 4 replication result is the highest-trust evidence; treat any conflict
+  between it and the original report as the replication result being correct
 - Conceded points are fact — they cannot be restored
 - "By design" arguments are valid when supported by business context
 - CVSS must match demonstrated impact, not theoretical impact
@@ -410,6 +596,13 @@ skill references.
 **Original CVSS:** [cvss]
 
 ---
+
+## Empirical Ground Truth (Step 4)
+
+**Replication result:** [Reproducible / Partially Reproducible / Not Reproducible / Target Unavailable / Skipped (audited)]
+**Steps executed:** [list with key outputs]
+**Evidence captured:** [paths, screenshots, response bodies]
+**Skip reason (if applicable):** [operator-provided reason]
 
 ## Finding (Original)
 
@@ -476,6 +669,7 @@ skill references.
 **Verdict:** [Confirmed / Downgraded / False Positive / Insufficient Evidence]
 **CVSS:** [original] → [final]
 **SysReptor patches applied:** [list of fields, or "None"]
+**Replication result:** [Reproducible / Partial / Not Reproducible / Target Unavailable / Skipped (audited)]
 **Empirical tests run:** [count] ([PASSED/FAILED/INCONCLUSIVE counts])
 **Operator confirmations:** [count]
 ```

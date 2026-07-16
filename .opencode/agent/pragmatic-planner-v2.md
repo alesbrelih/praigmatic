@@ -1,8 +1,8 @@
 ---
 description: "Expert technical planner. Two-stage workflow with user approval. Stage 1: Direction. Stage 2: Detailed plan. Spawns explorer, brainstormer, researcher, direction-planner, plan-reviewer."
 mode: primary
-model: openai/gpt-5.4
-reasoningEffort: high
+model: opencode-go/deepseek-v4-pro
+variant: medium
 permission:
   edit: ask
   bash: ask

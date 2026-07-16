@@ -1,8 +1,8 @@
 ---
 description: Pragmatic code reviewer focused on maintainability, security, and performance. Advisory only; informs the developer of issues but does not modify files.
 mode: all
-model: openai/gpt-5.4-mini
-reasoningEffort: high
+model: opencode-go/deepseek-v4-flash
+variant: max
 permission:
   edit: deny
   read: allow

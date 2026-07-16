@@ -1,8 +1,8 @@
 ---
 description: QA engineer that validates runtime behavior. Starts the app, runs test suites, hits real endpoints, and verifies features work end-to-end. Does not modify code.
 mode: all
-model: openai/gpt-5.4-mini
-reasoningEffort: medium
+model: opencode-go/deepseek-v4-flash
+variant: max
 permission:
   edit: deny
   read: allow

@@ -1,8 +1,8 @@
 ---
 description: Specialized agent focused on task size optimization and plan quality. Primary mission is ensuring tasks are as small as possible and detecting when plans should be split.
 mode: all
-model: openai/gpt-5.4-mini
-reasoningEffort: medium
+model: opencode-go/deepseek-v4-flash
+variant: max
 permission:
   edit: deny
   read: allow

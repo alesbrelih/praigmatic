@@ -1,8 +1,8 @@
 ---
 description: "Senior developer reviewer for direction (Stage 1). Challenges ideas for YAGNI, KISS, scale appropriateness, and overengineering. Acts as pragmatic gatekeeper before task planning."
 mode: all
-model: openai/gpt-5.4-mini
-reasoningEffort: medium
+model: opencode-go/deepseek-v4-flash
+variant: max
 permission:
   edit: deny
   read: allow
