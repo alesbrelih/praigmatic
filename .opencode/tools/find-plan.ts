@@ -6,10 +6,12 @@ export default tool({
   description: "Find the most recent plan file in .opencode/plans/ or use provided name",
   args: {
     planName: tool.schema.string().optional().describe("Optional plan file name (without .opencode/plans/ prefix)"),
+    plansDir: tool.schema.string().optional().describe("Optional plans directory (default: .opencode/plans/)"),
   },
-  async execute({ planName }) {
+  async execute({ planName, plansDir: plansDirArg }, context) {
     try {
-      const plansDir = resolve(process.cwd(), ".opencode/plans");
+      const directory = context?.directory ?? process.cwd();
+      const plansDir = resolve(directory, plansDirArg ?? ".opencode/plans");
 
       if (planName) {
         const path = resolve(plansDir, planName);
@@ -26,7 +28,7 @@ export default tool({
       try {
         entries = await readdir(plansDir);
       } catch {
-        return `Error: .opencode/plans/ directory does not exist (looked in ${plansDir})`;
+        return `Error: Plans directory does not exist (looked in ${plansDir})`;
       }
 
       const mdFiles = entries.filter(
@@ -34,7 +36,7 @@ export default tool({
       );
 
       if (mdFiles.length === 0) {
-        return "Error: No plan files found in .opencode/plans/";
+        return `Error: No plan files found in ${plansDir}`;
       }
 
       const filesWithStats = await Promise.all(

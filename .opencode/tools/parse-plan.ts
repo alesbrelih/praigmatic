@@ -7,10 +7,12 @@ export default tool({
   description: "Parse a plan file into structured JSON using the canonical executable task contract",
   args: {
     planName: tool.schema.string().optional().describe("Optional plan file name in .opencode/plans/; defaults to the most recent plan"),
+    plansDir: tool.schema.string().optional().describe("Optional plans directory (default: .opencode/plans/)"),
   },
-  async execute({ planName }) {
+  async execute({ planName, plansDir }, context) {
     try {
-      const planPath = await resolvePlanPath(process.cwd(), planName);
+      const directory = context?.directory ?? process.cwd();
+      const planPath = await resolvePlanPath(directory, planName, plansDir);
       await stat(planPath);
       const content = await readFile(planPath, "utf-8");
       const inspection = inspectPlanContent(content, planPath);

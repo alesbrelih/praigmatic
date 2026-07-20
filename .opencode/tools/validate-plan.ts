@@ -8,9 +8,10 @@ export default tool({
   args: {
     planPath: tool.schema.string().describe("Path to the plan file to validate"),
   },
-  async execute({ planPath }) {
+  async execute({ planPath }, context) {
+    const directory = context?.directory ?? process.cwd();
     try {
-      const absolutePath = resolve(process.cwd(), planPath);
+      const absolutePath = resolve(directory, planPath);
       const content = await readFile(absolutePath, "utf-8");
       const inspection = inspectPlanContent(content, absolutePath);
 
@@ -22,7 +23,7 @@ export default tool({
     } catch (error) {
       return JSON.stringify({
         valid: false,
-        planPath: resolve(process.cwd(), planPath),
+        planPath: resolve(directory, planPath),
         violations: [
           `Failed to validate plan: ${error instanceof Error ? error.message : String(error)}`,
         ],

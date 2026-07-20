@@ -13,10 +13,11 @@ export default tool({
       .optional()
       .describe("Commit kind: task, holistic_fix, qa_fix, archive. Defaults to task."),
   },
-  async execute({ planPath, taskName, kind }) {
+  async execute({ planPath, taskName, kind }, context) {
     try {
       const commitKind = kind ?? "task";
-      const absolutePath = resolve(process.cwd(), planPath);
+      const directory = context?.directory ?? process.cwd();
+      const absolutePath = resolve(directory, planPath);
       const content = await readFile(absolutePath, "utf-8");
       const plan = parsePlanContent(content, absolutePath);
 

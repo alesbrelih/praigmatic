@@ -7,10 +7,12 @@ export default tool({
   description: "Move a plan file to the archive directory with a timestamp suffix",
   args: {
     planPath: tool.schema.string().describe("Path to the plan file to archive"),
+    archiveDir: tool.schema.string().optional().describe("Optional archive directory (default: .opencode/plans/archive/)"),
   },
-  async execute(args) {
+  async execute(args, context) {
     try {
-      const planPath = resolve(process.cwd(), args.planPath);
+      const directory = context?.directory ?? process.cwd();
+      const planPath = resolve(directory, args.planPath);
 
       // Validate that source file exists and is readable
       await access(planPath, constants.R_OK);
@@ -18,7 +20,7 @@ export default tool({
       const sourceBasename = basename(planPath, '.md');
       const timestamp = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
       const archiveFilename = `${sourceBasename}-${timestamp}.md`;
-      const archiveDir = resolve(process.cwd(), ".opencode/plans/archive");
+      const archiveDir = resolve(directory, args.archiveDir ?? ".opencode/plans/archive");
       const archivePath = resolve(archiveDir, archiveFilename);
 
       if (existsSync(archivePath)) {

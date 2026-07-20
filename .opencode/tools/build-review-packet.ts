@@ -75,9 +75,10 @@ export default tool({
       .optional()
       .describe("Optional parsed prior review result or retry packet JSON for re-review"),
   },
-  async execute({ planPath, taskName, stagedFiles, reviewPass, previousReviewJson }) {
+  async execute({ planPath, taskName, stagedFiles, reviewPass, previousReviewJson }, context) {
     try {
-      const absolutePath = resolve(process.cwd(), planPath);
+      const directory = context?.directory ?? process.cwd();
+      const absolutePath = resolve(directory, planPath);
       const content = await readFile(absolutePath, "utf-8");
       const plan = parsePlanContent(content, absolutePath);
       const task = findTask(plan, taskName);

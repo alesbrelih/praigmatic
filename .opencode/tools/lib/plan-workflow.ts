@@ -468,8 +468,8 @@ export function parsePlanContent(content: string, planPath: string): ParsedPlan 
   return inspection.plan;
 }
 
-export async function resolvePlanPath(cwd: string, planName?: string): Promise<string> {
-  const plansDir = resolve(cwd, ".opencode/plans");
+export async function resolvePlanPath(cwd: string, planName?: string, plansSubdir = ".opencode/plans"): Promise<string> {
+  const plansDir = resolve(cwd, plansSubdir);
 
   if (planName) {
     return resolve(plansDir, planName);
@@ -479,7 +479,7 @@ export async function resolvePlanPath(cwd: string, planName?: string): Promise<s
   const mdFiles = entries.filter((name) => name.endsWith(".md") && name !== "README.md");
 
   if (mdFiles.length === 0) {
-    throw new Error("No plan files found in .opencode/plans/");
+    throw new Error(`No plan files found in ${plansDir}`);
   }
 
   const files = await Promise.all(

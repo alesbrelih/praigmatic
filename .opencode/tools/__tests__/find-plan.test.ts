@@ -53,21 +53,21 @@ describe("find-plan tool", () => {
       vi.mocked(readdir).mockRejectedValue(new Error("ENOENT"));
 
       const result = await findPlan.execute({});
-      expect(result).toContain("Error: .opencode/plans/ directory does not exist");
+      expect(result).toContain("Error: Plans directory does not exist");
     });
 
     it("should return error when no plan files found", async () => {
       vi.mocked(readdir).mockResolvedValue(["README.md"] as any);
 
       const result = await findPlan.execute({});
-      expect(result).toContain("Error: No plan files found");
+      expect(result).toContain("Error: No plan files found in");
     });
 
     it("should return error when directory is empty", async () => {
       vi.mocked(readdir).mockResolvedValue([] as any);
 
       const result = await findPlan.execute({});
-      expect(result).toContain("Error: No plan files found");
+      expect(result).toContain("Error: No plan files found in");
     });
 
     it("should handle single plan file", async () => {

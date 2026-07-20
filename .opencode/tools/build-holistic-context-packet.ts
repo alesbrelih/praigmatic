@@ -46,9 +46,10 @@ export default tool({
       .string()
       .describe("JSON array of completed task execution summaries"),
   },
-  async execute({ planPath, completedTasksJson }) {
+  async execute({ planPath, completedTasksJson }, context) {
     try {
-      const absolutePath = resolve(process.cwd(), planPath);
+      const directory = context?.directory ?? process.cwd();
+      const absolutePath = resolve(directory, planPath);
       const content = await readFile(absolutePath, "utf-8");
       const plan = parsePlanContent(content, absolutePath);
       const completedTasks = parseCompletedTasks(completedTasksJson);

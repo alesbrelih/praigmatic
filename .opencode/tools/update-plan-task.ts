@@ -38,10 +38,11 @@ export default tool({
     blocker: tool.schema.string().optional().describe("Blocker text for annotate_blocked"),
     requiredAction: tool.schema.string().optional().describe("Required action text for annotate_blocked"),
   },
-  async execute({ planPath, taskName, action, actualFiles, notes, summary, blocker, requiredAction }) {
+  async execute({ planPath, taskName, action, actualFiles, notes, summary, blocker, requiredAction }, context) {
     try {
       const normalizedAction = action as UpdateAction;
-      const absolutePath = resolve(process.cwd(), planPath);
+      const directory = context?.directory ?? process.cwd();
+      const absolutePath = resolve(directory, planPath);
       const content = await readFile(absolutePath, "utf-8");
       const plan = parsePlanContent(content, absolutePath);
       const task = findTask(plan, taskName);
