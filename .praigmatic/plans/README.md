@@ -50,7 +50,7 @@ This creates an audit trail of what was implemented and when.
 ## Directory Structure
 
 ```
-.opencode/plans/
+.praigmatic/plans/
 ├── README.md                    # This file
 ├── active-plan.md              # Current implementation plan
 ├── another-plan.md             # Another active plan
