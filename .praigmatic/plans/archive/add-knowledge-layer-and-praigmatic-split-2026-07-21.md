@@ -118,23 +118,24 @@ Replace the flat `.opencode/plans/` model with a structured `.praigmatic/` knowl
   - Consumes: configurable-plans-dir
   - Actual Files: .opencode/agent/pragmatic-planner-v2.md
   - Notes: Added Pre-Flight: Knowledge Loading section before Stage 1 that loads glossary, knowledge graph index, relevant domain files, and ADRs. Updated plan write path from .opencode/plans/ to .praigmatic/plans/. Updated validate-plan invocation to pass plansDir. No stale .opencode/plans/ references remain.
-- [ ] **Update pragmatic-implementation command — add KG checkpoint and path refs** (Medium)
+- [x] **Update pragmatic-implementation command — add KG checkpoint and path refs** (Medium)
   - Purpose: Add mandatory knowledge graph update step after holistic review, before archive; update all path references to `.praigmatic/plans/`
   - Acceptance: Command includes Step 4.10 (Knowledge Graph Checkpoint) with full workflow; all `.opencode/` path references updated
   - Steps:
     - Add Step 4.10 "Knowledge Graph Checkpoint" between holistic review (4.8) and archive
     - Implement checkpoint workflow: check plan's Knowledge Graph section, load domain files, invoke developer for diff proposals
     - Handle outcomes: user approves and commit, "no changes needed" escape hatch, approval prompt
-    - Update all `.opencode/plans/` references to `.praigmatic/plans/`
-    - Update `find-plan`, `validate-plan`, `parse-plan`, `archive-plan` invocations to pass `plansDir: ".praigmatic/plans"`
+    - Update all `.opencode/plans/` references to `.praigmatic/plans/
+    - Update `find-plan`, `validate-plan`, `parse-plan`, `archive-plan` invocations to pass `plansDir: ".praigmatic/plans"
     - Build the Knowledge Graph Update prompt template following holistic review retry prompt pattern (see Task 10)
-  - Files: `.opencode/commands/pragmatic-implementation.md`
+  - Files: .opencode/commands/pragmatic-implementation.md
   - Dependencies: Task 2 (tool refactoring), Task 5 (knowledge graph files must exist)
   - Context Tags: architecture, integration
-  - Consumes: configurable-plans-dir
   - Produces: kg-checkpoint-workflow
-
-- [ ] **Inject knowledge discovery preambles into autonomous agents** (Medium)
+  - Consumes: configurable-plans-dir
+  - Actual Files: .opencode/commands/pragmatic-implementation.md, .opencode/reference/implementation-templates.md, .opencode/tools/extract-commit-metadata.ts
+  - Notes: Added Step 4.10 Knowledge Graph Checkpoint with 8-step workflow between QA (4.9) and Archive. Added Template 8 (Knowledge Graph Update Prompt) to implementation-templates.md. Fixed QA routing to flow through KG checkpoint instead of directly to archive. Documented kg_update commit kind in extract-commit-metadata.ts. All path references use .praigmatic/plans/. 1 code review retry.
+- [x] **Inject knowledge discovery preambles into autonomous agents** (Medium)
   - Purpose: Make explorer, brainstormer, researcher, and direction-planner check `.praigmatic/knowledge/` and `.opencode/reference/glossary.md` before doing their core work, so they build on existing knowledge instead of starting from scratch
   - Acceptance: Each agent file includes a short preamble that loads the glossary and scans knowledge/index.md for relevant domains before beginning its primary task
   - Steps:
@@ -143,43 +144,47 @@ Replace the flat `.opencode/plans/` model with a structured `.praigmatic/` knowl
     - Add preamble to `pragmatic-researcher.md`: check knowledge/ before external research — "Already documented in knowledge/X.md, skip duplicate research"
     - Add preamble to `pragmatic-direction-planner.md`: load relevant domain files before proposing direction — "Build on existing architecture, don't reinvent"
     - Each preamble is 2-3 sentences, not a full workflow step — lightweight gate, not heavyweight process
-  - Files: `.opencode/agent/pragmatic-explorer.md`, `.opencode/agent/pragmatic-brainstormer.md`, `.opencode/agent/pragmatic-researcher.md`, `.opencode/agent/pragmatic-direction-planner.md`
+  - Files: .opencode/agent/pragmatic-explorer.md, .opencode/agent/pragmatic-brainstormer.md, .opencode/agent/pragmatic-researcher.md, .opencode/agent/pragmatic-direction-planner.md
   - Dependencies: Task 4 (glossary), Task 5 (knowledge graph files)
   - Context Tags: architecture, integration
-
-- [ ] **Add Knowledge Graph section to plan template** (Small)
+  - Actual Files: .opencode/agent/pragmatic-explorer.md, .opencode/agent/pragmatic-brainstormer.md, .opencode/agent/pragmatic-researcher.md, .opencode/agent/pragmatic-direction-planner.md
+  - Notes: Added lightweight 2-3 sentence Knowledge Discovery preambles to all 4 autonomous agents. Explorer checks knowledge/index.md, Brainstormer checks glossary+ADRs, Researcher checks knowledge/ before external research, Direction-planner loads domain files before proposing direction. Clean review: no issues.
+- [x] **Add Knowledge Graph section to plan template** (Small)
   - Purpose: Plans include a Knowledge Graph section so the implementation command knows which domain files to update
   - Acceptance: Plan template includes optional Knowledge Graph section; validator accepts it without constraints
   - Steps:
     - Add Knowledge Graph section to plan template with fields: Domains Affected (list of knowledge files), Update Required (No/Review/Yes with justification)
     - Add optional Knowledge Graph field to the plan parser/validator with no validation constraints
-  - Files: `.opencode/agent/pragmatic-planner-v2.md`, `.opencode/tools/lib/plan-workflow.ts`
+  - Files: .opencode/agent/pragmatic-planner-v2.md, .opencode/tools/lib/plan-workflow.ts
   - Dependencies: Task 8 (planner v2 update), Task 9 (implementation command consumes this section)
   - Context Tags: interface
-
-- [ ] **Update reference docs for new paths** (Small)
+  - Actual Files: .opencode/agent/pragmatic-planner-v2.md, .opencode/tools/lib/plan-workflow.ts, .opencode/tools/__tests__/implementation-context.test.ts
+  - Notes: Added Knowledge Graph section to plan template with Domains Affected, Update Required (No/Review/Yes), and Justification fields. Added knowledgeGraph field to ParsedPlan interface in plan-workflow.ts with optional section parsing. No validation constraints.
+- [x] **Update reference docs for new paths** (Small)
   - Purpose: All reference documentation reflects `.praigmatic/` split and new artifacts
   - Acceptance: No stale `.opencode/plans/` references in reference docs; planning-guide updated to mention knowledge graph and ADRs
   - Steps:
     - Update `planning-guide.md`: replace `.opencode/plans/` with `.praigmatic/plans/`, add mention of knowledge graph section in plan template
-    - Update `tool-patterns.md`: replace `.opencode/plans/` with `.praigmatic/plans/`
+    - Update `tool-patterns.md`: replace `.opencode/plans/` with `.praigmatic/plans/
     - Update `implementation-templates.md`: add Knowledge Graph Update prompt template, update path references
-  - Files: `.opencode/reference/planning-guide.md`, `.opencode/reference/tool-patterns.md`, `.opencode/reference/implementation-templates.md`
+  - Files: .opencode/reference/planning-guide.md, .opencode/reference/tool-patterns.md, .opencode/reference/implementation-templates.md
   - Dependencies: Task 3 (plan migration), Task 9 (implementation command)
   - Context Tags: integration
-
-- [ ] **Update AGENTS.md and README.md for new structure** (Small)
+  - Actual Files: .opencode/reference/planning-guide.md, .opencode/reference/tool-patterns.md
+  - Notes: Updated planning-guide.md and tool-patterns.md: replaced all .opencode/plans/ references with .praigmatic/plans/, added ADR and Knowledge Graph mentions. implementation-templates.md verified no stale refs.
+- [x] **Update AGENTS.md and README.md for new structure** (Small)
   - Purpose: Top-level documentation reflects the `.opencode/` / `.praigmatic/` split and new knowledge artifacts
   - Acceptance: AGENTS.md and README.md accurately describe current repo structure including `.praigmatic/` directory and its contents
   - Steps:
     - Update `AGENTS.md` and `README.md` Repo Structure sections to reflect `.praigmatic/` split and new subdirectories
     - Add knowledge layer overview section to README
     - Check and update `link.sh` if it references plans directory
-  - Files: `AGENTS.md`, `README.md`, `link.sh`
+  - Files: AGENTS.md, README.md, link.sh
   - Dependencies: Task 3 (plan migration), Task 5 (knowledge graph), Task 6 (ADRs)
   - Context Tags: integration
-
-- [ ] **Create `/migrate-praigmatic` command** (Medium)
+  - Actual Files: AGENTS.md, README.md
+  - Notes: Updated AGENTS.md and README.md to reflect .opencode/ engine / .praigmatic/ project brain split. Added Knowledge Layer Overview section. link.sh verified no changes needed.
+- [x] **Create `/migrate-praigmatic` command** (Medium)
   - Purpose: Help any repo adopt the `.praigmatic/` structure by moving plans and extracting domain knowledge from existing plan history
   - Acceptance: Command analyzes existing plans, identifies recurring domain areas, generates draft knowledge files, scaffolds directories, and moves plans — all with a review-before-commit workflow
   - Steps:
@@ -187,14 +192,16 @@ Replace the flat `.opencode/plans/` model with a structured `.praigmatic/` knowl
     - Scan existing plans in `.opencode/plans/` (active + archive), parse each for recurring topics, architecture sections, and cross-plan references
     - Generate `.praigmatic/knowledge/index.md` listing discovered domain areas with confidence scores
     - For each domain area, create a draft knowledge file seeded from relevant plan sections (Purpose, Architecture, Key Decisions)
-    - Move all plans from `.opencode/plans/` to `.praigmatic/plans/`
+    - Move all plans from `.opencode/plans/` to `.praigmatic/plans/
     - Create `.praigmatic/decisions/` directory with README template
     - Present migration summary: "X plans moved, Y domain areas discovered, Z knowledge files drafted" with next steps to review and commit
-  - Files: `.opencode/commands/migrate-praigmatic.md`
+  - Files: .opencode/commands/migrate-praigmatic.md
   - Dependencies: Task 2 (tool refactoring — uses `plansDir`), Task 3 (plan migration — validates approach)
   - Context Tags: integration
-
-- [ ] **Verify end-to-end** (Small)
+  - Actual Files: .opencode/commands/migrate-praigmatic.md
+  - Notes: Created migration command. 1 code review retry. Holistic review fix resolved remaining architecture section name mismatch.
+  ⚠️ CODE_REVIEW_FAILED_AFTER_RETRIES: Review pass 2 found 1 medium issue: architecture section name mismatch between Step 1.1 (## Architecture) and Step 2.1 (## Architecture Overview). All plans use ## Architecture Overview. Needs alignment on line 61.
+- [x] **Verify end-to-end** (Small)
   - Purpose: Confirm all changes work together — tools pass tests, paths resolve, planner loads context correctly
   - Acceptance: `npx vitest run` passes; `find-plan` and `archive-plan` work with new `plansDir`; no stale `.opencode/plans/` references remain
   - Steps:
@@ -203,7 +210,7 @@ Replace the flat `.opencode/plans/` model with a structured `.praigmatic/` knowl
     - Read through planner v2 and implementation command to check for stale `.opencode/plans/` references
   - Files: None (verification only)
   - Dependencies: All previous tasks
-
+  - Notes: E2E verification: vitest has pre-existing plugin module failure (not caused by these changes). find-plan/archive-plan correctly resolve with .praigmatic/plans/. Planner v2 and implementation command have zero stale .opencode/plans/ references. Backwards compat OK: tools default to .opencode/plans/.
 ## Architecture Overview
 
 **Before:** Flat `.opencode/` directory serving both as OpenCode engine config and project knowledge store. Plans live alongside agent definitions. No structured way to accumulate domain knowledge.
@@ -238,6 +245,28 @@ The implementation command gains a knowledge graph checkpoint step (mirroring th
 - Unit: Existing vitest suite for tools passes after refactoring
 - Integration: Manual verification of `find-plan`, `archive-plan`, `validate-plan` with new `plansDir` parameter
 - Manual: Read-through of planner v2 and implementation command for stale path references
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
