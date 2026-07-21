@@ -17,7 +17,7 @@ This separation prevents the system from diving into task details before the ove
 
 ### Plan File as Single Source of Truth
 
-The plan file (`.opencode/plans/[feature].md`) serves both as the task definition document AND the execution tracker. Checkboxes (`- [ ]` / `- [~]` / `- [x]`) mark task state. No separate todo system exists — the plan file is the canonical record.
+The plan file (`.praigmatic/plans/[feature].md`) serves both as the task definition document AND the execution tracker. Checkboxes (`- [ ]` / `- [~]` / `- [x]`) mark task state. No separate todo system exists — the plan file is the canonical record.
 
 ### Canonical Executable Contract
 
@@ -82,7 +82,7 @@ This keeps packets minimal — only relevant context is included for each task.
 - Multiple researchers can run in parallel
 
 **Step 2.2: Create Plan (Required)**
-- Write plan to `.opencode/plans/[feature].md`
+- Write plan to `.praigmatic/plans/[feature].md`
 - Include: Purpose, Metadata, Planning Summary table, Tasks, Architecture Overview, Technical Decisions, Security Considerations, Testing Strategy
 - Each task uses the canonical executable contract format
 - Run `validate-plan` after writing; fix violations before proceeding

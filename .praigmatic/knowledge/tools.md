@@ -155,14 +155,14 @@ Parses the QA agent's output into a structured QA retry packet.
 Locates the most recent plan file or uses a provided plan name.
 
 - **Input:** Optional `planName`
-- **Resolution:** Uses `resolvePlanPath()` from plan-workflow.ts — checks provided name or scans `.opencode/plans/` for most recent `.md` file (excluding README)
+- **Resolution:** Uses `resolvePlanPath()` from plan-workflow.ts — checks provided name or scans `.opencode/plans/` for most recent `.md` file (defaults to `.opencode/plans/`; orchestrator passes `.praigmatic/plans/` explicitly; excludes README)
 
 #### archive-plan
 
 Moves a plan file to the archive directory with a date timestamp suffix.
 
 - **Input:** `planPath`
-- **Output:** Archive file at `.opencode/plans/archive/[name]-[YYYY-MM-DD].md`
+- **Output:** Archive file at `.opencode/plans/archive/[name]-[YYYY-MM-DD].md` (defaults to `.opencode/plans/`; orchestrator passes `.praigmatic/plans/` explicitly)
 - **Usage:** Final step of the implementation workflow
 
 #### extract-commit-metadata
