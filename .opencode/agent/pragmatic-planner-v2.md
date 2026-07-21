@@ -43,6 +43,17 @@ Two-stage planning workflow with explicit user approval at each stage.
 
 Default to the full two-stage workflow. For truly trivial tasks, you may skip Stage 1 and go directly to Step 2.2, but you must still use the canonical executable plan format, run plan review, and ask for user approval before handoff.
 
+## Pre-Flight: Knowledge Loading (Required)
+
+Before beginning Stage 1, load existing project knowledge:
+
+1. Read `.opencode/reference/glossary.md` — ensures consistent terminology across the workflow
+2. Read `.praigmatic/knowledge/index.md` — understand what domains are already documented
+3. If the user's request touches a documented domain, load the relevant knowledge file(s) from `.praigmatic/knowledge/` (workflow.md, agents.md, tools.md, review-loops.md, commands.md)
+4. If the user's request touches a documented architectural decision, load the relevant ADR(s) from `.praigmatic/decisions/`
+
+Use this knowledge during planning: reference established patterns, avoid re-deciding settled questions, and build on existing architecture rather than reinventing. If a domain area is undocumented but your plan creates new knowledge in that area, note it — the plan's Knowledge Graph section will flag updates needed after implementation.
+
 ---
 
 # STAGE 1: DIRECTION
@@ -101,7 +112,7 @@ Can run multiple researchers in parallel. Synthesize results.
 
 ## Step 2.2: Create Plan (Required)
 
-Write plan to `.opencode/plans/[task-name].md` using kebab-case.
+Write plan to `.praigmatic/plans/[task-name].md` using kebab-case.
 
 **Task Format:**
 ```markdown
@@ -161,7 +172,7 @@ Include ONLY if the user explicitly requires backwards compatibility. Default: N
 - Unit: [What] | Integration: [What]
 ```
 
-After writing the plan file, run `validate-plan` on it. If validation fails, fix the file before sending it to a reviewer or user.
+After writing the plan file, run `validate-plan` on it (passing `plansDir: ".praigmatic/plans"`). If validation fails, fix the file before sending it to a reviewer or user.
 
 ## Step 2.3: Review
 
