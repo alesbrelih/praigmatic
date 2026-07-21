@@ -144,7 +144,7 @@ Too Sparse                    ✓ OPTIMAL                      Too Detailed
 
 **Automated quality review:**
 
-1. Planner writes initial plan to `.opencode/plans/[feature].md`
+1. Planner writes initial plan to `.praigmatic/plans/[feature].md`
 2. Planner invokes pragmatic-plan-reviewer with full plan content
 3. Reviewer evaluates plan against quality criteria:
    - Logic & Coherence (dependencies, sequencing)
@@ -177,6 +177,7 @@ Too Sparse                    ✓ OPTIMAL                      Too Detailed
 ✅ **Risk Mitigation:** Security considerations, performance bottlenecks, edge cases
 ✅ **Integration Points:** How new code connects to existing systems
 ✅ **Testing Strategy:** What needs testing and why
+✅ **ADRs:** Architecture Decision Records from `.praigmatic/decisions/` that inform this plan
 
 ### Exclude from Planfile
 
@@ -243,6 +244,8 @@ Before finalizing a plan, verify:
 - [ ] Plan is readable in <2 minutes
 - [ ] No copy-pasted code snippets (patterns only)
 - [ ] Context section explains the "why"
+- [ ] Knowledge Graph section included with Domains Affected, Update Required, and Justification
+- [ ] ADRs from `.praigmatic/decisions/` referenced if relevant
 
 ---
 

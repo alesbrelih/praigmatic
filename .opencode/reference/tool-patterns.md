@@ -1,16 +1,16 @@
 # Plan File Handling Patterns
 
-Patterns for working with plan files in `.opencode/plans/`.
+Patterns for working with plan files in `.praigmatic/plans/`.
 
 ## Find Plan File
 
 ```bash
 # If argument provided, use it
 if [ -n "$1" ]; then
-  PLAN_FILE=".opencode/plans/$1"
+  PLAN_FILE=".praigmatic/plans/$1"
 else
   # Auto-detect most recent plan
-  PLAN_FILE=$(ls -t .opencode/plans/*.md 2>/dev/null | grep -v README | head -1)
+  PLAN_FILE=$(ls -t .praigmatic/plans/*.md 2>/dev/null | grep -v README | head -1)
 fi
 
 # Verify file exists
@@ -41,13 +41,13 @@ grep -n "^\- \[ \]" "$PLAN_FILE" | head -1
 
 ```
 edit(
-  filePath: ".opencode/plans/feature-name.md",
+  filePath: ".praigmatic/plans/feature-name.md",
   oldString: "- [ ] **Task Name** (Medium)",
   newString: "- [x] **Task Name** (Medium)"
 )
 
 # CRITICAL: Verify edit succeeded
-read(filePath: ".opencode/plans/feature-name.md")
+read(filePath: ".praigmatic/plans/feature-name.md")
 ```
 
 ## Archive Completed Plan
@@ -55,14 +55,14 @@ read(filePath: ".opencode/plans/feature-name.md")
 ```bash
 TIMESTAMP=$(date +%Y-%m-%d)
 PLAN_NAME=$(basename "$PLAN_FILE" .md)
-mv "$PLAN_FILE" ".opencode/plans/archive/${PLAN_NAME}-${TIMESTAMP}.md"
+mv "$PLAN_FILE" ".praigmatic/plans/archive/${PLAN_NAME}-${TIMESTAMP}.md"
 ```
 
 ## Add Blocker Note
 
 ```
 edit(
-  filePath: ".opencode/plans/feature-name.md",
+  filePath: ".praigmatic/plans/feature-name.md",
   oldString: "- [ ] **Task Name** (Medium)",
   newString: "- [ ] **Task Name** (Medium)
   - BLOCKED: Missing dependency X"
