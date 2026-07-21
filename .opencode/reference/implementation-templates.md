@@ -318,3 +318,63 @@ Produced by: `render-developer-qa-fix-prompt(qaRetryPacketJson, planPurpose?, re
 ```
 
 Invoke: `task(agent: "pragmatic-developer", prompt: "[rendered prompt]")`
+
+---
+
+## 8. Knowledge Graph Update Prompt
+
+```markdown
+# Knowledge Graph Update Request
+
+## Plan Information
+**Plan Name:** [plan name from parsed plan]
+**Plan Purpose:** [plan purpose from parsed plan]
+**Tasks Completed:** [number]
+
+## Affected Domain Files
+
+[For each knowledge file listed in the plan's Knowledge Graph > Domains Affected:]
+
+### `.praigmatic/knowledge/[filename]`
+
+**Current content:**
+```
+[full current content of the affected knowledge file]
+```
+
+**Changes introduced by this plan:**
+[what was implemented that may affect this domain file — new agents/tools/workflow steps,
+architecture changes, pattern changes, command modifications]
+
+## Implementation Context
+
+**Completed tasks:**
+[compact task summaries from execution state]
+
+**Relevant commits:**
+[git log output filtered for this plan]
+
+**Accumulated discoveries:**
+[all discoveries from task execution, or "None"]
+
+## Instructions
+
+1. Review each affected domain file against what was actually implemented
+2. Determine if the file needs updates to reflect:
+   - New agent capabilities, roles, permissions, or contract changes
+   - New tools or changes to existing tool behavior or parameters
+   - New workflow steps or changes to existing step ordering or logic
+   - New architectural patterns, conventions, or decisions
+   - New commands or command modifications
+3. For each file needing an update, propose specific edits (additions, modifications, removals)
+   in the structured result format with exact file paths and changed content
+4. If NO changes are needed for any affected file, return "No changes needed" as the summary
+   — this is the escape hatch
+5. Return completion status with ✅, ❌, or ⚠️
+6. Include the `## Structured Result` JSON block required by the developer contract with:
+   - `status`: `completed` (with or without changes)
+   - `files_modified`: list of knowledge files changed, or empty if none
+   - `summary`: "No changes needed" if no updates, or description of what was updated
+```
+
+Invoke: `task(agent: "pragmatic-developer", prompt: "[populated template]")`

@@ -19,7 +19,7 @@ YOU MUST EXECUTE THE FOLLOWING WORKFLOW IMMEDIATELY.
 ## Workflow Steps
 
 ### 1. Find Plan
-Use `find-plan` tool to locate most recent plan file (or specify planName argument). If error returned, display usage message and exit.
+Use `find-plan` tool to locate most recent plan file (or specify planName argument), passing `plansDir: ".praigmatic/plans"`. If error returned, display usage message and exit.
 
 ### 2. Validate Git State
 Use `validate-git-state` tool to check for uncommitted changes. If changes found, display files and prompt user to continue (y/N). Only proceed if user confirms.
@@ -27,7 +27,7 @@ Use `validate-git-state` tool to check for uncommitted changes. If changes found
 ### 3. Validate and Parse Plan
 1. Run `validate-plan(planPath)` on the selected plan file.
 2. If validation fails, stop and show the violations. Do NOT try to execute an invalid plan.
-3. Run `parse-plan(planName?)` and use its structured JSON as the source of truth for:
+3. Run `parse-plan(planName?, plansDir: ".praigmatic/plans")` and use its structured JSON as the source of truth for:
    - plan metadata
    - ordered tasks
    - task status and size
@@ -169,14 +169,14 @@ If files staged: resolve refs with `extract-commit-metadata(kind: "holistic_fix"
 QA validation is **optional** — only run if:
 - User requests via flag (`/pragmatic-implementation --qa`)
 - Plan contains a `## QA Required` section
-- Default: skip QA, proceed directly to archive
+- Default: skip QA, proceed to Knowledge Graph Checkpoint (4.10)
 
 If QA is requested:
 
 1. Build prompt using **Template 6 (QA Validation Prompt)**. Invoke: `task(agent: "pragmatic-qa", prompt: "[populated template]")`
 
 2. **Handle QA Response:**
-   - `✅ **QA Passed:**` — Proceed to archive
+   - `✅ **QA Passed:**` — Proceed to Knowledge Graph Checkpoint (4.10)
    - `⚠️ **QA Partial:**` or `❌ **QA Failed:**` — Classify issues:
      - **Fixable:** New issues OR Preexisting with Small/Medium effort
      - **Skipped:** Preexisting with Large effort
@@ -187,13 +187,29 @@ If QA is requested:
 4. Parse that developer response with `parse-task-result(output)`.
 5. If the developer succeeds, stage the reported files and re-run QA with **Template 6**.
 6. Repeat this QA fix-and-revalidate cycle for up to 2 developer fix attempts.
-7. If fixable issues still remain after the second developer fix attempt, use `update-plan-task(..., action: "annotate_qa_failed")`, keep staged changes, inform the user, and proceed to archive with notes.
-8. If the developer fails or is blocked while fixing QA issues, use `update-plan-task(..., action: "annotate_qa_failed")`, keep staged changes, inform the user, and proceed to archive with notes.
+7. If fixable issues still remain after the second developer fix attempt, use `update-plan-task(..., action: "annotate_qa_failed")`, keep staged changes, inform the user, and proceed to Knowledge Graph Checkpoint (4.10) with notes.
+8. If the developer fails or is blocked while fixing QA issues, use `update-plan-task(..., action: "annotate_qa_failed")`, keep staged changes, inform the user, and proceed to Knowledge Graph Checkpoint (4.10) with notes.
 
 9. **Commit QA Fixes:** resolve refs with `extract-commit-metadata(kind: "qa_fix")`, then `git-commit(type: "fix", subject: "qa fixes for [plan name]")`
 
+#### 4.10 Knowledge Graph Checkpoint
+
+The Knowledge Graph Checkpoint ensures domain knowledge stays current after plan implementation. It runs after QA validation (or holistic review if QA is skipped) and before archive. The checkpoint loads the plan's `Knowledge Graph` section, invokes the developer to propose diffs, and presents them for user approval.
+
+1. **Check Knowledge Graph section:** Read the parsed plan for a `Knowledge Graph` section. If absent (no Knowledge Graph section in parsed JSON) or `Update Required: No`, skip this step — log a note and proceed to archive.
+2. **Load domain files:** If `Domains Affected` lists knowledge files (e.g., `agents.md`, `tools.md`, `commands.md`, `workflow.md`, `review-loops.md`), load each affected file from `.praigmatic/knowledge/`. Read the full content of each file for context.
+3. **Build KG Update prompt:** Populate **Template 8 (Knowledge Graph Update Prompt)** with the plan name, purpose, completed task summaries, affected domain files (current content), and implementation context (commits, discoveries).
+4. **Invoke developer:** `task(agent: "pragmatic-developer", prompt: "[populated Template 8]")`
+5. **Handle developer response:** Use `parse-task-result(output)`.
+   - `completed` with file diffs: Present proposed changes to the user — "Knowledge graph updates proposed for: [files]. Apply and commit? (y/N)"
+   - `completed` with "No changes needed" summary: Proceed to archive (escape hatch — no further prompting needed)
+   - `failed` or `blocked`: Use `update-plan-task(..., action: "annotate_execution", notes: "KG checkpoint: [summary]")`, then proceed to archive with notes
+6. **User approval:** Only stage and commit if user confirms (y). If user declines (N or empty), skip to archive.
+7. **Commit KG updates:** If approved: `git add [knowledge files]`, resolve refs with `extract-commit-metadata(kind: "kg_update")`, then `git-commit(type: "docs", scope: "knowledge", subject: "knowledge graph updates for [plan name]")`.
+8. **No changes escape hatch:** If developer confirms no knowledge graph updates needed, proceed directly to archive without further prompting.
+
 **Archive:**
-Use `archive-plan` tool with planPath. Then stage the moved plan files, resolve archive commit refs with `extract-commit-metadata(kind: "archive")`, and create the archive commit with `git-commit`.
+Use `archive-plan` tool with planPath, passing `archiveDir: ".praigmatic/plans/archive"`. Then stage the moved plan files, resolve archive commit refs with `extract-commit-metadata(kind: "archive")`, and create the archive commit with `git-commit`.
 
 **Final Summary:**
 ```markdown
@@ -207,6 +223,7 @@ Use `archive-plan` tool with planPath. Then stage the moved plan files, resolve 
 ### Code Reviews: [X total retry iterations]
 ### Holistic Review: [Passed / X retry iterations]
 ### QA Validation: [Skipped / Passed / Partial / Failed]
+### Knowledge Graph Checkpoint: [Skipped / Updated / No Changes Needed / Failed]
 
 ### Commits
 [commit hashes with messages]

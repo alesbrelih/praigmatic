@@ -11,7 +11,7 @@ export default tool({
     kind: tool.schema
       .string()
       .optional()
-      .describe("Commit kind: task, holistic_fix, qa_fix, archive. Defaults to task."),
+      .describe("Commit kind: task, holistic_fix, qa_fix, kg_update, archive. Defaults to task."),
   },
   async execute({ planPath, taskName, kind }, context) {
     try {
