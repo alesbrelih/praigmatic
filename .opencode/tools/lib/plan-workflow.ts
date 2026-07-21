@@ -41,6 +41,7 @@ export interface ParsedPlan {
   backwardsCompatibility: string;
   securityConsiderations: string;
   testingStrategy: string;
+  knowledgeGraph: string;
   tasks: ParsedPlanTask[];
   qaRequired: boolean;
 }
@@ -382,6 +383,7 @@ export function inspectPlanContent(content: string, planPath: string): PlanInspe
   const backwardsCompatibilitySection = findSection("Backwards Compatibility");
   const securityConsiderationsSection = findSection("Security Considerations");
   const testingStrategySection = findSection("Testing Strategy");
+  const knowledgeGraphSection = findSection("Knowledge Graph");
   const qaRequired = Boolean(findSection("QA Required"));
 
   if (!purposeSection) {
@@ -453,6 +455,7 @@ export function inspectPlanContent(content: string, planPath: string): PlanInspe
       backwardsCompatibility: readSectionBody(lines, backwardsCompatibilitySection),
       securityConsiderations: readSectionBody(lines, securityConsiderationsSection),
       testingStrategy: readSectionBody(lines, testingStrategySection),
+      knowledgeGraph: readSectionBody(lines, knowledgeGraphSection),
       tasks,
       qaRequired,
     },

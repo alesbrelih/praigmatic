@@ -170,6 +170,11 @@ Include ONLY if the user explicitly requires backwards compatibility. Default: N
 
 ## Testing Strategy
 - Unit: [What] | Integration: [What]
+
+## Knowledge Graph
+**Domains Affected:** [List of knowledge files in `.praigmatic/knowledge/` this plan touches]
+**Update Required:** [No / Review / Yes]
+**Justification:** [Why the update is or isn't needed]
 ```
 
 After writing the plan file, run `validate-plan` on it (passing `plansDir: ".praigmatic/plans"`). If validation fails, fix the file before sending it to a reviewer or user.

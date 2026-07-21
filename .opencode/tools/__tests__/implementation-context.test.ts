@@ -21,6 +21,7 @@ const basePlan: ParsedPlan = {
   backwardsCompatibility: "**Required:** Yes | **Rationale:** Existing commands depend on current behavior.",
   securityConsiderations: "Auth, middleware, and secret handling require careful review.",
   testingStrategy: "Unit test helpers and run the existing vitest suite.",
+  knowledgeGraph: "",
   qaRequired: false,
   tasks: [
     {
