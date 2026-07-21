@@ -25,31 +25,90 @@
 
 ## File Structure
 
+### Engine (`.opencode/`)
+
+The OpenCode engine configuration — agents, tools, commands, skills, and shared reference docs.
+
 ```
- .opencode/
- ├── opencode.json          # Plugins: DCP + opencode-skillful
- ├── dcp.jsonc              # Dynamic context pruning config
- ├── agent/
- │   ├── pragmatic-explorer.md
- │   ├── pragmatic-brainstormer.md
- │   ├── pragmatic-direction-planner.md
- │   ├── pragmatic-planner.md
- │   ├── pragmatic-researcher.md
- │   ├── pragmatic-developer.md
- │   └── pragmatic-code-reviewer.md
+.opencode/
+├── opencode.json          # Plugins: DCP + opencode-skillful
+├── dcp.jsonc              # Dynamic context pruning config
+├── agent/                 # Agent definitions (markdown)
+│   ├── pragmatic-explorer.md
+│   ├── pragmatic-brainstormer.md
+│   ├── pragmatic-direction-planner.md
+│   ├── pragmatic-planner.md
+│   ├── pragmatic-researcher.md
+│   ├── pragmatic-developer.md
+│   └── pragmatic-code-reviewer.md
+├── commands/              # Slash commands
+│   └── pragmatic-implementation.md
 ├── reference/             # Shared standards (referenced by agents)
-│   ├── ttd-criteria.md    # TTD decision framework
+│   ├── tdd-criteria.md    # TDD decision framework
 │   ├── security-checklist.md
 │   ├── code-quality.md
-│   └── tool-patterns.md   # MCP tool syntax
+│   ├── tool-patterns.md   # MCP tool syntax
+│   ├── glossary.md        # Canonical term definitions
+│   ├── planning-guide.md  # Plan file conventions
+│   └── implementation-templates.md
+├── skills/                # Skill definitions
+│   ├── bubbletea/
+│   ├── go-backend-developer/
+│   ├── penetration-tester/
+│   └── ...
+├── tools/                 # Custom OpenCode plugin tools (TypeScript)
+├── tests/                 # Tool tests
+└── plugins/               # Custom plugins
+```
+
+### Project Brain (`.praigmatic/`)
+
+Project-specific intelligence — plans, decisions, and domain knowledge that stays local to this repo.
+
+```
+.praigmatic/
+├── index.md               # Knowledge base entry point
 ├── plans/                 # Implementation plans
 │   ├── README.md          # Plan lifecycle documentation
 │   └── archive/           # Completed plans
-├── skills/                # Skill definitions
-    ├── SKILL-TEMPLATE.md  # Template for new skills
-    └── go-backend-developer/
-        └── SKILL.md
+├── decisions/             # Architectural decision records (ADRs)
+│   ├── README.md
+│   ├── 0001-two-stage-planning.md
+│   ├── 0002-committer-removal.md
+│   └── 0003-adaptive-review-routing.md
+└── knowledge/             # Knowledge graph (domain understanding)
+    ├── index.md
+    ├── workflow.md
+    ├── review-loops.md
+    ├── agents.md
+    ├── tools.md
+    └── commands.md
 ```
+
+## Knowledge Layer
+
+The `.praigmatic/` directory forms a structured knowledge layer that accumulates project intelligence across implementations. Unlike the `.opencode/` engine (which is shared across repos via symlinks), `.praigmatic/` stays local and grows with the project.
+
+### Components
+
+- **Knowledge Graph** (`knowledge/`) — Five domain files documenting the pragmatic workflow system: workflow stages, review loops, agent contracts, tool patterns, and commands. Each file references ADRs and plans for traceability.
+- **Architectural Decisions** (`decisions/`) — ADRs capturing the context, rationale, and consequences of architectural choices. New decisions are added before (or alongside) implementation to preserve intent.
+- **Plans** (`plans/`) — Implementation plans in the canonical executable contract format. Active plans are at the top level; completed plans are archived with date suffixes.
+
+### Knowledge Flow
+
+1. **Before Planning:** The planner loads relevant knowledge (glossary, KG domains, ADRs) so new plans build on accumulated understanding.
+2. **During Implementation:** Agents receive knowledge through context packets — they don't read `.praigmatic/` directly.
+3. **After Completion:** A Knowledge Graph checkpoint step (part of the implementation orchestrator) suggests updates to the knowledge graph based on what was discovered. A human approves or rejects the changes.
+
+### Why a Separate Directory?
+
+| Concern | `.opencode/` (engine) | `.praigmatic/` (project brain) |
+|---------|----------------------|-------------------------------|
+| Contents | Agents, tools, commands, shared skills | Plans, decisions, domain knowledge |
+| Scope | Shared across repos via symlinks | Local to this repo only |
+| Updates | Config changes | Grows organically with each plan |
+| Consumers | All OpenCode sessions | Agents via context packets |
 
 ## Plugins
 
@@ -103,7 +162,7 @@ Phase 5: Synthesis (aggregate findings, if research ran)
 Phase 6: Task breakdown (create implementation tasks based on direction)
   ↓
 Phase 7: Create plan file ONLY
-  │  ├─ Write plan file (.opencode/plans/[task-name].md)
+   │  ├─ Write plan file (.praigmatic/plans/[task-name].md)
   │  │  ├─ Phase Decisions section (document all phase evaluations)
   │  │  ├─ Tasks section with markdown checkboxes
   │  │  ├─ Architecture overview
@@ -287,7 +346,7 @@ After all tasks have `[x]` checkbox:
 ```bash
 TIMESTAMP=$(date +%Y-%m-%d)
 PLAN_NAME=$(basename "$PLAN_FILE" .md)
-mv "$PLAN_FILE" ".opencode/plans/archive/${PLAN_NAME}-${TIMESTAMP}.md"
+mv "$PLAN_FILE" ".praigmatic/plans/archive/${PLAN_NAME}-${TIMESTAMP}.md"
 ```
 
 Stage and commit archive move:
@@ -336,7 +395,7 @@ See `.opencode/agent/pragmatic-committer.md` for details.
 ```
 ✅ Planning complete!
 
-Created implementation plan: .opencode/plans/add-oauth-authentication.md
+Created implementation plan: .praigmatic/plans/add-oauth-authentication.md
 
 Plan includes:
 - 5 implementation tasks with TTD guidance
@@ -385,8 +444,8 @@ Or with specific plan file:
 
 **6. Archive plan when done:**
 ```bash
-mv .opencode/plans/add-oauth-authentication.md \
-   .opencode/plans/archive/add-oauth-authentication-2026-01-18.md
+mv .praigmatic/plans/add-oauth-authentication.md \
+   .praigmatic/plans/archive/add-oauth-authentication-2026-01-18.md
 ```
 
 ### Plan File Format
@@ -410,13 +469,13 @@ mv .opencode/plans/add-oauth-authentication.md \
 
 ```
 Created by planner:
-  .opencode/plans/add-oauth-authentication.md
+  .praigmatic/plans/add-oauth-authentication.md
 
 Used by developer:
   Read for architecture, decisions, risks
 
 Archived when complete:
-  .opencode/plans/archive/add-oauth-authentication-2026-01-17.md
+  .praigmatic/plans/archive/add-oauth-authentication-2026-01-17.md
 ```
 
 ### Benefits of Clean Separation
