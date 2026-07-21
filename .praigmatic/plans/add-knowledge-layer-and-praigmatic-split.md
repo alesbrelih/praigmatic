@@ -46,7 +46,7 @@ Replace the flat `.opencode/plans/` model with a structured `.praigmatic/` knowl
   - Produces: configurable-plans-dir
   - Actual Files: .opencode/tools/lib/plan-workflow.ts, .opencode/tools/find-plan.ts, .opencode/tools/archive-plan.ts, .opencode/tools/parse-plan.ts, .opencode/tools/validate-plan.ts, .opencode/tools/update-plan-task.ts, .opencode/tools/extract-commit-metadata.ts, .opencode/tools/build-developer-task-packet.ts, .opencode/tools/build-review-packet.ts, .opencode/tools/build-holistic-context-packet.ts, .opencode/tools/__tests__/find-plan.test.ts
   - Notes: All 10 plan-related tools now accept optional plansDir (or archiveDir) parameter and use context.directory for path resolution. Tools accepting explicit planPath no longer have a plansDir param. 1 code review retry, issues resolved. 174 tests pass.
-- [~] **Migrate existing plans to `.praigmatic/plans/`** (Small)
+- [x] **Migrate existing plans to `.praigmatic/plans/`** (Small)
   - Purpose: Move current `.opencode/plans/` content to new location
   - Acceptance: All active and archived plans accessible from `.praigmatic/plans/`, no files left behind in `.opencode/plans/`
   - Steps:
@@ -55,7 +55,9 @@ Replace the flat `.opencode/plans/` model with a structured `.praigmatic/` knowl
   - Files: .opencode/plans/*` → `.praigmatic/plans/*, .opencode/plans/archive/*` → `.praigmatic/plans/archive/*
   - Dependencies: Task 2 (tool refactoring), Task 1 (directory scaffold)
   - Context Tags: integration
-- [ ] **Create glossary** (Medium)
+  - Actual Files: .praigmatic/plans/, .opencode/plans/
+  - Notes: Migrated all 23 plan files from .opencode/plans/ to .praigmatic/plans/. Plan was prematurely archived by developer; recovered to .praigmatic/plans/ for remaining implementation. Old .opencode/plans/ directory removed.
+- [x] **Create glossary** (Medium)
   - Purpose: Single reference defining every domain term used across the praigmatic workflow, shared to all repos via symlinks
   - Acceptance: `glossary.md` covers all key terms found in agent files, commands, tools, and reference docs; organized alphabetically with cross-references
   - Steps:
@@ -63,11 +65,12 @@ Replace the flat `.opencode/plans/` model with a structured `.praigmatic/` knowl
     - Define each term: Stage, Phase, Direction, Plan, Task, Holistic Review, Canonical Contract, Orchestrator, Agent, Subagent, TTD, QA, Checkpoint, Packet, etc.
     - Include cross-references to related terms (e.g., Stage → see also: Phase)
     - Write to `.opencode/reference/glossary.md` (shared via symlinks to all projects)
-  - Files: `.opencode/reference/glossary.md`
+  - Files: .opencode/reference/glossary.md
   - Dependencies: None
   - Context Tags: architecture
-
-- [ ] **Create knowledge graph files** (Medium)
+  - Actual Files: .opencode/reference/glossary.md
+  - Notes: Comprehensive glossary covering all 65+ domain terms organized alphabetically with cross-references, aliases, and structured definitions. Covers: workflow concepts (Stage, Direction, Plan, Task), agents (Orchestrator, all pragmatic-* agents), contracts (Canonical Executable Contract, Developer Contract, Reviewer Contract), packets (Developer Task, Review, Retry, Holistic), review loops (Code Review, Plan Review, Direction Review, Holistic Review, QA Validation), routing (Adaptive Routing, Security Override), tools (all build-*, parse-*, render-* tools), and output formats (Completed, Deviated, Failed, Blocked).
+- [x] **Create knowledge graph files** (Medium)
   - Purpose: Document the praigmatic workflow system architecture — agents, review loops, planning stages, tool ecosystem — as domain knowledge files
   - Acceptance: `knowledge/index.md` maps all domains; each domain file documents its area with architecture, flows, integration points, and links to ADRs/plans
   - Steps:
@@ -76,13 +79,12 @@ Replace the flat `.opencode/plans/` model with a structured `.praigmatic/` knowl
     - Write `knowledge/review-loops.md`: self-correcting code review, direction review, plan review, holistic review, QA validation; retry caps and routing logic
     - Write `knowledge/agents.md`: agent architecture, model assignments, permission patterns, subagent spawning rules, packet-based communication
     - Write `knowledge/tools.md`: plan-related tool ecosystem, canonical contract enforcement, shared library (`plan-workflow.ts`)
-    - Write `knowledge/commands.md`: `/pragmatic-implementation` orchestrator, `/verify-finding`, `/verify-next`
+    - Write `knowledge/commands.md`: `/pragmatic-implementation` orchestrator, `/verify-finding`, `/verify-next
     - Each file includes: Overview, Architecture, Key Flows, Integration Points, Related ADRs/Plans sections
-  - Files: `.praigmatic/knowledge/index.md`, `.praigmatic/knowledge/workflow.md`, `.praigmatic/knowledge/review-loops.md`, `.praigmatic/knowledge/agents.md`, `.praigmatic/knowledge/tools.md`, `.praigmatic/knowledge/commands.md`
+  - Files: .praigmatic/knowledge/index.md, .praigmatic/knowledge/workflow.md, .praigmatic/knowledge/review-loops.md, .praigmatic/knowledge/agents.md, .praigmatic/knowledge/tools.md, .praigmatic/knowledge/commands.md
   - Dependencies: Task 1 (directory scaffold), Task 4 (glossary — terms referenced in KG)
   - Context Tags: architecture
-
-- [ ] **Create initial ADRs** (Small)
+- [x] **Create initial ADRs** (Small)
   - Purpose: Capture 2-3 key architectural decisions in ADR format to bootstrap the decisions directory
   - Acceptance: Each ADR follows the canonical template (Status, Context, Decision, Consequences, Related), uses sequential numbering
   - Steps:
@@ -90,33 +92,32 @@ Replace the flat `.opencode/plans/` model with a structured `.praigmatic/` knowl
     - Write `0001-two-stage-planning.md`: why direction is separated from tasks
     - Write `0002-committer-removal.md`: why committer agent was deleted, commit logic inlined
     - Write `0003-adaptive-review-routing.md`: why Small tasks skip external review, Medium/Large use it
-  - Files: `.praigmatic/decisions/README.md`, `.praigmatic/decisions/0001-two-stage-planning.md`, `.praigmatic/decisions/0002-committer-removal.md`, `.praigmatic/decisions/0003-adaptive-review-routing.md`
+  - Files: .praigmatic/decisions/README.md, .praigmatic/decisions/0001-two-stage-planning.md, .praigmatic/decisions/0002-committer-removal.md, .praigmatic/decisions/0003-adaptive-review-routing.md
   - Dependencies: Task 1 (directory scaffold)
   - Context Tags: architecture
-
-- [ ] **Create `.praigmatic/index.md` hub entry point** (Small)
+- [x] **Create `.praigmatic/index.md` hub entry point** (Small)
   - Purpose: Single entry point that links to all knowledge artifacts — glossary, knowledge graph, ADRs, plans
   - Acceptance: Clear navigation with brief descriptions; self-explanatory for a new contributor
   - Steps:
     - Write intro explaining what `.praigmatic/` is and how to use it
-    - Link to `knowledge/index.md`, `.opencode/reference/glossary.md`, `decisions/`, `plans/`
+    - Link to `knowledge/index.md`, `.opencode/reference/glossary.md`, `decisions/`, `plans/
     - Include Quick Start section for common tasks
-  - Files: `.praigmatic/index.md` (replace stub from Task 1)
+  - Files: .praigmatic/index.md` (replace stub from Task 1)
   - Dependencies: Task 4 (glossary), Task 5 (knowledge graph), Task 6 (ADRs)
   - Context Tags: architecture
-
-- [ ] **Update pragmatic-planner-v2 with knowledge context loading** (Small)
+- [x] **Update pragmatic-planner-v2 with knowledge context loading** (Small)
   - Purpose: Planner loads glossary and relevant knowledge graph files as context before beginning Stage 1, so plans build on existing knowledge
   - Acceptance: Planner v2 prompt includes instruction to load `.opencode/reference/glossary.md` and `.praigmatic/knowledge/index.md` before Step 1.1; all path references updated
   - Steps:
     - Add pre-flight step before Step 1.1: load glossary and knowledge graph index as context
-    - Update plan template and all `.opencode/plans/` references to `.praigmatic/plans/`
-    - Update `find-plan` and `validate-plan` invocation instructions to pass `plansDir: ".praigmatic/plans"`
-  - Files: `.opencode/agent/pragmatic-planner-v2.md`
+    - Update plan template and all `.opencode/plans/` references to `.praigmatic/plans/
+    - Update `find-plan` and `validate-plan` invocation instructions to pass `plansDir: ".praigmatic/plans"
+  - Files: .opencode/agent/pragmatic-planner-v2.md
   - Dependencies: Task 2 (tool refactoring), Task 4 (glossary), Task 5 (knowledge graph)
   - Context Tags: architecture, integration
   - Consumes: configurable-plans-dir
-
+  - Actual Files: .opencode/agent/pragmatic-planner-v2.md
+  - Notes: Added Pre-Flight: Knowledge Loading section before Stage 1 that loads glossary, knowledge graph index, relevant domain files, and ADRs. Updated plan write path from .opencode/plans/ to .praigmatic/plans/. Updated validate-plan invocation to pass plansDir. No stale .opencode/plans/ references remain.
 - [ ] **Update pragmatic-implementation command — add KG checkpoint and path refs** (Medium)
   - Purpose: Add mandatory knowledge graph update step after holistic review, before archive; update all path references to `.praigmatic/plans/`
   - Acceptance: Command includes Step 4.10 (Knowledge Graph Checkpoint) with full workflow; all `.opencode/` path references updated
@@ -237,6 +238,16 @@ The implementation command gains a knowledge graph checkpoint step (mirroring th
 - Unit: Existing vitest suite for tools passes after refactoring
 - Integration: Manual verification of `find-plan`, `archive-plan`, `validate-plan` with new `plansDir` parameter
 - Manual: Read-through of planner v2 and implementation command for stale path references
+
+
+
+
+
+
+
+
+
+
 
 
 
