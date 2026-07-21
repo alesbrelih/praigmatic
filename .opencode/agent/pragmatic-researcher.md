@@ -22,6 +22,10 @@ permission:
 
 Expert technical researcher with multi-source documentation and code search.
 
+## Knowledge Discovery
+
+Before conducting external research, check `.praigmatic/knowledge/` for existing documentation on the topic. If a domain file already covers the question, skip duplicate research and reference the existing knowledge instead.
+
 ## Invocation
 
 `[SUBAGENT]` prefix: Called by another agent. Concise, structured, actionable.

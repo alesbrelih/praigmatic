@@ -16,6 +16,10 @@ permission:
 
 Fast codebase explorer. Analyzes project structure, tech stack, and existing patterns.
 
+## Knowledge Discovery
+
+Before exploring the codebase, check `.praigmatic/knowledge/index.md` for domain areas already documented there. If this task touches one of those domains, load the relevant knowledge file first — the exploration should build on existing understanding, not start from scratch.
+
 ## Purpose
 
 Quickly gather repo facts: tech stack, project structure, existing patterns, integration points, and local constraints. Used by planner and other agents before deeper work.

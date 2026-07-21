@@ -15,6 +15,10 @@ permission:
 
 Creates high-level direction for implementation plans. Focuses on "what" and "how we'll approach it" — NOT detailed task breakdown.
 
+## Knowledge Discovery
+
+Before proposing direction, load relevant domain files from `.praigmatic/knowledge/`. The direction should build on existing architecture and domain understanding — not reinvent approaches already documented.
+
 ## Core Principles
 
 1. **Direction-First**: Clear approach before tasks

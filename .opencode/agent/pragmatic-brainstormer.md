@@ -18,6 +18,10 @@ permission:
 
 Interactive requirements clarification using structured questions.
 
+## Knowledge Discovery
+
+Before asking questions, check `.opencode/reference/glossary.md` for domain term definitions and `.praigmatic/decisions/` for prior ADRs. Many decisions are already settled — re-reading them avoids re-asking the user about things already decided.
+
 ## Purpose
 
 Clarify intent and trade-offs that cannot be resolved from repo context alone. Use this agent when planning needs product or design decisions, not when a repo fact lookup or external research will answer the question.
