@@ -471,7 +471,7 @@ export function parsePlanContent(content: string, planPath: string): ParsedPlan 
   return inspection.plan;
 }
 
-export async function resolvePlanPath(cwd: string, planName?: string, plansSubdir = ".opencode/plans"): Promise<string> {
+export async function resolvePlanPath(cwd: string, planName?: string, plansSubdir = ".praigmatic/plans"): Promise<string> {
   const plansDir = resolve(cwd, plansSubdir);
 
   if (planName) {

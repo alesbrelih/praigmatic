@@ -107,7 +107,7 @@ Validate the refactored agent architecture to ensure:
   ```
 
 **Steps:**
-1. Save plan as `.opencode/plans/test-simple.md`
+1. Save plan as `.praigmatic/plans/test-simple.md`
 
 2. Run `/pragmatic-implementation`
 
@@ -122,7 +122,7 @@ Validate the refactored agent architecture to ensure:
 - Plan executes successfully
 - src/test.ts is created
 - Commit is created for the task
-- Plan is archived to `.opencode/plans/archive/`
+- Plan is archived to `.praigmatic/plans/archive/`
 
 **Status:** ⏳ Pending
 
@@ -136,7 +136,7 @@ Validate the refactored agent architecture to ensure:
   3. Create tests for service
 
 **Steps:**
-1. Save plan as `.opencode/plans/test-multi.md`
+1. Save plan as `.praigmatic/plans/test-multi.md`
 
 2. Run `/pragmatic-implementation`
 
@@ -344,7 +344,7 @@ Validate the refactored agent architecture to ensure:
 
 **Expected Result:**
 - Developer executes task successfully
-- Developer does not attempt to read any `.opencode/plans/*.md` file
+- Developer does not attempt to read any `.praigmatic/plans/*.md` file
 - Developer returns success status
 - Changes are made as requested
 
@@ -437,7 +437,7 @@ After testing, clean up test files:
 
 ```bash
 # Remove test plans
-rm -rf .opencode/plans/test-*.md
+rm -rf .praigmatic/plans/test-*.md
 
 # Remove test code files (if created in main project)
 # Or create them in a separate test directory

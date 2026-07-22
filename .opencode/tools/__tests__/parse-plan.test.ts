@@ -61,7 +61,7 @@ describe("parse-plan tool", () => {
 
   beforeEach(() => {
     rootDir = mkdtempSync(join(tmpdir(), "parse-plan-"));
-    mkdirSync(join(rootDir, ".opencode", "plans"), { recursive: true });
+    mkdirSync(join(rootDir, ".praigmatic", "plans"), { recursive: true });
     process.cwd = () => rootDir;
   });
 
@@ -71,7 +71,7 @@ describe("parse-plan tool", () => {
   });
 
   it("parses a valid plan into structured JSON", async () => {
-    writeFileSync(join(rootDir, ".opencode", "plans", "workflow.md"), VALID_PLAN, "utf-8");
+    writeFileSync(join(rootDir, ".praigmatic", "plans", "workflow.md"), VALID_PLAN, "utf-8");
 
     const result = JSON.parse(await parsePlan.execute({ planName: "workflow.md" }));
 
@@ -104,7 +104,7 @@ describe("parse-plan tool", () => {
 
   it("returns structured violations when the plan is malformed", async () => {
     writeFileSync(
-      join(rootDir, ".opencode", "plans", "broken.md"),
+      join(rootDir, ".praigmatic", "plans", "broken.md"),
       `# Broken
 
 ## Purpose
@@ -125,7 +125,7 @@ Bad plan
 
   it("rejects invalid context tag values", async () => {
     writeFileSync(
-      join(rootDir, ".opencode", "plans", "invalid-tags.md"),
+      join(rootDir, ".praigmatic", "plans", "invalid-tags.md"),
       `# Invalid Tags
 
 ## Purpose
@@ -152,7 +152,7 @@ Reject invalid metadata.
 
   it("keeps legacy plans without context metadata backward compatible", async () => {
     writeFileSync(
-      join(rootDir, ".opencode", "plans", "legacy.md"),
+      join(rootDir, ".praigmatic", "plans", "legacy.md"),
       `# Legacy Plan
 
 ## Purpose

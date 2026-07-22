@@ -6,8 +6,8 @@ import { inspectPlanContent, resolvePlanPath } from "./lib/plan-workflow.js";
 export default tool({
   description: "Parse a plan file into structured JSON using the canonical executable task contract",
   args: {
-    planName: tool.schema.string().optional().describe("Optional plan file name in .opencode/plans/; defaults to the most recent plan"),
-    plansDir: tool.schema.string().optional().describe("Optional plans directory (default: .opencode/plans/)"),
+    planName: tool.schema.string().optional().describe("Optional plan file name in .praigmatic/plans/; defaults to the most recent plan"),
+    plansDir: tool.schema.string().optional().describe("Optional plans directory (default: .praigmatic/plans/)"),
   },
   async execute({ planName, plansDir }, context) {
     try {

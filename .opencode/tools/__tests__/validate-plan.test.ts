@@ -10,7 +10,7 @@ describe("validate-plan tool", () => {
 
   beforeEach(() => {
     rootDir = mkdtempSync(join(tmpdir(), "validate-plan-"));
-    mkdirSync(join(rootDir, ".opencode", "plans"), { recursive: true });
+    mkdirSync(join(rootDir, ".praigmatic", "plans"), { recursive: true });
     process.cwd = () => rootDir;
   });
 
@@ -20,7 +20,7 @@ describe("validate-plan tool", () => {
   });
 
   it("accepts the canonical executable task contract", async () => {
-    const planPath = join(rootDir, ".opencode", "plans", "valid.md");
+    const planPath = join(rootDir, ".praigmatic", "plans", "valid.md");
     writeFileSync(
       planPath,
       `# Valid
@@ -41,7 +41,7 @@ Do valid things.
     );
 
     const result = JSON.parse(
-      await validatePlan.execute({ planPath: ".opencode/plans/valid.md" }),
+      await validatePlan.execute({ planPath: ".praigmatic/plans/valid.md" }),
     );
 
     expect(result.valid).toBe(true);
@@ -49,7 +49,7 @@ Do valid things.
   });
 
   it("rejects duplicate task names and unsupported metadata", async () => {
-    const planPath = join(rootDir, ".opencode", "plans", "invalid.md");
+    const planPath = join(rootDir, ".praigmatic", "plans", "invalid.md");
     writeFileSync(
       planPath,
       `# Invalid
@@ -79,7 +79,7 @@ Break validation.
     );
 
     const result = JSON.parse(
-      await validatePlan.execute({ planPath: ".opencode/plans/invalid.md" }),
+      await validatePlan.execute({ planPath: ".praigmatic/plans/invalid.md" }),
     );
 
     expect(result.valid).toBe(false);
@@ -88,7 +88,7 @@ Break validation.
   });
 
   it("rejects tasks with unsupported sizes", async () => {
-    const planPath = join(rootDir, ".opencode", "plans", "bad-size.md");
+    const planPath = join(rootDir, ".praigmatic", "plans", "bad-size.md");
     writeFileSync(
       planPath,
       `# Invalid Size
@@ -109,7 +109,7 @@ Reject unsupported sizes.
     );
 
     const result = JSON.parse(
-      await validatePlan.execute({ planPath: ".opencode/plans/bad-size.md" }),
+      await validatePlan.execute({ planPath: ".praigmatic/plans/bad-size.md" }),
     );
 
     expect(result.valid).toBe(false);

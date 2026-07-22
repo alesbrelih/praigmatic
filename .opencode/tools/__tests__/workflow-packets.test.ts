@@ -66,8 +66,8 @@ describe("workflow packet tools", () => {
 
   beforeEach(() => {
     rootDir = mkdtempSync(join(tmpdir(), "workflow-packets-"));
-    mkdirSync(join(rootDir, ".opencode", "plans"), { recursive: true });
-    planPath = join(rootDir, ".opencode", "plans", "workflow.md");
+    mkdirSync(join(rootDir, ".praigmatic", "plans"), { recursive: true });
+    planPath = join(rootDir, ".praigmatic", "plans", "workflow.md");
     writeFileSync(planPath, PLAN_CONTENT, "utf-8");
     process.cwd = () => rootDir;
   });
@@ -80,7 +80,7 @@ describe("workflow packet tools", () => {
   it("builds a developer packet that honors explicit context tags", async () => {
     const result = JSON.parse(
       await buildDeveloperTaskPacket.execute({
-        planPath: ".opencode/plans/workflow.md",
+        planPath: ".praigmatic/plans/workflow.md",
         taskName: "Rotate secret docs",
         completedTasksJson: "[]",
       }),
@@ -96,7 +96,7 @@ describe("workflow packet tools", () => {
   it("builds a review packet using produces and consumes metadata", async () => {
     const result = JSON.parse(
       await buildReviewPacket.execute({
-        planPath: ".opencode/plans/workflow.md",
+        planPath: ".praigmatic/plans/workflow.md",
         taskName: "Define schema contract",
         stagedFiles: ["src/contracts/schema.ts"],
         reviewPass: 1,
@@ -117,7 +117,7 @@ describe("workflow packet tools", () => {
   it("builds a re-review packet with explicit issues to re-check", async () => {
     const result = JSON.parse(
       await buildReviewPacket.execute({
-        planPath: ".opencode/plans/workflow.md",
+        planPath: ".praigmatic/plans/workflow.md",
         taskName: "Define schema contract",
         stagedFiles: ["src/contracts/schema.ts"],
         reviewPass: 2,
@@ -179,7 +179,7 @@ describe("workflow packet tools", () => {
   it("builds a holistic packet from accumulated execution state", async () => {
     const result = JSON.parse(
       await buildHolisticContextPacket.execute({
-        planPath: ".opencode/plans/workflow.md",
+        planPath: ".praigmatic/plans/workflow.md",
         completedTasksJson: JSON.stringify([
           {
             title: "Define schema contract",

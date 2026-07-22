@@ -3,15 +3,15 @@ import { readdir, stat } from "node:fs/promises";
 import { resolve } from "node:path";
 
 export default tool({
-  description: "Find the most recent plan file in .opencode/plans/ or use provided name",
+  description: "Find the most recent plan file in .praigmatic/plans/ or use provided name",
   args: {
-    planName: tool.schema.string().optional().describe("Optional plan file name (without .opencode/plans/ prefix)"),
-    plansDir: tool.schema.string().optional().describe("Optional plans directory (default: .opencode/plans/)"),
+    planName: tool.schema.string().optional().describe("Optional plan file name (without .praigmatic/plans/ prefix)"),
+    plansDir: tool.schema.string().optional().describe("Optional plans directory (default: .praigmatic/plans/)"),
   },
   async execute({ planName, plansDir: plansDirArg }, context) {
     try {
       const directory = context?.directory ?? process.cwd();
-      const plansDir = resolve(directory, plansDirArg ?? ".opencode/plans");
+      const plansDir = resolve(directory, plansDirArg ?? ".praigmatic/plans");
 
       if (planName) {
         const path = resolve(plansDir, planName);

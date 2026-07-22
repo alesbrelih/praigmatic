@@ -30,8 +30,8 @@ describe("extract-commit-metadata tool", () => {
 
   beforeEach(() => {
     rootDir = mkdtempSync(join(tmpdir(), "extract-commit-metadata-"));
-    mkdirSync(join(rootDir, ".opencode", "plans"), { recursive: true });
-    writeFileSync(join(rootDir, ".opencode", "plans", "workflow.md"), PLAN_WITH_METADATA, "utf-8");
+    mkdirSync(join(rootDir, ".praigmatic", "plans"), { recursive: true });
+    writeFileSync(join(rootDir, ".praigmatic", "plans", "workflow.md"), PLAN_WITH_METADATA, "utf-8");
     process.cwd = () => rootDir;
   });
 
@@ -43,7 +43,7 @@ describe("extract-commit-metadata tool", () => {
   it("merges plan-level and task-level refs for task commits", async () => {
     const result = JSON.parse(
       await extractCommitMetadata.execute({
-        planPath: ".opencode/plans/workflow.md",
+        planPath: ".praigmatic/plans/workflow.md",
         taskName: "Task One",
         kind: "task",
       }),
@@ -57,7 +57,7 @@ describe("extract-commit-metadata tool", () => {
   it("uses only plan-level refs for archive commits", async () => {
     const result = JSON.parse(
       await extractCommitMetadata.execute({
-        planPath: ".opencode/plans/workflow.md",
+        planPath: ".praigmatic/plans/workflow.md",
         kind: "archive",
       }),
     );

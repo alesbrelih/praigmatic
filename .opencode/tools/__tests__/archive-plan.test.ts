@@ -25,7 +25,7 @@ describe("archive-plan tool", () => {
 
   it("should archive a plan file with timestamp suffix", async () => {
     const result = await archivePlan.execute({
-      planPath: ".opencode/plans/my-feature.md",
+      planPath: ".praigmatic/plans/my-feature.md",
     });
 
     expect(result).toContain("archive");
@@ -47,13 +47,13 @@ describe("archive-plan tool", () => {
     vi.mocked(existsSync).mockReturnValue(true);
 
     await expect(
-      archivePlan.execute({ planPath: ".opencode/plans/existing.md" })
+      archivePlan.execute({ planPath: ".praigmatic/plans/existing.md" })
     ).rejects.toThrow("Archive file already exists");
   });
 
   it("should not create double .md extension", async () => {
     const result = await archivePlan.execute({
-      planPath: ".opencode/plans/test.md",
+      planPath: ".praigmatic/plans/test.md",
     });
 
     expect(result).not.toContain(".md-");
@@ -62,7 +62,7 @@ describe("archive-plan tool", () => {
 
   it("should create archive directory recursively", async () => {
     await archivePlan.execute({
-      planPath: ".opencode/plans/test.md",
+      planPath: ".praigmatic/plans/test.md",
     });
 
     expect(mkdir).toHaveBeenCalledWith(

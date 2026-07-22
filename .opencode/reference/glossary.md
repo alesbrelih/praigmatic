@@ -152,7 +152,7 @@ A required field in the canonical executable contract listing the primary files 
 - **See also:** Canonical Executable Contract, Task
 
 ### find-plan
-A CLI tool that locates the most recent plan file or uses a provided plan name. Uses `context.directory` for base path resolution with an optional `plansDir` parameter (defaults to `.opencode/plans`).
+A CLI tool that locates the most recent plan file or uses a provided plan name. Uses `context.directory` for base path resolution with an optional `plansDir` parameter (defaults to `.praigmatic/plans`).
 - **See also:** Plan, Orchestrator
 
 ## G

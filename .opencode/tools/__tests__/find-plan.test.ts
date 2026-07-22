@@ -18,7 +18,7 @@ describe("find-plan tool", () => {
 
       const result = await findPlan.execute({ planName: "my-plan.md" });
       expect(result).toContain("my-plan.md");
-      expect(result).toContain(".opencode/plans");
+      expect(result).toContain(".praigmatic/plans");
     });
 
     it("should return error when plan file does not exist", async () => {

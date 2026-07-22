@@ -26,8 +26,8 @@ describe("update-plan-task tool", () => {
 
   beforeEach(() => {
     rootDir = mkdtempSync(join(tmpdir(), "update-plan-task-"));
-    mkdirSync(join(rootDir, ".opencode", "plans"), { recursive: true });
-    planPath = join(rootDir, ".opencode", "plans", "workflow.md");
+    mkdirSync(join(rootDir, ".praigmatic", "plans"), { recursive: true });
+    planPath = join(rootDir, ".praigmatic", "plans", "workflow.md");
     writeFileSync(planPath, PLAN_CONTENT, "utf-8");
     process.cwd = () => rootDir;
   });
@@ -39,19 +39,19 @@ describe("update-plan-task tool", () => {
 
   it("transitions task status and annotates execution details", async () => {
     await updatePlanTask.execute({
-      planPath: ".opencode/plans/workflow.md",
+      planPath: ".praigmatic/plans/workflow.md",
       taskName: "Task One",
       action: "mark_in_progress",
     });
     await updatePlanTask.execute({
-      planPath: ".opencode/plans/workflow.md",
+      planPath: ".praigmatic/plans/workflow.md",
       taskName: "Task One",
       action: "annotate_execution",
       actualFiles: ["src/task-one.ts", "src/helper.ts"],
       notes: "Implemented the task cleanly",
     });
     await updatePlanTask.execute({
-      planPath: ".opencode/plans/workflow.md",
+      planPath: ".praigmatic/plans/workflow.md",
       taskName: "Task One",
       action: "mark_completed",
     });
@@ -64,14 +64,14 @@ describe("update-plan-task tool", () => {
 
   it("adds runtime warnings for blocked and review-failed states", async () => {
     await updatePlanTask.execute({
-      planPath: ".opencode/plans/workflow.md",
+      planPath: ".praigmatic/plans/workflow.md",
       taskName: "Task One",
       action: "annotate_blocked",
       blocker: "Missing dependency",
       requiredAction: "Install the package",
     });
     await updatePlanTask.execute({
-      planPath: ".opencode/plans/workflow.md",
+      planPath: ".praigmatic/plans/workflow.md",
       taskName: "Task One",
       action: "annotate_review_failed",
       summary: "Reviewer still found medium issues",
