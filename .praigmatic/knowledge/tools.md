@@ -196,6 +196,32 @@ Safely updates task execution state and annotations within a plan file.
 - **Actions:** `mark_pending`, `mark_in_progress`, `mark_completed`, `annotate_execution`, `annotate_failure`, `annotate_blocked`, `annotate_review_failed`, `annotate_holistic_failed`, `annotate_qa_failed`
 - **Usage:** The orchestrator's primary mechanism for tracking task execution state in the plan file
 
+#### Knowledge Tools
+
+Tools that provide programmatic access to the `.praigmatic/knowledge/` directory. These are used by `pragmatic-planner-v2` during its pre-flight knowledge loading step, replacing ad-hoc `Read` + `Glob` calls with deterministic structured operations.
+
+##### list-knowledge-files
+
+Lists all markdown files in `.praigmatic/knowledge/` with their `# ` heading titles, sorted alphabetically.
+
+- **Input:** None (optional `knowledgeDir` to override the default `.praigmatic/knowledge/`)
+- **Output:** One line per file in `filename: Title` format (e.g., `tools.md: Tools: Plan-Related Workflow Ecosystem`). Falls back to bare `filename` if no `# ` heading is found or if the file is unreadable.
+- **Error handling:** Returns `Error: Knowledge directory does not exist` if the directory is missing; `No knowledge files found.` if empty; wraps unexpected errors in a descriptive message.
+- **Resolution:** Resolves from `context.directory` with a `process.cwd()` fallback — consistent with `find-plan.ts` and other path-aware tools.
+
+##### read-knowledge-file
+
+Reads and returns the full content of a named knowledge file from `.praigmatic/knowledge/`.
+
+- **Input:** `file` (required) — the knowledge file name, e.g., `agents.md`. Optional `knowledgeDir` to override the default directory.
+- **Output:** Full file content as a string.
+- **Validation rules:**
+  - `file` argument is required — returns an error if empty
+  - `file` must end with `.md` — rejects non-markdown files
+  - Path traversal (`..`) is not allowed in the file argument — returns an error
+  - Resolved path must stay within the knowledge directory — double-checked after `resolve()`
+- **Error handling:** If the file is not found, lists available files from the directory in the error message. If the knowledge directory itself does not exist, reports that explicitly. Wraps unexpected errors in a descriptive message.
+
 ## Integration Points
 
 - **Orchestrator** — Primary consumer of all tools. The orchestrator's step 4 (Implementation Loop) and step 4.8 (holistic review) use every tool category.
